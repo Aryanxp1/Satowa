@@ -45,6 +45,9 @@ app.include_router(evidence_router)
 app.include_router(health_router)
 app.include_router(analyze_router)
 app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
+showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
+if showcase_dir.is_dir():
+    app.mount('/showcase', StaticFiles(directory=showcase_dir, html=True), name='showcase')
 
 
 @app.get("/", tags=["System Root"])

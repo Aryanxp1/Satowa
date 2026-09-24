@@ -225,5 +225,54 @@ def test_existing_database_adds_version_column(tmp_path, monkeypatch):
 def test_demo_served_by_backend():
     html = client.get('/demo/')
     assert html.status_code == 200
-    assert 'From field photos to a report' in html.text
+    assert 'Show the evidence.' in html.text
     assert client.get('/demo/app.js').status_code == 200
+
+
+def test_synthetic_walkthrough_is_idempotent_and_labeled():
+    from scripts.seed_local_demo import seed
+    seed()
+    seed()
+    sites = client.get('/api/v1/sites', headers=HEADERS).json()
+    assert [site['id'] for site in sites] == ['demo-riverbank']
+    visits = client.get('/api/v1/sites/demo-riverbank/visits', headers=HEADERS).json()
+    assert len(visits) == 2
+    assert len(visits[0]['assets']) == len(visits[1]['assets']) == 1
+    observation = client.get('/api/v1/sites/demo-riverbank/observations', headers=HEADERS).json()[0]
+    assert observation['ai_draft'] is None
+    assert observation['review_status'] == 'pending'
+    assert 'Synthetic' in observation['reliability_reason']
+    assert client.get('/demo/sample-media/river-before-synthetic.png').status_code == 200
+    approved = review(observation['id'], 'approve')
+    assert approved.status_code == 200
+    report = client.get('/api/v1/sites/demo-riverbank/report', headers=HEADERS).json()
+    assert report['synthetic_demo'] is True
+    assert len(report['observations']) == 1
+    markdown = client.get('/api/v1/sites/demo-riverbank/report?format=markdown', headers=HEADERS)
+    assert 'SYNTHETIC DEMO' in markdown.text
+    assert client.get('/showcase/').status_code == 200
+
+
+def test_measurements_need_named_reviewer_and_explicit_source():
+    setup_site()
+    visit = client.get('/api/v1/sites/river/visits', headers=HEADERS).json()[1]
+    payload = {'visit_id': visit['id'], 'label': 'Collected litter',
+               'quantity': 12.5, 'unit': 'kg', 'source': 'Signed scale sheet'}
+    master = client.post('/api/v1/sites/river/measurements',
+                         headers={'Authorization': 'Bearer demo-token'}, json=payload)
+    assert master.status_code == 403
+    missing_source = client.post('/api/v1/sites/river/measurements', headers=HEADERS,
+                                 json={**payload, 'source': '  '})
+    assert missing_source.status_code == 422
+    negative = client.post('/api/v1/sites/river/measurements', headers=HEADERS,
+                           json={**payload, 'quantity': -5})
+    assert negative.status_code == 422
+    saved = client.post('/api/v1/sites/river/measurements', headers=HEADERS, json=payload)
+    assert saved.status_code == 201
+    assert saved.json()['recorded_by'] == 'Farhan'
+    report = client.get('/api/v1/sites/river/report', headers=HEADERS).json()
+    assert report['observations'] == []
+    assert report['recorded_measurements'][0]['quantity'] == 12.5
+    assert report['synthetic_demo'] is False
+    markdown = client.get('/api/v1/sites/river/report?format=markdown', headers=HEADERS)
+    assert '12.5 kg' in markdown.text and 'Signed scale sheet' in markdown.text

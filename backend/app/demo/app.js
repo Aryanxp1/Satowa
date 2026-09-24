@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { token: '', site: '', visits: [], observations: [] };
+  const state = { token: '', site: '', visits: [], observations: [], measurements: [] };
   const notice = (message, error = false) => {
     $('notice').textContent = message;
     $('notice').classList.toggle('error', error);
@@ -37,43 +37,57 @@
   };
 
   async function loadSites(preferred = '') {
-    const sites = await api('/sites');
+    const [sites, integrations] = await Promise.all([api('/sites'), api('/integrations')]);
     const select = $('site-select');
     select.replaceChildren(new Option('Choose a site', ''));
     sites.forEach(site => select.add(new Option(`${site.name} (${site.id})`, site.id)));
     if (preferred && sites.some(site => site.id === preferred)) select.value = preferred;
+    $('integration-status').textContent = `Media: ${integrations.cloudinary_ready ? 'Cloudinary configured' : 'local sample only; Cloudinary credentials needed for uploads'} · Image comparison: ${integrations.gemini_ready ? 'Gemini configured' : 'manual review; Gemini key needed for AI drafts'}`;
     $('workspace').hidden = false;
     return sites;
   }
 
   async function refreshSite() {
     if (!state.site) return;
-    const [visits, observations, report] = await Promise.all([
+    const [visits, observations, measurements, report] = await Promise.all([
       api(`/sites/${encodeURIComponent(state.site)}/visits`),
       api(`/sites/${encodeURIComponent(state.site)}/observations`),
+      api(`/sites/${encodeURIComponent(state.site)}/measurements`),
       api(`/sites/${encodeURIComponent(state.site)}/report`),
     ]);
     state.visits = visits;
     state.observations = observations;
+    state.measurements = measurements;
     $('site-workspace').hidden = false;
+    $('synthetic-banner').hidden = state.site !== 'demo-riverbank';
+    $('visit-count').textContent = visits.length;
+    $('photo-count').textContent = visits.reduce((total, visit) => total + visit.assets.length, 0);
+    $('observation-count').textContent = observations.length;
+    $('approved-count').textContent = report.observations.length;
     renderVisits();
     renderPairChoices();
     renderObservations();
+    renderMeasurements();
     const count = report.observations.length;
-    $('report-count').textContent = `${count} approved observation${count === 1 ? '' : 's'} ready to export.`;
-    $('export').disabled = count === 0;
+    const measureCount = report.recorded_measurements.length;
+    $('report-count').textContent = `${count} approved observation${count === 1 ? '' : 's'} and ${measureCount} recorded measurement${measureCount === 1 ? '' : 's'} ready to export.`;
+    $('export').disabled = count + measureCount === 0;
   }
 
   function renderVisits() {
     const container = $('visits');
     container.replaceChildren();
-    container.classList.toggle('empty', state.visits.length === 0);
-    if (!state.visits.length) { container.textContent = 'No visits yet.'; return; }
-    state.visits.forEach(visit => {
+    const filter = $('media-filter').value.trim().toLowerCase();
+    const visible = state.visits.filter(visit => !filter || visit.label.toLowerCase().includes(filter) ||
+      visit.visited_on.includes(filter) || visit.assets.some(asset => asset.source.toLowerCase().includes(filter)));
+    container.classList.toggle('empty', visible.length === 0);
+    if (!visible.length) { container.textContent = filter ? 'No visits or photo sources match this search.' : 'No visits yet.'; return; }
+    visible.forEach(visit => {
       const card = node('article', 'visit-card');
       card.append(node('h3', '', visit.label), node('div', 'date', visit.visited_on));
       const thumbs = node('div', 'thumb-grid');
-      visit.assets.forEach(asset => {
+      visit.assets.filter(asset => !filter || visit.label.toLowerCase().includes(filter) ||
+        visit.visited_on.includes(filter) || asset.source.toLowerCase().includes(filter)).forEach(asset => {
         const image = node('img');
         image.src = asset.secure_url;
         image.alt = `${visit.label}: ${asset.source}`;
@@ -133,6 +147,36 @@
       if (selected) image.src = selected.secure_url;
       else image.removeAttribute('src');
     }
+    const before = assets.find(asset => asset.asset_id === $('before-select').value);
+    const after = assets.find(asset => asset.asset_id === $('after-select').value);
+    $('comparison-stage').hidden = !before || !after || before.asset_id === after.asset_id;
+    if (before && after) {
+      $('comparison-before').src = before.secure_url;
+      $('comparison-after').src = after.secure_url;
+      updateComparisonRange();
+    }
+  }
+
+  function updateComparisonRange() {
+    $('comparison-before').style.clipPath = `inset(0 ${100 - Number($('comparison-range').value)}% 0 0)`;
+  }
+
+  function renderMeasurements() {
+    const select = $('measurement-visit');
+    select.replaceChildren(new Option('Choose a visit', ''));
+    state.visits.forEach(visit => select.add(new Option(`${visit.visited_on} · ${visit.label}`, visit.id)));
+    const container = $('measurements');
+    container.replaceChildren();
+    if (!state.measurements.length) {
+      container.textContent = 'No measurements recorded. Photos alone do not establish weight or impact.';
+      return;
+    }
+    state.measurements.forEach(item => {
+      const row = node('div', 'measurement-item');
+      row.append(node('strong', '', `${item.quantity} ${item.unit} · ${item.label}`),
+        node('span', '', `Source: ${item.source} · ${item.recorded_by}`));
+      container.append(row);
+    });
   }
 
   function renderObservations() {
@@ -143,7 +187,8 @@
     state.observations.forEach(observation => {
       const card = node('article', 'observation-card');
       const badge = node('span', `badge ${observation.review_status}`, observation.review_status);
-      const title = node('h3', '', `Observation ${observation.id.slice(0, 8)}`);
+      const title = node('h3', '', observation.id === 'synthetic-river-observation'
+        ? 'Sample observation' : `Observation ${observation.id.slice(0, 8)}`);
       const meta = node('p', 'meta', `Version ${observation.version} · ${observation.before_asset_id.slice(0, 9)} → ${observation.after_asset_id.slice(0, 9)}`);
       card.append(badge, title, meta);
       const evidence = node('div', 'evidence-grid');
@@ -241,6 +286,20 @@
   });
   $('before-select').addEventListener('change', updatePreview);
   $('after-select').addEventListener('change', updatePreview);
+  $('comparison-range').addEventListener('input', updateComparisonRange);
+  $('media-filter').addEventListener('input', renderVisits);
+  $('measurement-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    run(async () => {
+      const data = Object.fromEntries(new FormData(form));
+      data.quantity = Number(data.quantity);
+      await api(`/sites/${encodeURIComponent(state.site)}/measurements`, { method: 'POST', json: data });
+      form.reset();
+      await refreshSite();
+      notice('Measured outcome saved with its source.');
+    });
+  });
   $('compare').addEventListener('click', () => run(async () => {
     const before_asset_id = $('before-select').value;
     const after_asset_id = $('after-select').value;

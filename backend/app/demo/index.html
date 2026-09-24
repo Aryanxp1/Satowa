@@ -10,13 +10,13 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/demo/"><span class="brand-mark">L</span><span>LEX <small>Evidence desk</small></span></a>
-    <span class="mode">Private demo</span>
+    <a class="brand" href="/showcase/"><span class="brand-mark">L</span><span>LEX <small>Evidence desk</small></span></a>
+    <div class="topbar-links"><a href="/showcase/">Project story</a><span class="mode">Local demo</span></div>
   </header>
   <main>
     <section class="intro">
       <span class="eyebrow">Cleanup reporting workspace</span>
-      <h1>From field photos to a report you can defend.</h1>
+      <h1>Show the change.<br><span>Show the evidence.</span></h1>
       <p>Organise visits, compare the same site, review every observation, and export only what a person approved.</p>
     </section>
     <section class="panel connect" aria-labelledby="connect-title">
@@ -25,28 +25,39 @@
     </section>
     <p id="notice" class="notice" role="status" aria-live="polite"></p>
     <div id="workspace" hidden>
+      <div id="integration-status" class="integration-status" role="status"></div>
       <section class="panel" aria-labelledby="site-title">
         <div class="section-head"><span class="step">01</span><div><h2 id="site-title">Choose a cleanup site</h2><p>Each visit and observation belongs to one site.</p></div></div>
         <div class="inline"><label class="grow">Saved sites<select id="site-select"><option value="">Choose a site</option></select></label><button id="load-site" class="secondary">Open</button></div>
         <form id="site-form" class="inline subform"><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label class="grow">Name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><button class="secondary">Create site</button></form>
       </section>
       <div id="site-workspace" hidden>
+        <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Synthetic sample project</strong><span>These images were generated for this walkthrough. They are not real cleanup evidence and no AI comparison is claimed.</span></div>
+        <div class="summary-grid" aria-label="Current project summary"><div><strong id="visit-count">0</strong><span>Visits</span></div><div><strong id="photo-count">0</strong><span>Photos</span></div><div><strong id="observation-count">0</strong><span>Observations</span></div><div><strong id="approved-count">0</strong><span>Approved</span></div></div>
         <section class="panel" aria-labelledby="visits-title">
           <div class="section-head"><span class="step">02</span><div><h2 id="visits-title">Record visits and photos</h2><p>Upload photos you have permission to use publicly in this demo.</p></div></div>
           <form id="visit-form" class="inline"><label>Visit date<input name="visited_on" type="date" required></label><label class="grow">Label<input name="label" required maxlength="120" placeholder="Before cleanup"></label><button class="secondary">Add visit</button></form>
+          <label class="media-filter">Find media by source or visit<input id="media-filter" type="search" placeholder="Search this project's media"></label>
           <div id="visits" class="visit-grid empty">No visits yet.</div>
         </section>
         <section class="panel" aria-labelledby="pair-title">
           <div class="section-head"><span class="step">03</span><div><h2 id="pair-title">Select evidence</h2><p>Choose photos from different dates at the same site. AI may decline an unreliable comparison.</p></div></div>
           <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
+          <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Slide to compare<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
           <button id="compare" class="primary">Compare and draft observation</button>
         </section>
         <section class="panel" aria-labelledby="review-title">
           <div class="section-head"><span class="step">04</span><div><h2 id="review-title">Review observations</h2><p>AI drafts are proposals. Your approval determines what reaches the report.</p></div></div>
           <div id="observations" class="observation-list empty">No observations yet.</div>
         </section>
+        <section class="panel" aria-labelledby="measurement-title">
+          <div class="section-head"><span class="step">05</span><div><h2 id="measurement-title">Record a measured outcome</h2><p>Optional. Enter only a quantity someone actually measured or counted, with its source.</p></div></div>
+          <form id="measurement-form" class="measurement-form"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="measurement-source">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label><button class="secondary">Save measurement</button></form>
+          <div id="measurements" class="measurement-list"></div>
+        </section>
         <section class="panel" aria-labelledby="report-title">
-          <div class="section-head"><span class="step">05</span><div><h2 id="report-title">Export reviewed evidence</h2><p id="report-count">No approved observations yet.</p></div></div>
+          <div class="section-head"><span class="step">06</span><div><h2 id="report-title">Export reviewed evidence</h2><p id="report-count">No approved observations yet.</p></div></div>
+          <p class="report-note">Only approved observations and explicitly recorded measurements appear here. Synthetic sample reports are marked as such.</p>
           <button id="export" class="primary">Download Markdown report</button>
         </section>
       </div>

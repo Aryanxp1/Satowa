@@ -6,6 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.routes.media import require_upload_token
 from app.services import evidence_store as store
 from app.services.image_comparison import compare_images
@@ -41,6 +42,14 @@ class ReviewInput(BaseModel):
     decision: Literal['approve', 'reject']
     expected_version: int = Field(ge=1)
     text: str | None = Field(default=None, max_length=600)
+
+
+class MeasurementInput(BaseModel):
+    visit_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=120)
+    quantity: float = Field(gt=0, le=10_000_000, allow_inf_nan=False)
+    unit: Literal['kg', 'bags', 'items']
+    source: str = Field(min_length=1, max_length=200)
 
 
 def require_reviewer(authorization: str | None = Header(default=None)):
@@ -92,6 +101,16 @@ def create_site(payload: SiteInput):
 def list_sites():
     with store.connection() as db:
         return store.rows(db, 'SELECT * FROM sites ORDER BY name,id')
+
+
+@router.get('/integrations')
+def integration_status():
+    return {
+        'cloudinary_ready': all((settings.CLOUDINARY_CLOUD_NAME,
+                                 settings.CLOUDINARY_API_KEY,
+                                 settings.CLOUDINARY_API_SECRET.get_secret_value())),
+        'gemini_ready': bool(settings.GEMINI_API_KEY),
+    }
 
 
 @router.post('/sites/{site_id}/visits', status_code=201)
@@ -150,6 +169,37 @@ def list_observations(site_id: str):
     with store.connection() as db:
         require_site(db, site_id)
         return store.rows(db, 'SELECT * FROM observations WHERE site_id=? ORDER BY created_at,id', (site_id,))
+
+
+@router.post('/sites/{site_id}/measurements', status_code=201)
+def record_measurement(site_id: str, payload: MeasurementInput,
+                       reviewer: str = Depends(require_reviewer)):
+    label, source = payload.label.strip(), payload.source.strip()
+    if not label or not source:
+        raise HTTPException(422, 'Measurement label and source must not be blank')
+    with store.connection() as db:
+        require_site(db, site_id)
+        visit = store.one(db, 'SELECT * FROM visits WHERE id=?', (payload.visit_id,))
+        if not visit or visit['site_id'] != site_id:
+            raise HTTPException(422, 'Measurement visit must belong to this site')
+        measurement = {
+            'id': store.new_id(), 'site_id': site_id, 'visit_id': visit['id'],
+            'label': label, 'quantity': payload.quantity, 'unit': payload.unit,
+            'source': source, 'recorded_by': reviewer, 'recorded_at': store.timestamp(),
+        }
+        db.execute('''INSERT INTO measurements
+            (id,site_id,visit_id,label,quantity,unit,source,recorded_by,recorded_at)
+            VALUES (:id,:site_id,:visit_id,:label,:quantity,:unit,:source,:recorded_by,:recorded_at)''',
+            measurement)
+    return measurement
+
+
+@router.get('/sites/{site_id}/measurements')
+def list_measurements(site_id: str):
+    with store.connection() as db:
+        require_site(db, site_id)
+        return store.rows(db, '''SELECT * FROM measurements WHERE site_id=?
+            ORDER BY recorded_at,id''', (site_id,))
 
 
 @router.get('/observations/{observation_id}')
@@ -241,15 +291,32 @@ def export_report(site_id: str, format: Literal['json','markdown'] = Query(defau
     with store.connection() as db:
         site = require_site(db, site_id)
         observations = report_rows(db, site_id)
+        measurements = store.rows(db, '''SELECT m.*,v.visited_on FROM measurements m
+            JOIN visits v ON v.id=m.visit_id WHERE m.site_id=? ORDER BY m.recorded_at,m.id''',
+            (site_id,))
+    demo_only = site_id == 'demo-riverbank' or any(
+        item['before_url'].startswith('/demo/sample-media/') or
+        item['after_url'].startswith('/demo/sample-media/') for item in observations)
     if format == 'json':
         return {'site': site, 'generated_at': store.timestamp(), 'observations': observations,
-                'recorded_measurements': []}
+                'recorded_measurements': measurements, 'synthetic_demo': demo_only}
     lines = [f'# {escape(site["name"])} — Cleanup Evidence Report', '',
-             'Only reviewed observations are included. No measurements were recorded.', '']
+             'Only reviewed observations and explicitly recorded measurements are included.', '']
+    if demo_only:
+        lines += ['**SYNTHETIC DEMO — NOT FIELD EVIDENCE**', '']
     for item in observations:
         lines += [f'## Observation {item["id"]}', '', escape(item['approved_text']), '',
                   f'Before ({item["before_date"]}): {item["before_url"]}',
                   f'After ({item["after_date"]}): {item["after_url"]}',
                   f'Approved by {escape(item["reviewed_by"])} at {item["reviewed_at"]}', '']
+    if measurements:
+        lines += ['## Recorded measurements', '']
+        for item in measurements:
+            lines += [f'- {escape(item["label"])}: {item["quantity"]:g} {item["unit"]} '
+                      f'({item["visited_on"]}; source: {escape(item["source"])}; '
+                      f'recorded by {escape(item["recorded_by"])})']
+        lines.append('')
+    else:
+        lines += ['No measurements were recorded.', '']
     return Response('\n'.join(lines), media_type='text/markdown',
                     headers={'Content-Disposition': f'attachment; filename="lex-{site_id}-report.md"'})

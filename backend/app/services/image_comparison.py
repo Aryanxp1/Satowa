@@ -41,6 +41,8 @@ async def _image_bytes(client, asset):
 
 
 async def compare_images(before, after):
+    if before['secure_url'].startswith('/demo/sample-media/') or after['secure_url'].startswith('/demo/sample-media/'):
+        return unavailable('Synthetic sample photos are for a local walkthrough only. Inspect them and write a manual observation; no AI comparison was run.')
     if not settings.GEMINI_API_KEY:
         return unavailable('AI comparison is unavailable until GEMINI_API_KEY is configured. A reviewer may write an observation manually.')
     prompt = (

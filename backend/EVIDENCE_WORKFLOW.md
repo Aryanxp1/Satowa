@@ -9,6 +9,11 @@ or review observations. The server derives reviewer names from the token;
 request bodies cannot choose a reviewer. Tokens are held in page memory and
 must be entered again after a reload.
 
+For a complete local walkthrough without service keys, run `./run_local.sh`
+from the repository root. It creates a clearly synthetic two-visit project
+and a pending sample observation. The sample never uploads to Cloudinary or
+calls Gemini. The landing page is at `/showcase/`; the working app is `/demo/`.
+
 Records persist to SQLite at `LEX_DB_PATH` (default `./lex.sqlite3`, relative
 to the process working directory). Mount a persistent volume in deployment.
 Named demo tokens are a small step toward attribution; they are not full user
@@ -44,10 +49,14 @@ Call these endpoints in order:
    returns persisted text and revision events. `GET
    /api/v1/sites/river/observations` lists site records.
 7. `GET /api/v1/sites/river/report` returns JSON with only approved
-   observations, original Cloudinary URLs and asset versions. Add
+   observations, original Cloudinary URLs and asset versions. The synthetic
+   sample instead has local image URLs and is marked `synthetic_demo`. Add
    `?format=markdown` to download a human-readable report. The measurements
-   array is empty until a recorded measurement feature exists; photos never
-   imply waste mass.
+   array includes only quantities explicitly entered via
+   `POST /api/v1/sites/{site_id}/measurements`, with `visit_id`, `label`,
+   `quantity`, `unit` (`kg`, `bags`, or `items`), and a nonblank `source`.
+   `GET /api/v1/sites/{site_id}/measurements` lists them. Photos never imply
+   waste mass.
 
 Comparison uses Gemini only when `GEMINI_API_KEY` is set. It sends two stored
 Cloudinary images to `GEMINI_VISION_MODEL`, which must return a structured JSON

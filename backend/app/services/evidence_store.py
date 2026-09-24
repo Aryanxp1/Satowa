@@ -37,6 +37,13 @@ CREATE TABLE IF NOT EXISTS observation_revisions (
  action TEXT NOT NULL, actor TEXT NOT NULL, text TEXT, at TEXT NOT NULL,
  before_asset_id TEXT NOT NULL, after_asset_id TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS measurements (
+ id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
+ visit_id TEXT NOT NULL REFERENCES visits(id),
+ label TEXT NOT NULL, quantity REAL NOT NULL CHECK(quantity > 0),
+ unit TEXT NOT NULL CHECK(unit IN ('kg','bags','items')),
+ source TEXT NOT NULL, recorded_by TEXT NOT NULL, recorded_at TEXT NOT NULL
+);
 """
 
 

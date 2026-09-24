@@ -1,5 +1,10 @@
 # 🚀 Project LEX — Code Cubicle Hackathon
 
+**Working local app:** see [START_HERE.md](./START_HERE.md) and run
+`./run_local.sh` to open the actual cleanup evidence workflow at
+`http://127.0.0.1:8000/demo/`. The repository's older planning sections below
+are historical planning notes; the current product is described in START_HERE.
+
 > Built with passion by **Team LEX** for **Code Cubicle** (organized by **HackCulture**).
 
 ---
