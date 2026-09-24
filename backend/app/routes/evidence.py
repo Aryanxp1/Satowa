@@ -3,12 +3,13 @@ from datetime import date
 from html import escape
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from app.routes.media import require_upload_token
 from app.services import evidence_store as store
 from app.services.image_comparison import compare_images
+from app.services.reviewer_auth import reviewer_for_authorization
 
 router = APIRouter(prefix='/api/v1', tags=['Evidence workflow'], dependencies=[Depends(require_upload_token)])
 ID = r'^[a-z0-9][a-z0-9_-]{0,63}$'
@@ -30,7 +31,7 @@ class PairInput(BaseModel):
 
 
 class EditInput(BaseModel):
-    actor: str = Field(min_length=1, max_length=100)
+    expected_version: int = Field(ge=1)
     working_text: str | None = Field(default=None, max_length=600)
     before_asset_id: str | None = None
     after_asset_id: str | None = None
@@ -38,8 +39,12 @@ class EditInput(BaseModel):
 
 class ReviewInput(BaseModel):
     decision: Literal['approve', 'reject']
-    reviewer: str = Field(min_length=1, max_length=100)
+    expected_version: int = Field(ge=1)
     text: str | None = Field(default=None, max_length=600)
+
+
+def require_reviewer(authorization: str | None = Header(default=None)):
+    return reviewer_for_authorization(authorization)
 
 
 def require_site(db, site_id):
@@ -83,6 +88,12 @@ def create_site(payload: SiteInput):
     return {'id': payload.id, 'name': name}
 
 
+@router.get('/sites')
+def list_sites():
+    with store.connection() as db:
+        return store.rows(db, 'SELECT * FROM sites ORDER BY name,id')
+
+
 @router.post('/sites/{site_id}/visits', status_code=201)
 def create_visit(site_id: str, payload: VisitInput):
     label = payload.label.strip()
@@ -120,7 +131,7 @@ async def select_pair(payload: PairInput):
         'approved_text': None,
         'review_status': 'pending' if comparison.reliable else 'unreliable',
         'reliability_reason': comparison.reason, 'reviewed_by': None,
-        'reviewed_at': None, 'created_at': now, 'updated_at': now,
+        'reviewed_at': None, 'created_at': now, 'updated_at': now, 'version': 1,
     }
     with store.connection() as db:
         # Recheck after the external AI call; the chosen records are immutable.
@@ -128,7 +139,7 @@ async def select_pair(payload: PairInput):
         db.execute('''INSERT INTO observations VALUES
             (:id,:site_id,:before_asset_id,:after_asset_id,:ai_draft,:working_text,
              :approved_text,:review_status,:reliability_reason,:reviewed_by,
-             :reviewed_at,:created_at,:updated_at)''', observation)
+             :reviewed_at,:created_at,:updated_at,:version)''', observation)
         store.revision(db, observation, 'drafted' if comparison.reliable else 'comparison_unreliable',
                        'system', observation['ai_draft'] or observation['reliability_reason'])
     return observation
@@ -152,12 +163,13 @@ def get_observation(observation_id: str):
 
 
 @router.patch('/observations/{observation_id}')
-def edit_observation(observation_id: str, payload: EditInput):
-    if not payload.actor.strip():
-        raise HTTPException(422, 'Actor must not be blank')
+def edit_observation(observation_id: str, payload: EditInput,
+                     reviewer: str = Depends(require_reviewer)):
     with store.connection() as db:
         db.execute('BEGIN IMMEDIATE')
         observation = require_observation(db, observation_id)
+        if payload.expected_version != observation['version']:
+            raise HTTPException(409, 'Observation changed; reload before editing')
         before_id = payload.before_asset_id or observation['before_asset_id']
         after_id = payload.after_asset_id or observation['after_asset_id']
         validate_pair(db, before_id, after_id, observation['site_id'])
@@ -171,24 +183,24 @@ def edit_observation(observation_id: str, payload: EditInput):
             text = None
         db.execute('''UPDATE observations SET before_asset_id=?,after_asset_id=?,ai_draft=?,
             working_text=?,approved_text=NULL,review_status='pending',reliability_reason=?,
-            reviewed_by=NULL,reviewed_at=NULL,updated_at=? WHERE id=?''',
+            reviewed_by=NULL,reviewed_at=NULL,updated_at=?,version=version+1 WHERE id=?''',
             (before_id, after_id, None if evidence_changed else observation['ai_draft'],
              text, 'Evidence changed; review the new pair manually.' if evidence_changed
              else observation['reliability_reason'],
              store.timestamp(), observation_id))
         updated = require_observation(db, observation_id)
-        store.revision(db, updated, 'edited', payload.actor.strip(), text)
+        store.revision(db, updated, 'edited', reviewer, text)
         return updated
 
 
 @router.post('/observations/{observation_id}/review')
-def review_observation(observation_id: str, payload: ReviewInput):
-    reviewer = payload.reviewer.strip()
-    if not reviewer:
-        raise HTTPException(422, 'Reviewer must not be blank')
+def review_observation(observation_id: str, payload: ReviewInput,
+                       reviewer: str = Depends(require_reviewer)):
     with store.connection() as db:
         db.execute('BEGIN IMMEDIATE')
         observation = require_observation(db, observation_id)
+        if payload.expected_version != observation['version']:
+            raise HTTPException(409, 'Observation changed; reload before reviewing')
         if observation['review_status'] == 'approved':
             raise HTTPException(409, 'Edit before reviewing an approved observation again')
         validate_pair(db, observation['before_asset_id'], observation['after_asset_id'], observation['site_id'])
@@ -203,7 +215,7 @@ def review_observation(observation_id: str, payload: ReviewInput):
             text = payload.text.strip() if payload.text is not None else observation['working_text']
         now = store.timestamp()
         db.execute('''UPDATE observations SET working_text=?, approved_text=?,review_status=?,
-            reviewed_by=?,reviewed_at=?,updated_at=? WHERE id=?''',
+            reviewed_by=?,reviewed_at=?,updated_at=?,version=version+1 WHERE id=?''',
             (text, approved, status, reviewer, now, now, observation_id))
         updated = require_observation(db, observation_id)
         store.revision(db, updated, status, reviewer, text)

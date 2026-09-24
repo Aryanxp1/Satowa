@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS observations (
  ai_draft TEXT, working_text TEXT, approved_text TEXT,
  review_status TEXT NOT NULL CHECK(review_status IN ('pending','approved','rejected','unreliable')),
  reliability_reason TEXT, reviewed_by TEXT, reviewed_at TEXT,
- created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+ version INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS observation_revisions (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,6 +58,10 @@ def connection():
     db.execute('PRAGMA busy_timeout=10000')
     try:
         db.executescript(SCHEMA)
+        # Existing local demo databases predate optimistic review versions.
+        columns = {row['name'] for row in db.execute('PRAGMA table_info(observations)')}
+        if 'version' not in columns:
+            db.execute('ALTER TABLE observations ADD COLUMN version INTEGER NOT NULL DEFAULT 1')
         yield db
         db.commit()
     except Exception:

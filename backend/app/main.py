@@ -1,7 +1,9 @@
 """Main application entry point for Project LEX Backend."""
 import logging
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app import __version__
 from app.config import settings
 from app.routes.evidence import router as evidence_router
@@ -42,6 +44,7 @@ app.include_router(media_router)
 app.include_router(evidence_router)
 app.include_router(health_router)
 app.include_router(analyze_router)
+app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
 
 
 @app.get("/", tags=["System Root"])

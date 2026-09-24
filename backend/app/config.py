@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: SecretStr = SecretStr("")
     MEDIA_UPLOAD_TOKEN: SecretStr = SecretStr("")
+    REVIEWER_TOKENS: SecretStr = SecretStr("")
 
     # SQLite persistence for sites, visits, evidence, and review history.
     LEX_DB_PATH: str = "./lex.sqlite3"

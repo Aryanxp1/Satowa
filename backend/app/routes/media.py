@@ -9,15 +9,19 @@ from starlette.concurrency import run_in_threadpool
 from app.config import settings
 from app.services.media import MAX_BYTES, ingest_image
 from app.services import evidence_store as store
+from app.services.reviewer_auth import reviewer_tokens
 
 router = APIRouter(prefix="/api/v1", tags=["Media"])
 
 
 def require_upload_token(authorization: str | None = Header(default=None)):
     token = settings.MEDIA_UPLOAD_TOKEN.get_secret_value()
-    if not token:
+    reviewers = reviewer_tokens()
+    allowed = [candidate for candidate in [token, *reviewers.values()] if candidate]
+    if not allowed:
         raise HTTPException(503, "Media uploads are not configured")
-    if not hmac.compare_digest((authorization or "").encode(), f"Bearer {token}".encode()):
+    provided = (authorization or "").encode()
+    if not any(hmac.compare_digest(provided, f"Bearer {candidate}".encode()) for candidate in allowed):
         raise HTTPException(401, "Invalid upload credentials")
 
 

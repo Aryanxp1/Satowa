@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>LEX — Cleanup evidence review</title>
+  <link rel="stylesheet" href="/demo/styles.css">
+  <script src="/demo/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/demo/"><span class="brand-mark">L</span><span>LEX <small>Evidence desk</small></span></a>
+    <span class="mode">Private demo</span>
+  </header>
+  <main>
+    <section class="intro">
+      <span class="eyebrow">Cleanup reporting workspace</span>
+      <h1>From field photos to a report you can defend.</h1>
+      <p>Organise visits, compare the same site, review every observation, and export only what a person approved.</p>
+    </section>
+    <section class="panel connect" aria-labelledby="connect-title">
+      <div><h2 id="connect-title">Connect to this demo</h2><p>Enter a named reviewer token from the server configuration. It stays in this tab's memory and is cleared on reload.</p></div>
+      <div class="inline"><label class="grow">Reviewer token<input id="token" type="password" autocomplete="off" placeholder="Paste reviewer token"></label><button id="connect" class="primary">Connect</button></div>
+    </section>
+    <p id="notice" class="notice" role="status" aria-live="polite"></p>
+    <div id="workspace" hidden>
+      <section class="panel" aria-labelledby="site-title">
+        <div class="section-head"><span class="step">01</span><div><h2 id="site-title">Choose a cleanup site</h2><p>Each visit and observation belongs to one site.</p></div></div>
+        <div class="inline"><label class="grow">Saved sites<select id="site-select"><option value="">Choose a site</option></select></label><button id="load-site" class="secondary">Open</button></div>
+        <form id="site-form" class="inline subform"><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label class="grow">Name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><button class="secondary">Create site</button></form>
+      </section>
+      <div id="site-workspace" hidden>
+        <section class="panel" aria-labelledby="visits-title">
+          <div class="section-head"><span class="step">02</span><div><h2 id="visits-title">Record visits and photos</h2><p>Upload photos you have permission to use publicly in this demo.</p></div></div>
+          <form id="visit-form" class="inline"><label>Visit date<input name="visited_on" type="date" required></label><label class="grow">Label<input name="label" required maxlength="120" placeholder="Before cleanup"></label><button class="secondary">Add visit</button></form>
+          <div id="visits" class="visit-grid empty">No visits yet.</div>
+        </section>
+        <section class="panel" aria-labelledby="pair-title">
+          <div class="section-head"><span class="step">03</span><div><h2 id="pair-title">Select evidence</h2><p>Choose photos from different dates at the same site. AI may decline an unreliable comparison.</p></div></div>
+          <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
+          <button id="compare" class="primary">Compare and draft observation</button>
+        </section>
+        <section class="panel" aria-labelledby="review-title">
+          <div class="section-head"><span class="step">04</span><div><h2 id="review-title">Review observations</h2><p>AI drafts are proposals. Your approval determines what reaches the report.</p></div></div>
+          <div id="observations" class="observation-list empty">No observations yet.</div>
+        </section>
+        <section class="panel" aria-labelledby="report-title">
+          <div class="section-head"><span class="step">05</span><div><h2 id="report-title">Export reviewed evidence</h2><p id="report-count">No approved observations yet.</p></div></div>
+          <button id="export" class="primary">Download Markdown report</button>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer>LEX • AI proposes, evidence supports, a person verifies.</footer>
+</body>
+</html>
