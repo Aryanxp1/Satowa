@@ -1,0 +1,7 @@
+.venv/
+.env
+.env.*
+!.env.example
+credentials.json
+__pycache__/
+.pytest_cache/

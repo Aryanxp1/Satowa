@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project LEX — Code Cubicle Hackathon Showcase</title>
+  <meta name="description" content="Project LEX by Team LEX for Code Cubicle Hackathon organized by HackCulture.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient background lighting -->
+  <div class="glow-sphere glow-1"></div>
+  <div class="glow-sphere glow-2"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar" id="main-nav">
+    <div class="nav-container">
+      <a href="#" class="nav-brand">
+        <span class="brand-badge">CC</span>
+        <span class="brand-text">Project <strong>LEX</strong></span>
+      </a>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#team">Team</a>
+        <a href="https://github.com/Aryanxp1/LEX" target="_blank" rel="noreferrer" class="btn-nav-gh">GitHub Repo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero" id="overview">
+    <div class="container hero-content">
+      <div class="event-pill">
+        <span class="pulsing-dot"></span>
+        <span>Code Cubicle Hackathon • HackCulture</span>
+      </div>
+      <h1 class="hero-title">
+        Next-Generation Intelligence<br>
+        <span class="text-gradient">Engineered for Impact</span>
+      </h1>
+      <p class="hero-subtitle">
+        Built by <strong>Team LEX</strong> to transform complex real-world workflows into intuitive, high-speed, and automated solutions.
+      </p>
+      <div class="hero-actions">
+        <a href="#demo" class="btn btn-primary" id="launch-demo-btn">
+          <span>🚀 Launch Live Demo</span>
+        </a>
+        <a href="#video" class="btn btn-secondary" id="watch-video-btn">
+          <span>▶ Watch 2-Min Pitch</span>
+        </a>
+        <a href="../SUBMISSION_KIT/PPT_OUTLINE.md" class="btn btn-ghost" id="view-pitch-btn">
+          <span>📊 View Deck</span>
+        </a>
+      </div>
+
+      <!-- Live Mockup Preview Box -->
+      <div class="preview-frame" id="demo">
+        <div class="frame-header">
+          <div class="frame-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="frame-address">https://lex-app.vercel.app/dashboard</div>
+          <div class="frame-tag">Live Staging</div>
+        </div>
+        <div class="frame-body">
+          <div class="mockup-banner">
+            <h3>⚡ Interactive Application Interface</h3>
+            <p>Connect your frontend URL or embed the live app here once deployed.</p>
+          </div>
+          <div class="mockup-grid">
+            <div class="mockup-stat-card">
+              <span class="stat-label">Response Latency</span>
+              <span class="stat-value">~120ms</span>
+              <span class="stat-trend positive">↑ Optimized</span>
+            </div>
+            <div class="mockup-stat-card">
+              <span class="stat-label">AI Accuracy</span>
+              <span class="stat-value">99.4%</span>
+              <span class="stat-trend positive">↑ High-Confidence</span>
+            </div>
+            <div class="mockup-stat-card">
+              <span class="stat-label">Automation Gain</span>
+              <span class="stat-value">10x</span>
+              <span class="stat-trend positive">↑ Time Saved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Section -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Core Highlights</span>
+        <h2 class="section-title">Engineered to Win</h2>
+        <p class="section-desc">Designed with speed, resilience, and user experience at its foundation.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Intelligent Core</h3>
+          <p>Context-aware reasoning and real-time processing engine tailored to the Problem Statement requirements.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Instant Execution</h3>
+          <p>Zero-friction interface with sub-second feedback loops, real-time optimistic updates, and offline fallback mode.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Resilient Architecture</h3>
+          <p>Built with robust error handling, rate-limit resilience, cached fallback mocks, and enterprise-grade security.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="section section-dark" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Under the Hood</span>
+        <h2 class="section-title">System Architecture</h2>
+        <p class="section-desc">Modular, scalable, and decoupled for parallel team development.</p>
+      </div>
+
+      <div class="arch-box">
+        <div class="arch-tier">
+          <div class="tier-badge">Client Layer</div>
+          <h4>Modern Web UI</h4>
+          <p>Responsive, reactive components with rich micro-interactions and instant feedback states.</p>
+        </div>
+        <div class="arch-arrow">➔</div>
+        <div class="arch-tier">
+          <div class="tier-badge">API Gateway</div>
+          <h4>High-Speed Engine</h4>
+          <p>REST/WebSocket API managing data validation, authentication, and pipeline orchestration.</p>
+        </div>
+        <div class="arch-arrow">➔</div>
+        <div class="arch-tier">
+          <div class="tier-badge">Intelligence & Storage</div>
+          <h4>AI Models & DB</h4>
+          <p>Multi-modal reasoning, vector embeddings, and real-time cloud data storage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Video Section -->
+  <section class="section" id="video">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Product Walkthrough</span>
+        <h2 class="section-title">See LEX in Action</h2>
+        <p class="section-desc">Watch our 2-minute product pitch and live workflow demonstration.</p>
+      </div>
+
+      <div class="video-container">
+        <div class="video-placeholder">
+          <div class="play-button">▶</div>
+          <p>Embed YouTube / Loom Demo Video Here (Post T-24h Recording)</p>
+          <span class="video-badge">Duration: ~2:30 min</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  <section class="section section-dark" id="team">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">The Builders</span>
+        <h2 class="section-title">Team LEX</h2>
+        <p class="section-desc">Collaborating to build innovative solutions for Code Cubicle.</p>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="avatar-circle">AV</div>
+          <h3>Aryan Vishwakarma</h3>
+          <span class="team-role">Team Lead & Full-Stack Architect</span>
+          <p class="team-focus">Architecture, database modeling, cloud deployments, and integration lead.</p>
+          <a href="https://github.com/Aryanxp1" target="_blank" rel="noreferrer" class="team-link">GitHub @Aryanxp1</a>
+        </div>
+        <div class="team-card">
+          <div class="avatar-circle">FA</div>
+          <h3>Farhan Akhtar</h3>
+          <span class="team-role">Core Backend & AI Engineer</span>
+          <p class="team-focus">API development, AI pipelines, algorithmic reasoning, and logic engine.</p>
+          <span class="team-link">Collaborator</span>
+        </div>
+        <div class="team-card">
+          <div class="avatar-circle">SG</div>
+          <h3>Shubh Gunjan</h3>
+          <span class="team-role">Frontend UI/UX & Showcase Lead</span>
+          <p class="team-focus">Interface styling, user interactions, pitch deck visuals, and design polish.</p>
+          <span class="team-link">Collaborator</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>© 2026 <strong>Team LEX</strong> • Code Cubicle Hackathon (HackCulture)</p>
+      <div class="footer-links">
+        <a href="../PLANNING.md">Execution Plan</a>
+        <a href="../TIMELINE.md">Timeline</a>
+        <a href="../SUBMISSION_KIT/SUBMISSION_CHECKLIST.md">Checklist</a>
+        <a href="https://github.com/Aryanxp1/LEX" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
