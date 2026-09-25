@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-26 by AGY / Cline
 
-## Current Status: T008 JUDGE-FACING REVIEW EXPERIENCE COMPLETE
+## Current Status: T009 DEMO HARDENING & END-TO-END QA COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T008 (2026-09-26)
+## Verified Test Baseline Post-T009 (2026-09-26)
 
 ```
-Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=no -q
-Runtime: ~20.4 seconds
-Collected: 120 items
+Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=short -q
+Runtime: ~38.2 seconds
+Collected: 129 items
 
-PASSED: 118 (+11 new demo UI & review invariant tests passed)
+PASSED: 127 (+9 comprehensive end-to-end journey tests passed)
 SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 ERRORS: 2   ← Collection/deprecation errors (Starlette/httpx testclient)
@@ -98,16 +98,20 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Approval Invalidation: Editing observation resets approved status back to pending | ✅ Fully tested and verified |
 | Live In-Page Report Preview: filters out unapproved proposals, Markdown/JSON export | ✅ Fully tested and verified |
 | High-Resolution Inspection Lightbox Modal | ✅ Fully tested and verified |
+| Demo Loading UX: upload, comparison, review, and report buttons indicate progress & prevent double-submit | ✅ Hardened and verified in demo client |
+| Error Sanitization: client handles 400, 403, 404, 409, 413, 415, 422, 502, 503 and network disconnects without raw stack leaks | ✅ Hardened and verified in demo client |
+| Demo Startup: `run_local.sh` and `setup_local_demo.py` hardened for cross-platform/clean starts | ✅ Verified |
+| End-to-End QA Suite: 9 comprehensive tests in `test_e2e_journey.py` covering full lifecycle and failure paths | ✅ Fully tested and passing |
+| Demo Runbook: `docs/DEMO_RUNBOOK.md` with step-by-step judge sequence and safety guidelines | ✅ Complete |
 
 ## Current Active Task
 
-**T008 — JUDGE-FACING REVIEW EXPERIENCE** — COMPLETE
+**T009 — DEMO HARDENING & END-TO-END QA** — COMPLETE
 
 ## Pending Tasks (Ordered)
 
-1. T009 — Demo UI: uncertainty badge (addressed in T008; verify remaining polish if any)
-2. T010 — CI GitHub Actions
-3. T011 — Demo Script & Documentation
+1. T010 — CI GitHub Actions
+2. T011 — Final Presentation Package / Demo Delivery
 
 
 

@@ -111,29 +111,58 @@
    - Added `backend/tests/test_demo_ui.py` covering static delivery and all 9 critical behaviors (11 tests).
    - Total test suite now passes 118 tests (+11 new tests, zero regressions).
 
-## Test Summary Post-T008
+**T009 (Demo Hardening & End-to-End QA):**
+1. Fresh-Start Hardening:
+   - `run_local.sh`: Portable virtualenv detection (`.venv` or `venv`, Windows Git Bash vs Linux/macOS `bin/activate` vs `Scripts/activate`).
+   - `setup_local_demo.py`: Tolerant chmod protection (`try...except OSError`) for seamless database and session initialization on all filesystems.
+2. Demo UX & Loading States (`backend/app/demo/`):
+   - `app.js`: Added loading states (`"Comparing with Gemini..."`, `"Uploading to Cloudinary..."`, `"Approving..."`, `"Saving..."`, `"Rejecting..."`, `"Generating report..."`) and disabled button states during in-flight network requests to prevent duplicate submissions.
+   - Comprehensive error sanitization for HTTP 400, 403, 404, 409, 413, 415, 422, 502, 503, network disconnects, stripping raw Python tracebacks.
+   - Replaced platform-specific UI copy with OS-neutral copy in `index.html`.
+3. Secret & Security Audit:
+   - Zero `.env`, credentials, or local sqlite3 databases committed to git.
+   - Validated that logs, API responses, and client telemetry never expose API keys or secrets.
+   - Verified zero ungrounded accuracy or performance claims across the codebase.
+4. Comprehensive End-to-End Test Suite:
+   - Created `backend/tests/test_e2e_journey.py` (9 tests) testing:
+     - Fresh-start clean database migration and table integrity
+     - Full happy path: Site -> Visits -> Assets -> Pair -> Gemini -> AI Proposal -> Human Review -> Approval -> Certified Report
+     - Approval invalidation lifecycle (re-editing approved observation resets to pending)
+     - Chronological visit order rejection (HTTP 400)
+     - Revoked permission rejection (HTTP 400)
+     - Cross-site evidence pairing rejection (HTTP 400)
+     - Version conflict / stale overwrite prevention (HTTP 409)
+     - Uncertainty and insufficient evidence preservation
+     - Static bundle and script syntax contract
+5. Demo Runbook (`docs/DEMO_RUNBOOK.md`):
+   - Clear prerequisites, environment variable reference (names only, no values), backend/frontend startup instructions, Cloudinary/Gemini setup, exact 8-step demo sequence, failure recovery guide, and judge demo safety guidelines.
+6. Test Baseline:
+   - 129 collected, 127 passed, 1 skipped (live test), 1 known pre-existing failure (Windows chmod), 2 deprecation errors. Zero regressions.
+
+## Test Summary Post-T009
 
 | Metric | Value |
 |:---|:---|
-| **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
+| **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=short -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 120 |
-| **Passed** | 118 (+11 new demo UI tests passed) |
+| **Total Collected** | 129 |
+| **Passed** | 127 (+9 comprehensive end-to-end journey tests passed) |
 | **Skipped** | 1 (live integration test) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~20.4s |
+| **Runtime** | ~38.2s |
 
 ## What Is Ready Next
 
-- T008 is **COMPLETE**.
-- Next task on the board: **T009 / T010 / T011**.
+- T009 is **COMPLETE**.
+- Next task on the board: **T010 — CI GitHub Actions**.
 
 ## Open Questions for User
 
-None. Awaiting user review and authorization to proceed with next milestone.
+None. Ready for integration checkpoint and push to main.
+
 
 
 

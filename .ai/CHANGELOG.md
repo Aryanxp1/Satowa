@@ -91,3 +91,32 @@
   - Added ADR D010 in `DECISIONS.md`.
   - Added 11 deterministic tests in `backend/tests/test_demo_ui.py` covering static delivery, HTML contract, and all 9 critical review behaviors.
   - Total test suite now passes 118 tests (+11 new tests, zero regressions).
+- **Cline / AGY**: Completed T009 (Demo Hardening & End-to-End QA):
+  - Fresh-Start & Startup Hardening:
+    - Updated `run_local.sh` with portable venv detection (`.venv` and `venv`, Git Bash on Windows vs Linux/macOS `bin/activate` vs `Scripts/activate`).
+    - Protected `backend/scripts/setup_local_demo.py` with `try...except OSError` around `chmod 0o600` to guarantee smooth, error-free fresh starts on all operating systems and environments.
+    - Verified clean-slate initialization from nonexistent database file.
+  - Demo UX & Loading States:
+    - Added loading state notifications and button-disabled handling across all network operations in `backend/app/demo/app.js` (`"Comparing with Gemini..."`, `"Uploading to Cloudinary..."`, `"Approving..."`, `"Saving..."`, `"Rejecting..."`, `"Generating report..."`), preventing accidental double-submissions.
+    - Implemented comprehensive `sanitizeErrorMessage` handling HTTP 400, 403, 404, 409, 413, 415, 422, 502, 503, and network disconnects without raw tracebacks or secret leakage.
+    - Cleaned platform-specific text in `backend/app/demo/index.html` to be OS-neutral.
+  - Security & Secret Audit:
+    - Verified zero `.env`, credentials, local databases, or private media files are committed to git.
+    - Checked logs and API responses for secret leaks.
+    - Audited mock claims and confirmed zero unsupported accuracy claims (99.4%, 10x) across code and showcase.
+  - Comprehensive End-to-End Test Suite:
+    - Added `backend/tests/test_e2e_journey.py` (9 tests) verifying:
+      - Fresh-start clean database migration and table integrity
+      - Complete judge happy path: Site -> Visits -> Assets -> Pair -> Gemini -> AI Proposal -> Human Review -> Approval -> Certified Report
+      - Approval invalidation lifecycle (re-editing approved observation resets to pending)
+      - Chronological visit order rejection (HTTP 400)
+      - Revoked permission rejection (HTTP 400)
+      - Cross-site evidence pairing rejection (HTTP 400)
+      - Version conflict / stale overwrite prevention (HTTP 409)
+      - Uncertainty and insufficient evidence preservation
+      - Static bundle and script syntax contract
+  - Created `docs/DEMO_RUNBOOK.md`:
+    - Documented prerequisites, environment variables (names only), backend/frontend startup instructions, Cloudinary/Gemini setup, exact 8-step demo sequence, failure recovery guide, and judge demo safety guidelines ("AI-generated visual assessment", "Human-verified observation").
+  - Added ADR D011 in `DECISIONS.md`.
+  - Test baseline post-T009: 129 collected, 127 passed, 1 skipped, 1 failed (Windows chmod), 2 deprecation errors. Zero regressions.
+

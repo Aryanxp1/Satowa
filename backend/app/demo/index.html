@@ -38,14 +38,14 @@
       </div>
 
       <div class="setup-lower">
-        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this Mac. This page shows readiness only; it never displays stored keys.</p></div>
+        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
         <div class="setup-panel">
           <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
           <details class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
             <form id="credential-form" autocomplete="off">
               <p>Leave a field blank to keep its saved value. Provider keys are never sent back to this page.</p>
               <div class="form-grid"><label>Cloud name<input name="cloud_name" autocomplete="off" placeholder="Your Cloudinary cloud name"></label><label>Cloudinary API key<input name="cloudinary_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label><label>Cloudinary API secret<input name="cloudinary_api_secret" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved secret"></label><label>Gemini API key <span class="optional">optional</span><input name="gemini_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label></div>
-              <button class="button secondary" type="submit">Save to this Mac</button>
+              <button class="button secondary" type="submit">Save credentials locally</button>
             </form>
           </details>
           <p class="setup-help">Ready to explore? The sample uses synthetic photos, so you can try the review flow without uploading anything.</p>

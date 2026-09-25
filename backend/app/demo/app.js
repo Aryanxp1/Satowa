@@ -34,14 +34,22 @@
 
   function sanitizeErrorMessage(msg) {
     if (!msg) return 'The request could not be completed.';
-    if (msg.includes('503:')) return 'Cloudinary or service is not configured. Please check provider settings.';
-    if (msg.includes('502:')) return 'Media/AI provider communication error. No partial data was recorded.';
+    if (msg.includes('503:')) return 'Service or credentials unavailable. Please check Cloudinary / Gemini configuration.';
+    if (msg.includes('502:')) return 'Media or AI provider communication error. No partial or corrupt data was recorded.';
     if (msg.includes('409:')) return 'Observation version conflict. The record was modified and has been refreshed.';
+    if (msg.includes('404:')) return 'Requested item not found. Please refresh the page.';
+    if (msg.includes('403:')) return 'Action restricted or permission denied.';
+    if (msg.includes('415:')) return 'Unsupported media format. Please upload JPEG, PNG, or WebP images.';
+    if (msg.includes('413:')) return 'Upload or payload is too large.';
     if (msg.includes('422:')) {
       const match = msg.match(/422:\s*(.*)/);
-      return match ? match[1] : 'Validation failed. Check visit dates, site consistency, and permissions.';
+      return match ? match[1].replace(/^[\[{].*[\]}]$/, 'Validation failed.') : 'Validation failed. Check visit dates, site consistency, and permissions.';
     }
-    return msg;
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Network connection')) {
+      return 'Network connection failed. Verify the Setowa backend server is running on http://127.0.0.1:8000.';
+    }
+    const cleaned = msg.replace(/^\d{3}:\s*/, '').split('\n')[0].trim();
+    return cleaned || 'The request could not be completed.';
   }
 
   function formatReason(reason) {
@@ -344,7 +352,9 @@
       form.addEventListener('submit', event => {
         event.preventDefault();
         run(async () => {
+          const originalText = button.textContent;
           button.disabled = true;
+          button.textContent = 'Uploading to Cloudinary...';
           try {
             const data = new FormData(form);
             data.set('project_id', state.site);
@@ -353,7 +363,10 @@
             await request('/media/images', { method: 'POST', body: data });
             notice('Photo uploaded and verified.');
             await refreshSite();
-          } finally { button.disabled = false; }
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
         });
       });
       card.append(form);
@@ -652,7 +665,11 @@
 
       const act = (method, payload) => run(async () => {
         const buttons = [save, approve, reject];
+        const originalTexts = { save: save.textContent, approve: approve.textContent, reject: reject.textContent };
         buttons.forEach(button => { button.disabled = true; });
+        if (method === 'PATCH') save.textContent = 'Saving...';
+        else if (payload.decision === 'approve') approve.textContent = 'Approving...';
+        else if (payload.decision === 'reject') reject.textContent = 'Rejecting...';
         try {
           await request(`/observations/${observation.id}${method === 'POST' ? '/review' : ''}`,
             { method, json: { expected_version: observation.version, ...payload } });
@@ -662,7 +679,12 @@
             'Observation rejected and excluded from report.'
           );
           await refreshSite();
-        } finally { buttons.forEach(button => { button.disabled = false; }); }
+        } finally {
+          buttons.forEach(button => { button.disabled = false; });
+          save.textContent = originalTexts.save;
+          approve.textContent = originalTexts.approve;
+          reject.textContent = originalTexts.reject;
+        }
       });
 
       save.addEventListener('click', () => act('PATCH', { working_text: field.value }));
@@ -794,14 +816,20 @@
     event.preventDefault();
     const form = event.currentTarget;
     run(async () => {
-      const values = Object.fromEntries(new FormData(form));
-      const status = await request('/local/credentials', { method: 'PUT', json: {
-        cloudinary: { cloud_name: values.cloud_name, api_key: values.cloudinary_api_key,
-          api_secret: values.cloudinary_api_secret },
-        gemini: { api_key: values.gemini_api_key },
-      } });
-      form.reset(); renderStatus(status);
-      notice('Saved locally. The readiness indicators have been updated.');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const values = Object.fromEntries(new FormData(form));
+        const status = await request('/local/credentials', { method: 'PUT', json: {
+          cloudinary: { cloud_name: values.cloud_name, api_key: values.cloudinary_api_key,
+            api_secret: values.cloudinary_api_secret },
+          gemini: { api_key: values.gemini_api_key },
+        } });
+        form.reset(); renderStatus(status);
+        notice('Saved locally. The readiness indicators have been updated.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 
@@ -813,25 +841,37 @@
   $('site-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
     run(async () => {
-      const data = Object.fromEntries(new FormData(form));
-      await request('/sites', { method: 'POST', json: data });
-      form.reset(); notice('Project created. Add its first visit.');
-      await loadProjects(); location.hash = projectHash(data.id);
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const data = Object.fromEntries(new FormData(form));
+        await request('/sites', { method: 'POST', json: data });
+        form.reset(); notice('Project created. Add its first visit.');
+        await loadProjects(); location.hash = projectHash(data.id);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 
   $('site-edit-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
     run(async () => {
-      const site = await request(`/sites/${encodeURIComponent(state.site)}`, {
-        method: 'PATCH', json: Object.fromEntries(new FormData(form)),
-      });
-      state.siteRecord = site;
-      state.sites = state.sites.map(item => item.id === site.id ? site : item);
-      $('project-title').textContent = site.name;
-      $('project-subtitle').textContent = site.location || 'Location not yet recorded';
-      $('overview-description').textContent = site.description || 'Add a description to explain what this site is documenting.';
-      notice('Project details saved.');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const site = await request(`/sites/${encodeURIComponent(state.site)}`, {
+          method: 'PATCH', json: Object.fromEntries(new FormData(form)),
+        });
+        state.siteRecord = site;
+        state.sites = state.sites.map(item => item.id === site.id ? site : item);
+        $('project-title').textContent = site.name;
+        $('project-subtitle').textContent = site.location || 'Location not yet recorded';
+        $('overview-description').textContent = site.description || 'Add a description to explain what this site is documenting.';
+        notice('Project details saved.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 
@@ -841,10 +881,16 @@
   $('visit-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
     run(async () => {
-      await request(`/sites/${encodeURIComponent(state.site)}/visits`, {
-        method: 'POST', json: Object.fromEntries(new FormData(form)),
-      });
-      form.reset(); await refreshSite(); notice('Visit recorded. Add a photo below.');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        await request(`/sites/${encodeURIComponent(state.site)}/visits`, {
+          method: 'POST', json: Object.fromEntries(new FormData(form)),
+        });
+        form.reset(); await refreshSite(); notice('Visit recorded. Add a photo below.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 
@@ -883,7 +929,11 @@
     const before_asset_id = $('before-select').value;
     const after_asset_id = $('after-select').value;
     if (!before_asset_id || !after_asset_id) throw new Error('Choose two photographs first.');
-    $('compare').disabled = true;
+    const compareBtn = $('compare');
+    const originalText = compareBtn.textContent;
+    compareBtn.disabled = true;
+    compareBtn.textContent = 'Comparing with Gemini...';
+    notice('Analyzing evidence pair with Gemini vision model...');
     try {
       const result = await request('/pairs', { method: 'POST', json: { before_asset_id, after_asset_id } });
       if (result.comparison) {
@@ -897,25 +947,43 @@
         isUncertain
       );
       goToTab('review');
-    } finally { $('compare').disabled = false; }
+    } finally {
+      compareBtn.disabled = false;
+      compareBtn.textContent = originalText;
+    }
   }));
 
   $('measurement-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
     run(async () => {
-      const data = Object.fromEntries(new FormData(form)); data.quantity = Number(data.quantity);
-      await request(`/sites/${encodeURIComponent(state.site)}/measurements`, { method: 'POST', json: data });
-      form.reset(); await refreshSite(); notice('Measurement saved with its source.');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const data = Object.fromEntries(new FormData(form)); data.quantity = Number(data.quantity);
+        await request(`/sites/${encodeURIComponent(state.site)}/measurements`, { method: 'POST', json: data });
+        form.reset(); await refreshSite(); notice('Measurement saved with its source.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   });
 
   $('export').addEventListener('click', () => run(async () => {
-    const response = await request(`/sites/${encodeURIComponent(state.site)}/report?format=markdown`);
-    const blob = await response.blob(); const url = URL.createObjectURL(blob);
-    const link = element('a'); link.href = url; link.download = `setowa-${state.site}-report.md`;
-    document.body.append(link); link.click(); link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notice('Reviewed report downloaded.');
+    const exportBtn = $('export');
+    const originalText = exportBtn.textContent;
+    exportBtn.disabled = true;
+    exportBtn.textContent = 'Generating report...';
+    try {
+      const response = await request(`/sites/${encodeURIComponent(state.site)}/report?format=markdown`);
+      const blob = await response.blob(); const url = URL.createObjectURL(blob);
+      const link = element('a'); link.href = url; link.download = `setowa-${state.site}-report.md`;
+      document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      notice('Reviewed report downloaded.');
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = originalText;
+    }
   }));
 
   $('toggle-json-report').addEventListener('click', () => {
