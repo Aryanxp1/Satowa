@@ -1,6 +1,6 @@
 """Configuration settings for Project LEX Backend."""
-import os
 import json
+import os
 from pathlib import Path
 from typing import List
 from pydantic import SecretStr
@@ -85,6 +85,18 @@ def apply_local_credentials(target: Settings, credentials: dict) -> None:
         target.CLOUDINARY_API_SECRET = SecretStr(secret)
 
 
+def credential_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "credential.json"
+
+
+def refresh_provider_settings() -> None:
+    """Apply a saved local credential edit without requiring a server restart."""
+    fresh = Settings()
+    apply_local_credentials(fresh, load_local_credentials(credential_path()))
+    for field in ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY",
+                  "CLOUDINARY_API_SECRET", "GEMINI_API_KEY"):
+        setattr(settings, field, getattr(fresh, field))
+
+
 settings = Settings()
-apply_local_credentials(settings, load_local_credentials(
-    Path(__file__).resolve().parents[2] / "credential.json"))
+apply_local_credentials(settings, load_local_credentials(credential_path()))

@@ -9,7 +9,8 @@ from app.config import settings
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sites (
- id TEXT PRIMARY KEY, name TEXT NOT NULL
+ id TEXT PRIMARY KEY, name TEXT NOT NULL,
+ location TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS visits (
  id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
@@ -69,6 +70,11 @@ def connection():
         columns = {row['name'] for row in db.execute('PRAGMA table_info(observations)')}
         if 'version' not in columns:
             db.execute('ALTER TABLE observations ADD COLUMN version INTEGER NOT NULL DEFAULT 1')
+        site_columns = {row['name'] for row in db.execute('PRAGMA table_info(sites)')}
+        if 'location' not in site_columns:
+            db.execute("ALTER TABLE sites ADD COLUMN location TEXT NOT NULL DEFAULT ''")
+        if 'description' not in site_columns:
+            db.execute("ALTER TABLE sites ADD COLUMN description TEXT NOT NULL DEFAULT ''")
         yield db
         db.commit()
     except Exception:

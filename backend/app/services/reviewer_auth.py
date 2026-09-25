@@ -1,10 +1,61 @@
 """Named private-demo tokens; secrets stay on the server."""
 import hmac
 import json
+import secrets
+import time
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 
 from app.config import settings
+
+LOCAL_COOKIE = 'lex_local_reviewer'
+LOCAL_SESSIONS: dict[str, tuple[str, float]] = {}
+
+
+def local_request(request: Request) -> bool:
+    """Only the loopback-bound desktop demo may use browser session auth."""
+    return (settings.ENVIRONMENT == 'development' and request.client is not None and
+            request.client.host in {'127.0.0.1', '::1'} and
+            request.url.hostname in {'127.0.0.1', 'localhost'}) or (
+                settings.ENVIRONMENT == 'test' and request.client is not None and
+                request.client.host == 'testclient')
+
+
+def same_origin(request: Request) -> bool:
+    origin = request.headers.get('origin')
+    return bool(origin and origin.rstrip('/') == str(request.base_url).rstrip('/'))
+
+
+def authorization_or_local_cookie(authorization: str | None, request: Request) -> str | None:
+    if authorization:
+        return authorization
+    if not local_request(request):
+        return None
+    if request.method not in {'GET', 'HEAD', 'OPTIONS'} and not same_origin(request):
+        return None
+    actor = local_session_actor(request)
+    token = reviewer_tokens().get(actor) if actor else None
+    return f'Bearer {token}' if token else None
+
+
+def local_session_actor(request: Request) -> str | None:
+    if not local_request(request):
+        return None
+    session_id = request.cookies.get(LOCAL_COOKIE)
+    session = LOCAL_SESSIONS.get(session_id or '')
+    if not session:
+        return None
+    actor, expires_at = session
+    if time.monotonic() >= expires_at:
+        LOCAL_SESSIONS.pop(session_id, None)
+        return None
+    return actor
+
+
+def new_local_session(actor: str) -> str:
+    session_id = secrets.token_urlsafe(32)
+    LOCAL_SESSIONS[session_id] = (actor, time.monotonic() + 8 * 60 * 60)
+    return session_id
 
 
 def reviewer_tokens():

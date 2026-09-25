@@ -45,17 +45,20 @@ From the repository root:
 
 The script creates `backend/.venv`, installs the Python requirements, creates
 a local reviewer token in gitignored `backend/.env` if needed, seeds the sample
-project, and starts FastAPI on `127.0.0.1:8000`. On first setup it prints the
-new token once so you can paste it into the app. If `.env` already has reviewer
-tokens, use one of those instead. Open:
+project, and starts FastAPI on `127.0.0.1:8000`. Open:
 
-- Landing page: <http://127.0.0.1:8000/showcase/>
-- Working app: <http://127.0.0.1:8000/demo/>
+- Setup, projects, and working app: <http://127.0.0.1:8000/>
+- Project story: <http://127.0.0.1:8000/showcase/>
 - API docs: <http://127.0.0.1:8000/docs>
 
-In the app, connect with your reviewer token, open **demo-riverbank**, inspect
-the sample pair, approve or edit the proposed human-written observation, and
-download the Markdown report. The report marks synthetic evidence clearly.
+The first page shows provider readiness and can save Cloudinary/Gemini keys to
+the private local file. Click **Open projects**; the loopback-only app creates
+an HttpOnly local reviewer session, so you do not need to copy a token into the
+browser. Open the highlighted synthetic sample, follow **Your next step** to
+review its observation, then open **Report** and download the Markdown file.
+The sample report marks synthetic evidence clearly. New projects can record a
+name, location, description, dated visits, photos, observations, and sourced
+measurements. The theme switch persists light/dark preference in this browser.
 
 ## Turn on live services
 
@@ -75,9 +78,11 @@ shape as `credential.example.json`:
 }
 ```
 
-Leave `gemini.api_key` empty if you do not have one yet. Restart `./run_local.sh`
-after editing the file. Existing environment variables or `backend/.env`
-values take priority over the JSON file. Never put keys in JavaScript or Git.
+Leave `gemini.api_key` empty if you do not have one yet. If you edit the JSON
+file manually, restart `./run_local.sh`; saving via the local setup page applies
+keys immediately. Existing environment variables or `backend/.env` values take
+priority over the JSON file. The setup API is restricted to this Mac's loopback
+browser and returns readiness flags, never provider keys. Never put keys in Git.
 
 Cloudinary upload uses signed server-side SDK calls. With its three fields
 configured, create a new site and dated visits, then upload photos that you

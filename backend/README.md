@@ -74,7 +74,7 @@ uvicorn app.main:app --reload --port 8000
 - **Interactive API Documentation (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Alternative ReDoc Docs:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - **Healthcheck:** [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
-- **Private evidence demo:** [http://localhost:8000/demo/](http://localhost:8000/demo/) (set `REVIEWER_TOKENS` and Cloudinary credentials in `.env` first)
+- **Local evidence workspace:** [http://127.0.0.1:8000/demo/](http://127.0.0.1:8000/demo/) (run `./run_local.sh` from the repository root for the guided sample and local reviewer session)
 
 ---
 

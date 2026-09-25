@@ -21,8 +21,18 @@ OBSERVATION_ID = 'synthetic-river-observation'
 def seed():
     now = store.timestamp()
     with store.connection() as db:
-        db.execute('INSERT OR IGNORE INTO sites(id,name) VALUES (?,?)',
-                   (SITE_ID, 'Riverbank cleanup · synthetic walkthrough'))
+        db.execute('''INSERT OR IGNORE INTO sites(id,name,location,description)
+            VALUES (?,?,?,?)''',
+            (SITE_ID, 'Riverbank cleanup · synthetic walkthrough',
+             'Illustrative river bend',
+             'A guided sample with two synthetic visits. No real field evidence or impact claim.'))
+        db.execute('''UPDATE sites SET
+            location=CASE WHEN location='' THEN ? ELSE location END,
+            description=CASE WHEN description='' THEN ? ELSE description END
+            WHERE id=?''',
+            ('Illustrative river bend',
+             'A guided sample with two synthetic visits. No real field evidence or impact claim.',
+             SITE_ID))
         for visit in (
             (BEFORE_VISIT, SITE_ID, '2026-09-01', 'Visit 1 · before'),
             (AFTER_VISIT, SITE_ID, '2026-09-23', 'Visit 2 · after'),

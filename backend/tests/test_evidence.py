@@ -216,16 +216,22 @@ def test_existing_database_adds_version_column(tmp_path, monkeypatch):
     path = tmp_path / 'legacy.sqlite3'
     monkeypatch.setattr(settings, 'LEX_DB_PATH', str(path))
     with sqlite3.connect(path) as db:
-        db.executescript(store.SCHEMA.replace(',\n version INTEGER NOT NULL DEFAULT 1', ''))
+        legacy = store.SCHEMA.replace(',\n version INTEGER NOT NULL DEFAULT 1', '')
+        legacy = legacy.replace(",\n location TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT ''", '')
+        db.executescript(legacy)
     with store.connection() as db:
         columns = {row['name'] for row in db.execute('PRAGMA table_info(observations)')}
+        site_columns = {row['name'] for row in db.execute('PRAGMA table_info(sites)')}
     assert 'version' in columns
+    assert {'location', 'description'} <= site_columns
 
 
 def test_demo_served_by_backend():
+    assert client.get('/', headers={'Accept': 'text/html'},
+                      follow_redirects=False).headers['location'] == '/demo/'
     html = client.get('/demo/')
     assert html.status_code == 200
-    assert 'Show the evidence.' in html.text
+    assert 'Better evidence.' in html.text
     assert client.get('/demo/app.js').status_code == 200
 
 

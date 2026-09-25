@@ -16,7 +16,6 @@ def ensure_local_env():
             stream.write(prefix + 'REVIEWER_TOKENS=' + json.dumps({'Farhan': token}) + '\n')
         env_path.chmod(0o600)
         print('A local reviewer token was created in backend/.env (gitignored).')
-        print('Paste this token into the demo login once:', token)
     else:
         print('Using existing REVIEWER_TOKENS from backend/.env.')
 

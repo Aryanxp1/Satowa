@@ -4,65 +4,99 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>LEX — Cleanup evidence review</title>
-  <link rel="stylesheet" href="/demo/styles.css">
-  <script src="/demo/app.js" defer></script>
+  <title>LEX — Evidence workspace</title>
+  <link rel="stylesheet" href="/demo/styles.css?v=2">
+  <script src="/demo/app.js?v=2" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/showcase/"><span class="brand-mark">L</span><span>LEX <small>Evidence desk</small></span></a>
-    <div class="topbar-links"><a href="/showcase/">Project story</a><span class="mode">Local demo</span></div>
+    <a class="brand" href="#setup" aria-label="LEX home"><span class="brand-symbol">L<span>.</span></span><span>LEX <small>EVIDENCE WORKSPACE</small></span></a>
+    <nav class="top-actions" aria-label="Primary navigation">
+      <a id="nav-projects" href="#projects" hidden>Projects</a>
+      <span id="session-label" class="session-label">Local workspace</span>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button>
+    </nav>
   </header>
+
   <main>
-    <section class="intro">
-      <span class="eyebrow">Cleanup reporting workspace</span>
-      <h1>Show the change.<br><span>Show the evidence.</span></h1>
-      <p>Organise visits, compare the same site, review every observation, and export only what a person approved.</p>
-    </section>
-    <section class="panel connect" aria-labelledby="connect-title">
-      <div><h2 id="connect-title">Connect to this demo</h2><p>Enter a named reviewer token from the server configuration. It stays in this tab's memory and is cleared on reload.</p></div>
-      <div class="inline"><label class="grow">Reviewer token<input id="token" type="password" autocomplete="off" placeholder="Paste reviewer token"></label><button id="connect" class="primary">Connect</button></div>
-    </section>
-    <p id="notice" class="notice" role="status" aria-live="polite"></p>
-    <div id="workspace" hidden>
-      <div id="integration-status" class="integration-status" role="status"></div>
-      <section class="panel" aria-labelledby="site-title">
-        <div class="section-head"><span class="step">01</span><div><h2 id="site-title">Choose a cleanup site</h2><p>Each visit and observation belongs to one site.</p></div></div>
-        <div class="inline"><label class="grow">Saved sites<select id="site-select"><option value="">Choose a site</option></select></label><button id="load-site" class="secondary">Open</button></div>
-        <form id="site-form" class="inline subform"><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label class="grow">Name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><button class="secondary">Create site</button></form>
-      </section>
-      <div id="site-workspace" hidden>
-        <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Synthetic sample project</strong><span>These images were generated for this walkthrough. They are not real cleanup evidence and no AI comparison is claimed.</span></div>
-        <div class="summary-grid" aria-label="Current project summary"><div><strong id="visit-count">0</strong><span>Visits</span></div><div><strong id="photo-count">0</strong><span>Photos</span></div><div><strong id="observation-count">0</strong><span>Observations</span></div><div><strong id="approved-count">0</strong><span>Approved</span></div></div>
-        <section class="panel" aria-labelledby="visits-title">
-          <div class="section-head"><span class="step">02</span><div><h2 id="visits-title">Record visits and photos</h2><p>Upload photos you have permission to use publicly in this demo.</p></div></div>
-          <form id="visit-form" class="inline"><label>Visit date<input name="visited_on" type="date" required></label><label class="grow">Label<input name="label" required maxlength="120" placeholder="Before cleanup"></label><button class="secondary">Add visit</button></form>
-          <label class="media-filter">Find media by source or visit<input id="media-filter" type="search" placeholder="Search this project's media"></label>
-          <div id="visits" class="visit-grid empty">No visits yet.</div>
-        </section>
-        <section class="panel" aria-labelledby="pair-title">
-          <div class="section-head"><span class="step">03</span><div><h2 id="pair-title">Select evidence</h2><p>Choose photos from different dates at the same site. AI may decline an unreliable comparison.</p></div></div>
-          <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
-          <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Slide to compare<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
-          <button id="compare" class="primary">Compare and draft observation</button>
-        </section>
-        <section class="panel" aria-labelledby="review-title">
-          <div class="section-head"><span class="step">04</span><div><h2 id="review-title">Review observations</h2><p>AI drafts are proposals. Your approval determines what reaches the report.</p></div></div>
-          <div id="observations" class="observation-list empty">No observations yet.</div>
-        </section>
-        <section class="panel" aria-labelledby="measurement-title">
-          <div class="section-head"><span class="step">05</span><div><h2 id="measurement-title">Record a measured outcome</h2><p>Optional. Enter only a quantity someone actually measured or counted, with its source.</p></div></div>
-          <form id="measurement-form" class="measurement-form"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="measurement-source">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label><button class="secondary">Save measurement</button></form>
-          <div id="measurements" class="measurement-list"></div>
-        </section>
-        <section class="panel" aria-labelledby="report-title">
-          <div class="section-head"><span class="step">06</span><div><h2 id="report-title">Export reviewed evidence</h2><p id="report-count">No approved observations yet.</p></div></div>
-          <p class="report-note">Only approved observations and explicitly recorded measurements appear here. Synthetic sample reports are marked as such.</p>
-          <button id="export" class="primary">Download Markdown report</button>
-        </section>
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+    <section id="setup-page" class="page setup-page" aria-labelledby="setup-title">
+      <div class="setup-hero">
+        <div class="hero-copy">
+          <p class="kicker">01 / GET READY</p>
+          <h1 id="setup-title">Better evidence.<br><em>Clearer claims.</em></h1>
+          <p class="hero-lede">LEX turns cleanup visits into a report you can stand behind. Pair photographs, review the proposed observation, and publish only what a person approves.</p>
+          <div class="hero-actions"><button id="enter-workspace" class="button primary" type="button">Open projects <span aria-hidden="true">→</span></button><a class="text-link" href="/showcase/">About the project</a></div>
+        </div>
+        <div class="hero-visual" aria-label="Preview of the synthetic riverbank before and after images">
+          <div class="hero-photo"><img src="/demo/sample-media/river-before-synthetic.png" alt="Synthetic riverbank before illustration"><span>01 / BEFORE</span></div>
+          <div class="hero-photo second"><img src="/demo/sample-media/river-after-synthetic.png" alt="Synthetic riverbank after illustration"><span>02 / AFTER</span></div>
+          <p>DEMO VISUALS · SYNTHETIC, NOT FIELD EVIDENCE</p>
+        </div>
       </div>
-    </div>
+
+      <div class="setup-lower">
+        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this Mac. This page shows readiness only; it never displays stored keys.</p></div>
+        <div class="setup-panel">
+          <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
+          <details class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
+            <form id="credential-form" autocomplete="off">
+              <p>Leave a field blank to keep its saved value. Provider keys are never sent back to this page.</p>
+              <div class="form-grid"><label>Cloud name<input name="cloud_name" autocomplete="off" placeholder="Your Cloudinary cloud name"></label><label>Cloudinary API key<input name="cloudinary_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label><label>Cloudinary API secret<input name="cloudinary_api_secret" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved secret"></label><label>Gemini API key <span class="optional">optional</span><input name="gemini_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label></div>
+              <button class="button secondary" type="submit">Save to this Mac</button>
+            </form>
+          </details>
+          <p class="setup-help">Ready to explore? The sample uses synthetic photos, so you can try the review flow without uploading anything.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects-page" class="page projects-page" aria-labelledby="projects-title" hidden>
+      <div class="page-heading"><div><p class="kicker">02 / PROJECT LIBRARY</p><h1 id="projects-title">Your cleanup sites<span class="period">.</span></h1><p>Open the guided sample or start a site of your own.</p></div><button id="new-project-button" class="button secondary" type="button">+ New project</button></div>
+      <div id="project-list" class="project-grid" aria-live="polite"></div>
+      <section id="new-project-panel" class="new-project-panel" hidden aria-labelledby="new-project-title">
+        <div><p class="kicker">NEW PROJECT</p><h2 id="new-project-title">Name the place you’re documenting.</h2><p>Site details and visit dates help keep before and after evidence in the right context.</p></div>
+        <form id="site-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label>Location<input name="location" maxlength="120" placeholder="Area, city or coordinates"></label><label class="full-width">What is this project documenting?<textarea name="description" maxlength="600" rows="3" placeholder="A short description of the site and cleanup work"></textarea></label></div><button class="button primary" type="submit">Create project <span aria-hidden="true">→</span></button></form>
+      </section>
+    </section>
+
+    <section id="project-page" class="page project-page" aria-labelledby="project-title" hidden>
+      <div class="project-heading"><a href="#projects" class="back-link">← All projects</a><div class="project-heading-row"><div><p id="project-kicker" class="kicker">03 / PROJECT WORKSPACE</p><h1 id="project-title">Loading project…</h1><p id="project-subtitle"></p></div><span id="project-badge" class="project-badge">EVIDENCE RECORD</span></div></div>
+      <div class="project-layout">
+        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><div id="integration-status" class="sidebar-status"></div></aside>
+        <div class="project-content">
+          <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
+
+          <section id="tab-overview" class="tab-panel" aria-labelledby="overview-title">
+            <div class="content-title"><p class="kicker">PROJECT OVERVIEW</p><h2 id="overview-title">A record of what changed.</h2><p id="overview-description"></p></div>
+            <div class="summary-grid" aria-label="Project summary"><div><strong id="visit-count">0</strong><span>Visits</span></div><div><strong id="photo-count">0</strong><span>Photos</span></div><div><strong id="observation-count">0</strong><span>Observations</span></div><div><strong id="approved-count">0</strong><span>Approved</span></div></div>
+            <div class="overview-columns"><div class="paper-card"><p class="kicker">YOUR NEXT STEP</p><h3 id="next-step-title">Start with a visit</h3><p id="next-step-copy">Record when this site was visited and add permissioned photos.</p><button id="next-step-button" class="button primary" type="button">Continue →</button></div><div class="paper-card muted-card"><p class="kicker">THE METHOD</p><ol class="method-list"><li><span>01</span> Record visits and photos</li><li><span>02</span> Compare the same location</li><li><span>03</span> Approve or reject observations</li><li><span>04</span> Export reviewed evidence</li></ol></div></div>
+            <details class="details-editor"><summary>Edit project details</summary><form id="site-edit-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120"></label><label>Location<input name="location" maxlength="120"></label><label class="full-width">Description<textarea name="description" maxlength="600" rows="3"></textarea></label></div><button class="button secondary" type="submit">Save project details</button></form></details>
+          </section>
+
+          <section id="tab-visits" class="tab-panel" hidden aria-labelledby="visits-title"><div class="content-title"><p class="kicker">01 / FIELD RECORD</p><h2 id="visits-title">Visits & photographs.</h2><p>One date per visit. Use photos you have permission to upload.</p></div>
+            <form id="visit-form" class="paper-card compact-form"><div class="form-grid"><label>Visit date<input name="visited_on" type="date" required></label><label>Visit label<input name="label" required maxlength="120" placeholder="Before cleanup"></label></div><button class="button primary" type="submit">Add visit</button></form>
+            <label class="search-label">Search visits or photo sources<input id="media-filter" type="search" placeholder="Type a date, visit, or source"></label><div id="visits" class="visit-grid empty">No visits yet.</div>
+          </section>
+
+          <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title"><div class="content-title"><p class="kicker">02 / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
+            <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
+            <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Drag to reveal<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
+            <div class="compare-actions"><button id="compare" class="button primary" type="button">Compare and draft observation</button><p id="compare-hint">A valid pair needs two dated photos.</p></div>
+          </section>
+
+          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title"><div class="content-title"><p class="kicker">03 / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>Drafts are suggestions. Only approved text enters the report.</p></div><div id="observations" class="observation-list empty">No observations yet.</div></section>
+
+          <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title"><div class="content-title"><p class="kicker">04 / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
+            <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><button id="export" class="button primary" type="button">Download Markdown report</button></div>
+            <div class="content-title smaller"><h3>Record a measured outcome</h3><p>Optional. Photos cannot establish weight or other quantities on their own.</p></div>
+            <form id="measurement-form" class="paper-card measurement-form"><div class="form-grid"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="full-width">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label></div><button class="button secondary" type="submit">Save measurement</button></form><div id="measurements" class="measurement-list"></div>
+          </section>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer>LEX • AI proposes, evidence supports, a person verifies.</footer>
+  <footer><span>LEX / EVIDENCE WORKSPACE</span><span>AI proposes. Evidence supports. People verify.</span></footer>
 </body>
 </html>

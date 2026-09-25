@@ -3,14 +3,14 @@ from datetime import date
 from html import escape
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.routes.media import require_upload_token
 from app.services import evidence_store as store
 from app.services.image_comparison import compare_images
-from app.services.reviewer_auth import reviewer_for_authorization
+from app.services.reviewer_auth import authorization_or_local_cookie, reviewer_for_authorization
 
 router = APIRouter(prefix='/api/v1', tags=['Evidence workflow'], dependencies=[Depends(require_upload_token)])
 ID = r'^[a-z0-9][a-z0-9_-]{0,63}$'
@@ -19,6 +19,14 @@ ID = r'^[a-z0-9][a-z0-9_-]{0,63}$'
 class SiteInput(BaseModel):
     id: str = Field(pattern=ID)
     name: str = Field(min_length=1, max_length=120)
+    location: str = Field(default='', max_length=120)
+    description: str = Field(default='', max_length=600)
+
+
+class SiteUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    location: str = Field(default='', max_length=120)
+    description: str = Field(default='', max_length=600)
 
 
 class VisitInput(BaseModel):
@@ -52,8 +60,8 @@ class MeasurementInput(BaseModel):
     source: str = Field(min_length=1, max_length=200)
 
 
-def require_reviewer(authorization: str | None = Header(default=None)):
-    return reviewer_for_authorization(authorization)
+def require_reviewer(request: Request, authorization: str | None = Header(default=None)):
+    return reviewer_for_authorization(authorization_or_local_cookie(authorization, request))
 
 
 def require_site(db, site_id):
@@ -93,14 +101,28 @@ def create_site(payload: SiteInput):
     with store.connection() as db:
         if store.one(db, 'SELECT id FROM sites WHERE id=?', (payload.id,)):
             raise HTTPException(409, 'Site already exists')
-        db.execute('INSERT INTO sites(id,name) VALUES (?,?)', (payload.id, name))
-    return {'id': payload.id, 'name': name}
+        db.execute('INSERT INTO sites(id,name,location,description) VALUES (?,?,?,?)',
+                   (payload.id, name, payload.location.strip(), payload.description.strip()))
+    return {'id': payload.id, 'name': name, 'location': payload.location.strip(),
+            'description': payload.description.strip()}
 
 
 @router.get('/sites')
 def list_sites():
     with store.connection() as db:
         return store.rows(db, 'SELECT * FROM sites ORDER BY name,id')
+
+
+@router.patch('/sites/{site_id}')
+def update_site(site_id: str, payload: SiteUpdate, reviewer: str = Depends(require_reviewer)):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(422, 'Site name must not be blank')
+    with store.connection() as db:
+        require_site(db, site_id)
+        db.execute('UPDATE sites SET name=?,location=?,description=? WHERE id=?',
+                   (name, payload.location.strip(), payload.description.strip(), site_id))
+        return require_site(db, site_id)
 
 
 @router.get('/integrations')
