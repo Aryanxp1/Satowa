@@ -5,6 +5,8 @@ from app.schemas.api import (
     ShowcaseStatsResponse,
     AnalyzeRequest,
     AnalyzeResponse,
+    AssetResponse,
+    PermissionStatus,
 )
 
 __all__ = [
@@ -13,4 +15,7 @@ __all__ = [
     "ShowcaseStatsResponse",
     "AnalyzeRequest",
     "AnalyzeResponse",
+    "AssetResponse",
+    "PermissionStatus",
 ]
+

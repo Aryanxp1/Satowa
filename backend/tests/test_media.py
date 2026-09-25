@@ -47,6 +47,7 @@ def test_upload_preserves_identity(provider, fmt, mime):
     assert response.status_code == 201
     result = response.json()
     assert result['asset_id'] == 'asset-1'
+    assert result['permission_status'] == 'granted'
     assert '/v123/lex/river/image-1.png' in result['thumbnail_url']
     assert result['context']['visit_date'] == '2026-09-23'
     assert len(result['context']['sha256']) == 64
@@ -56,6 +57,7 @@ def test_upload_preserves_identity(provider, fmt, mime):
     assert options['tags'] == ['lex', 'project_river']
     assert options['public_id'].startswith('lex/river/')
     assert 'test-secret' not in response.text
+
 
 
 @pytest.mark.parametrize('data,mime,status', [
@@ -105,3 +107,18 @@ def test_provider_error_is_redacted(provider):
 def test_incomplete_provider_response(provider):
     provider.return_value = {}
     assert post().status_code == 502
+
+
+def test_upload_permission_status_validation():
+    valid = post(permission_status='pending_verification')
+    assert valid.status_code == 201
+    assert valid.json()['permission_status'] == 'pending_verification'
+
+    revoked = post(permission_status='revoked')
+    assert revoked.status_code == 201
+    assert revoked.json()['permission_status'] == 'revoked'
+
+    invalid = post(permission_status='invalid_status')
+    assert invalid.status_code == 422
+    assert 'permission_status must be one of' in invalid.text
+

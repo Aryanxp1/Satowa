@@ -20,14 +20,16 @@ CREATE TABLE IF NOT EXISTS assets (
  asset_id TEXT PRIMARY KEY, visit_id TEXT NOT NULL REFERENCES visits(id),
  public_id TEXT NOT NULL, version INTEGER NOT NULL, secure_url TEXT NOT NULL,
  source TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL,
- format TEXT NOT NULL
+ format TEXT NOT NULL,
+ permission_status TEXT NOT NULL DEFAULT 'granted',
+ thumbnail_url TEXT
 );
 CREATE TABLE IF NOT EXISTS observations (
  id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
  before_asset_id TEXT NOT NULL REFERENCES assets(asset_id),
  after_asset_id TEXT NOT NULL REFERENCES assets(asset_id),
  ai_draft TEXT, working_text TEXT, approved_text TEXT,
- review_status TEXT NOT NULL CHECK(review_status IN ('pending','approved','rejected','unreliable')),
+ review_status TEXT NOT NULL CHECK(review_status IN ('pending','approved','rejected')),
  reliability_reason TEXT, reviewed_by TEXT, reviewed_at TEXT,
  created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
  version INTEGER NOT NULL DEFAULT 1
@@ -75,6 +77,15 @@ def connection():
             db.execute("ALTER TABLE sites ADD COLUMN location TEXT NOT NULL DEFAULT ''")
         if 'description' not in site_columns:
             db.execute("ALTER TABLE sites ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+        # Migrate assets table for permission_status and thumbnail_url
+        asset_columns = {row['name'] for row in db.execute('PRAGMA table_info(assets)')}
+        if 'permission_status' not in asset_columns:
+            db.execute("ALTER TABLE assets ADD COLUMN permission_status TEXT NOT NULL DEFAULT 'granted'")
+        if 'thumbnail_url' not in asset_columns:
+            db.execute("ALTER TABLE assets ADD COLUMN thumbnail_url TEXT")
+        # Migrate any legacy 'unreliable' review status to 'pending'
+        db.execute("UPDATE observations SET review_status = 'pending' WHERE review_status = 'unreliable'")
+        db.commit()
         yield db
         db.commit()
     except Exception:

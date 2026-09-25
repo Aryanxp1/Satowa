@@ -114,7 +114,7 @@ def test_unreliable_does_not_invent_text_and_human_can_override():
     response=client.post('/api/v1/pairs',json={'before_asset_id':before,'after_asset_id':after},headers=HEADERS)
     assert response.status_code==201
     observation=response.json()
-    assert observation['review_status']=='unreliable'
+    assert observation['review_status']=='pending'
     assert observation['ai_draft'] is None
     assert observation['reliability_reason']
     oid=observation['id']
@@ -282,3 +282,82 @@ def test_measurements_need_named_reviewer_and_explicit_source():
     assert report['synthetic_demo'] is False
     markdown = client.get('/api/v1/sites/river/report?format=markdown', headers=HEADERS)
     assert '12.5 kg' in markdown.text and 'Signed scale sheet' in markdown.text
+
+
+def test_migration_adds_permission_status_and_thumbnail_url(tmp_path, monkeypatch):
+    import sqlite3
+    from app.services import evidence_store as store
+    path = tmp_path / 'legacy_assets.sqlite3'
+    monkeypatch.setattr(settings, 'LEX_DB_PATH', str(path))
+    with sqlite3.connect(path) as db:
+        legacy = store.SCHEMA.replace(',\n permission_status TEXT NOT NULL DEFAULT \'granted\',\n thumbnail_url TEXT', '')
+        legacy = legacy.replace("CHECK(review_status IN ('pending','approved','rejected'))",
+                                "CHECK(review_status IN ('pending','approved','rejected','unreliable'))")
+        db.executescript(legacy)
+        db.execute("INSERT INTO sites(id,name,location,description) VALUES ('s1','Site 1','','')")
+        db.execute("INSERT INTO visits(id,site_id,visited_on,label) VALUES ('v1','s1','2026-09-01','V1')")
+        db.execute("INSERT INTO visits(id,site_id,visited_on,label) VALUES ('v2','s1','2026-09-02','V2')")
+        db.execute("""INSERT INTO assets (asset_id,visit_id,public_id,version,secure_url,source,width,height,format)
+                      VALUES ('a1','v1','pub1',1,'https://res.cloudinary.com/demo/image/upload/v1/a1.png','Source',100,100,'png')""")
+        db.execute("""INSERT INTO assets (asset_id,visit_id,public_id,version,secure_url,source,width,height,format)
+                      VALUES ('a2','v2','pub2',1,'https://res.cloudinary.com/demo/image/upload/v1/a2.png','Source',100,100,'png')""")
+        now = store.timestamp()
+        db.execute("""INSERT INTO observations (id,site_id,before_asset_id,after_asset_id,ai_draft,working_text,
+                      approved_text,review_status,reliability_reason,reviewed_by,reviewed_at,created_at,updated_at,version)
+                      VALUES ('o1','s1','a1','a2',NULL,NULL,NULL,'unreliable','Test reason',NULL,NULL,?,?,1)""",
+                   (now, now))
+    # Connect via store.connection(), which triggers non-destructive migration
+    with store.connection() as db:
+        asset_columns = {row['name'] for row in db.execute('PRAGMA table_info(assets)')}
+        asset_row = dict(db.execute("SELECT * FROM assets WHERE asset_id='a1'").fetchone())
+        obs_row = dict(db.execute("SELECT * FROM observations WHERE id='o1'").fetchone())
+
+    assert 'permission_status' in asset_columns
+    assert 'thumbnail_url' in asset_columns
+    assert asset_row['permission_status'] == 'granted'
+    assert asset_row['thumbnail_url'] is None
+    assert obs_row['review_status'] == 'pending'
+    assert obs_row['reliability_reason'] == 'Test reason'
+
+
+def test_asset_permission_status_and_thumbnail_persistence():
+    setup_site()
+    visit = client.get('/api/v1/sites/river/visits', headers=HEADERS).json()[0]
+
+    # Explicit permission status upload
+    upload = client.post('/api/v1/media/images', headers=HEADERS,
+        data={'project_id': 'river', 'visit_date': visit['visited_on'], 'visit_id': visit['id'],
+              'source': 'Field surveyor consent note', 'permission_status': 'pending_verification'},
+        files={'file': ('perm.png', image_bytes(), 'image/png')})
+    assert upload.status_code == 201
+    asset_data = upload.json()
+    assert asset_data['permission_status'] == 'pending_verification'
+    assert asset_data.get('thumbnail_url') is not None
+
+    # Retrieve visits and verify assets retain permission_status and thumbnail_url
+    visits = client.get('/api/v1/sites/river/visits', headers=HEADERS).json()
+    target_visit = [v for v in visits if v['id'] == visit['id']][0]
+    saved_asset = [a for a in target_visit['assets'] if a['asset_id'] == asset_data['asset_id']][0]
+    assert saved_asset['permission_status'] == 'pending_verification'
+    assert saved_asset['thumbnail_url'] == asset_data['thumbnail_url']
+
+    # Default permission status upload
+    default_upload = client.post('/api/v1/media/images', headers=HEADERS,
+        data={'project_id': 'river', 'visit_date': visit['visited_on'], 'visit_id': visit['id'],
+              'source': 'Standard team photo'},
+        files={'file': ('def.png', image_bytes(), 'image/png')})
+    assert default_upload.status_code == 201
+    assert default_upload.json()['permission_status'] == 'granted'
+
+    # Direct DB test verifying nullable thumbnail_url
+    from app.services import evidence_store as store
+    with store.connection() as db:
+        null_asset_id = store.new_id()
+        db.execute("""INSERT INTO assets
+            (asset_id,visit_id,public_id,version,secure_url,source,width,height,format,permission_status,thumbnail_url)
+            VALUES (?,?,?,1,?,?,100,100,'png','granted',NULL)""",
+            (null_asset_id, visit['id'], 'null_thumb', 'https://example.org/null.png', 'Test source'))
+        retrieved = store.one(db, "SELECT * FROM assets WHERE asset_id=?", (null_asset_id,))
+        assert retrieved['thumbnail_url'] is None
+        assert retrieved['permission_status'] == 'granted'
+

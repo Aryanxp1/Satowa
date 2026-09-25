@@ -1,6 +1,6 @@
 """API schemas for request and response validation."""
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 
 
 class HealthResponse(BaseModel):
@@ -40,3 +40,24 @@ class AnalyzeResponse(BaseModel):
     result: str = Field(..., description="Output text or structured response")
     confidence: float = Field(..., description="Confidence score between 0.0 and 1.0")
     latency_ms: float = Field(..., description="Processing time in milliseconds")
+
+
+PermissionStatus = Literal['granted', 'pending_verification', 'revoked']
+
+
+class AssetResponse(BaseModel):
+    """Uploaded or stored evidence asset metadata."""
+    asset_id: str
+    public_id: str
+    version: int
+    secure_url: str
+    thumbnail_url: Optional[str] = None
+    source: str
+    width: int
+    height: int
+    format: str
+    permission_status: str = Field(
+        default="granted",
+        description="Explicit evidence permission status: 'granted', 'pending_verification', 'revoked'"
+    )
+

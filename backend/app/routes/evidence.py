@@ -170,7 +170,7 @@ async def select_pair(payload: PairInput):
         'ai_draft': comparison.observation if comparison.reliable else None,
         'working_text': comparison.observation if comparison.reliable else None,
         'approved_text': None,
-        'review_status': 'pending' if comparison.reliable else 'unreliable',
+        'review_status': 'pending',
         'reliability_reason': comparison.reason, 'reviewed_by': None,
         'reviewed_at': None, 'created_at': now, 'updated_at': now, 'version': 1,
     }
