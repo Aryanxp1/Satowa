@@ -59,16 +59,27 @@ download the Markdown report. The report marks synthetic evidence clearly.
 
 ## Turn on live services
 
-Put these values in `backend/.env` on the server, never in JavaScript or Git:
+Fill the gitignored `credential.json` at the repository root. It uses the same
+shape as `credential.example.json`:
 
-```dotenv
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-GEMINI_API_KEY=your-gemini-key
+```json
+{
+  "cloudinary": {
+    "cloud_name": "your-cloud-name",
+    "api_key": "your-api-key",
+    "api_secret": "your-api-secret"
+  },
+  "gemini": {
+    "api_key": "your-gemini-key"
+  }
+}
 ```
 
-Cloudinary upload uses signed server-side SDK calls. With its three settings
+Leave `gemini.api_key` empty if you do not have one yet. Restart `./run_local.sh`
+after editing the file. Existing environment variables or `backend/.env`
+values take priority over the JSON file. Never put keys in JavaScript or Git.
+
+Cloudinary upload uses signed server-side SDK calls. With its three fields
 configured, create a new site and dated visits, then upload photos that you
 have permission to use on Cloudinary. Gemini is optional: without a real key,
 the comparison says it cannot draft an AI finding and a person may write the

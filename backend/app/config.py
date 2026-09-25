@@ -1,5 +1,7 @@
 """Configuration settings for Project LEX Backend."""
 import os
+import json
+from pathlib import Path
 from typing import List
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,4 +45,46 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
 
+def load_local_credentials(path: Path) -> dict:
+    """Read the gitignored local JSON template without exposing secret values."""
+    if not path.is_file():
+        return {}
+    try:
+        credentials = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise ValueError("credential.json is unreadable or invalid JSON") from None
+    if not isinstance(credentials, dict):
+        raise ValueError("credential.json must contain a JSON object")
+    result = {}
+    for section, names in {
+        "cloudinary": ("cloud_name", "api_key", "api_secret"),
+        "gemini": ("api_key",),
+    }.items():
+        values = credentials.get(section, {})
+        if not isinstance(values, dict):
+            raise ValueError(f"credential.json section {section} must be an object")
+        for name in names:
+            value = values.get(name, "")
+            if not isinstance(value, str):
+                raise ValueError(f"credential.json field {section}.{name} must be a string")
+            result[f"{section}.{name}"] = value.strip()
+    return result
+
+
+def apply_local_credentials(target: Settings, credentials: dict) -> None:
+    """Environment and .env values win; JSON fills only empty settings."""
+    for key, field in (
+        ("cloudinary.cloud_name", "CLOUDINARY_CLOUD_NAME"),
+        ("cloudinary.api_key", "CLOUDINARY_API_KEY"),
+        ("gemini.api_key", "GEMINI_API_KEY"),
+    ):
+        if not getattr(target, field) and credentials.get(key):
+            setattr(target, field, credentials[key])
+    secret = credentials.get("cloudinary.api_secret")
+    if secret and not target.CLOUDINARY_API_SECRET.get_secret_value():
+        target.CLOUDINARY_API_SECRET = SecretStr(secret)
+
+
 settings = Settings()
+apply_local_credentials(settings, load_local_credentials(
+    Path(__file__).resolve().parents[2] / "credential.json"))

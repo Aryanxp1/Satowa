@@ -16,7 +16,7 @@ from app.config import settings
 def main():
     secret = settings.CLOUDINARY_API_SECRET.get_secret_value()
     if not all((settings.CLOUDINARY_CLOUD_NAME, settings.CLOUDINARY_API_KEY, secret)):
-        raise SystemExit('Cloudinary cloud name, API key, and API secret are required in backend/.env')
+        raise SystemExit('Cloudinary cloud name, API key, and API secret are required in credential.json or backend/.env')
     cloudinary.config(cloud_name=settings.CLOUDINARY_CLOUD_NAME,
                       api_key=settings.CLOUDINARY_API_KEY, api_secret=secret,
                       secure=True)
