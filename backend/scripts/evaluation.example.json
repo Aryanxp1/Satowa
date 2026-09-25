@@ -1,0 +1,7 @@
+[
+  {
+    "before_asset_id": "replace-with-earlier-asset-id",
+    "after_asset_id": "replace-with-later-asset-id",
+    "expected_reliable": true
+  }
+]

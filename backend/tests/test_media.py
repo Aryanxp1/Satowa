@@ -16,6 +16,7 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def provider(monkeypatch):
     monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('test-token'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr(''))
     monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'test-cloud')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', 'test-key')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_SECRET', SecretStr('test-secret'))

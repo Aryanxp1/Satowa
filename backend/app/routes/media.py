@@ -3,21 +3,25 @@ import hmac
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app.config import settings
 from app.services.media import MAX_BYTES, ingest_image
 from app.services import evidence_store as store
+from app.services.reviewer_auth import authorization_or_local_cookie, reviewer_tokens
 
 router = APIRouter(prefix="/api/v1", tags=["Media"])
 
 
-def require_upload_token(authorization: str | None = Header(default=None)):
+def require_upload_token(request: Request, authorization: str | None = Header(default=None)):
     token = settings.MEDIA_UPLOAD_TOKEN.get_secret_value()
-    if not token:
+    reviewers = reviewer_tokens()
+    allowed = [candidate for candidate in [token, *reviewers.values()] if candidate]
+    if not allowed:
         raise HTTPException(503, "Media uploads are not configured")
-    if not hmac.compare_digest((authorization or "").encode(), f"Bearer {token}".encode()):
+    provided = (authorization_or_local_cookie(authorization, request) or "").encode()
+    if not any(hmac.compare_digest(provided, f"Bearer {candidate}".encode()) for candidate in allowed):
         raise HTTPException(401, "Invalid upload credentials")
 
 
