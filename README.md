@@ -29,6 +29,15 @@ The UI is served by FastAPI. SQLite holds Setowa's sites, visits, evidence refer
 
 ## Team and collaboration
 
+### Aryan Vishwakarma 🐐
+- Leader
+
+### Farhan Akhtar 🥀
+- Random Kid
+
+### Shubhr Gunjan 🗿
+- Aura
+
 Setowa is the product; **LEX** is the team: Aryan Vishwakarma (lead/integration), Farhan Akhtar (backend/evidence), and Shubh Gunjan (frontend/showcase). Features go through PRs into `dev`; tested releases move from `dev` to `main`. See [ROLES_AND_WORKFLOW.md](ROLES_AND_WORKFLOW.md).
 
 The repository is private during development. If the event requires a public repository, coordinate the release and disclosure of earlier work with the organizers before changing visibility. Git history and [START_HERE.md](START_HERE.md) retain the provenance of earlier work.
