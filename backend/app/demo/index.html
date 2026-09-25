@@ -82,15 +82,34 @@
           </section>
 
           <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title"><div class="content-title"><p class="kicker">02 / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
-            <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
+            <div class="pair-grid">
+              <label>Before photo
+                <select id="before-select"></select>
+                <div id="before-card" class="pair-provenance-card" hidden>
+                  <div class="provenance-img-wrap"><img id="before-preview" class="pair-preview" alt="Before selection preview"><button type="button" class="zoom-btn" data-target="before-preview" aria-label="Zoom before image">⤢ Enlarge</button></div>
+                  <div class="provenance-info"><div class="provenance-header"><strong>Before Visit</strong><span id="before-perm-badge" class="badge granted">Granted</span></div><p id="before-visit-info" class="meta"></p><p id="before-source-info" class="meta"></p><span class="cloudinary-tag">☁ Cloudinary Verified</span></div>
+                </div>
+              </label>
+              <label>After photo
+                <select id="after-select"></select>
+                <div id="after-card" class="pair-provenance-card" hidden>
+                  <div class="provenance-img-wrap"><img id="after-preview" class="pair-preview" alt="After selection preview"><button type="button" class="zoom-btn" data-target="after-preview" aria-label="Zoom after image">⤢ Enlarge</button></div>
+                  <div class="provenance-info"><div class="provenance-header"><strong>After Visit</strong><span id="after-perm-badge" class="badge granted">Granted</span></div><p id="after-visit-info" class="meta"></p><p id="after-source-info" class="meta"></p><span class="cloudinary-tag">☁ Cloudinary Verified</span></div>
+                </div>
+              </label>
+            </div>
+            <div id="pair-validation-warning" class="pair-warning" hidden></div>
+            <div class="stage-toggle-row"><span>Comparison display:</span><button id="toggle-stage-view" class="button button-small secondary" type="button">Switch to Reveal Slider</button></div>
             <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Drag to reveal<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
             <div class="compare-actions"><button id="compare" class="button primary" type="button">Compare and draft observation</button><p id="compare-hint">A valid pair needs two dated photos.</p></div>
           </section>
 
-          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title"><div class="content-title"><p class="kicker">03 / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>Drafts are suggestions. Only approved text enters the report.</p></div><div id="observations" class="observation-list empty">No observations yet.</div></section>
+          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title"><div class="content-title"><p class="kicker">03 / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div><div id="observations" class="observation-list empty">No observations yet.</div></section>
 
           <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title"><div class="content-title"><p class="kicker">04 / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
-            <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><button id="export" class="button primary" type="button">Download Markdown report</button></div>
+            <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><p class="report-rule-note">ℹ Trust Rule: Unapproved AI observations are strictly excluded from all report outputs.</p><div class="report-button-row"><button id="export" class="button primary" type="button">Download Markdown report (.md)</button><button id="toggle-json-report" class="button secondary" type="button">View Raw JSON</button></div></div>
+            <div id="report-live-preview" class="report-live-preview"></div>
+            <pre id="report-json-view" class="report-json-view" hidden></pre>
             <div class="content-title smaller"><h3>Record a measured outcome</h3><p>Optional. Photos cannot establish weight or other quantities on their own.</p></div>
             <form id="measurement-form" class="paper-card measurement-form"><div class="form-grid"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="full-width">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label></div><button class="button secondary" type="submit">Save measurement</button></form><div id="measurements" class="measurement-list"></div>
           </section>
@@ -98,6 +117,18 @@
       </div>
     </section>
   </main>
+  <dialog id="lightbox-modal" class="lightbox-modal" aria-label="Evidence Photo Lightbox">
+    <div class="lightbox-content">
+      <button id="lightbox-close" class="lightbox-close" type="button" aria-label="Close photo preview">✕ Close</button>
+      <img id="lightbox-img" alt="Enlarged field evidence photo">
+      <div class="lightbox-meta">
+        <h4 id="lightbox-title"></h4>
+        <p id="lightbox-details"></p>
+        <span id="lightbox-badge" class="badge"></span>
+      </div>
+    </div>
+  </dialog>
   <footer><span>SETOWA · BY TEAM LEX</span><span>AI proposes. Evidence supports. People verify.</span></footer>
 </body>
 </html>
+

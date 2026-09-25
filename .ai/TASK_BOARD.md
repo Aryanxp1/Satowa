@@ -184,9 +184,50 @@
 
 ---
 
+## [x] T008 — Judge-Facing Review Experience
+**Owner:** Cline (Builder) + AGY (Architect)  
+**Dependencies:** T002 ✅, T005 ✅, T006 ✅, T007 ✅  
+**Status:** COMPLETE (2026-09-26)
+
+**Scope Completed:**
+1. Primary Review Experience (`backend/app/demo/index.html`, `backend/app/demo/styles.css`, `backend/app/demo/app.js`):
+   - Provenance Display: Site, Before & After Visit dates, Source Asset IDs, Permission status (`granted`, `pending_verification`, `revoked`), and Cloudinary verification badge.
+   - Dual Visual Comparison: Side-by-side mode and interactive split-reveal comparison slider with toggle.
+   - Lightbox modal dialog for high-resolution inspection.
+   - Real-time client-side pair validation check (chronology, permissions, distinct assets).
+2. AI Proposal Presentation:
+   - Status badge (`Changed`, `Unchanged`, `Uncertain`, `Insufficient Evidence`).
+   - Concise AI observation summary and structured visual change list (`type`, `description`, `evidence`).
+   - Bounded Model Confidence gauge labeled `MODEL CONFIDENCE` with certainty disclaimer.
+   - Supporting evidence notes.
+3. Trust & Invariant Distinction:
+   - Visual distinction between `AI PROPOSAL` (amber border, warning banner `AI suggestion — Human verification required`) and `HUMAN VERIFIED RECORD` (emerald border, check banner, reviewer identity, approval date).
+   - Approval invalidation: Editing an approved observation immediately resets status to `pending` and removes it from verified reports.
+4. Uncertainty UX:
+   - Prominently displays: "AI could not determine the outcome with sufficient confidence." or "Insufficient evidence for a reliable comparison."
+   - Discloses controlled human-friendly reason (e.g., Camera angle mismatch, Lighting difference, Insufficient visual overlap).
+5. Human Review Workflow:
+   - `[ Approve ]`, `[ Save Draft / Edit ]`, and `[ Reject ]` actions wired to existing backend endpoints (`POST /observations/{id}/review`, `PATCH /observations/{id}`).
+6. Live In-Page Report:
+   - In-page preview of official report: guarantees only human-approved observations enter the report; unapproved proposals are explicitly excluded.
+   - Markdown export and raw JSON toggle.
+7. Testing:
+   - Created `backend/tests/test_demo_ui.py` covering static delivery and all 9 critical behaviors (11 tests).
+   - Total test suite now passes 118 tests (+11 new tests, zero regressions).
+
+**Acceptance Criteria:**
+- Primary demo flow 1 through 10 fully operational. ✅
+- Distinct visual hierarchy for AI Proposal vs Human Verified Record. ✅
+- Uncertainty prominently displayed with explanatory reason. ✅
+- Report generation excludes unapproved proposals. ✅
+- 11 new tests added and verified. ✅
+- Total tests passing: 118. ✅
+
+---
+
 ## [ ] T009 — Demo UI: Uncertainty Badge
 **Owner:** Cline (Builder)  
-**Dependencies:** T006  
+**Dependencies:** T006, T008  
 **Status:** NOT STARTED
 
 ---

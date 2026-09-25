@@ -68,7 +68,26 @@
     - Added read-only safe connectivity check scripts: `backend/scripts/check_cloudinary.py` and `backend/scripts/check_gemini.py`.
   - Added ADR D009 in `DECISIONS.md`.
   - Total test suite now passes 107 tests (+11 new tests in `test_integration_pipeline.py`, 1 skipped live test, zero regressions).
-
-
-
-
+- **Cline / AGY**: Completed T008 (Judge-Facing Review Experience):
+  - Primary Review Interface & Visual Comparison:
+    - Built comprehensive provenance cards displaying Site, Visit labels/dates, Source asset IDs, Permission status (`granted`, `pending_verification`, `revoked`), and Cloudinary verified badge.
+    - Added dual visual comparison modes: Side-by-side mode and interactive split-reveal comparison slider with toggle.
+    - Added high-resolution image inspection lightbox dialog.
+    - Added real-time pair validation feedback (chronology, permissions, distinct assets).
+  - Structured AI Proposal Presentation:
+    - Displayed 4-state status badges (`Changed`, `Unchanged`, `Uncertain`, `Insufficient Evidence`).
+    - Rendered concise AI observation summary, structured visual changes list, and supporting visual notes.
+    - Rendered bounded model confidence gauge with explicit `MODEL CONFIDENCE` labeling and certainty disclaimer.
+  - Trust & Invariant Distinction:
+    - Distinct visual hierarchy between `AI PROPOSAL` (amber border, `⚠ AI suggestion — Human verification required` banner) and `HUMAN VERIFIED RECORD` (emerald border, `✓ HUMAN VERIFIED RECORD` banner, reviewer identity, approval date).
+    - Approval Invalidation: editing an approved observation immediately resets review status to `pending` and drops it from verified reports.
+  - Uncertainty UX:
+    - Prominently displays: "AI could not determine the outcome with sufficient confidence." or "Insufficient evidence for a reliable comparison."
+    - Discloses controlled human-friendly reasons (Camera angle mismatch, Lighting difference, Insufficient visual overlap, etc.).
+  - Human Review Workflow:
+    - Wired `[ Approve ]`, `[ Save Draft / Edit ]`, and `[ Reject ]` review actions directly to backend endpoints.
+  - Live In-Page Report Preview:
+    - Rendered in-page live report preview strictly filtering out unapproved proposals, with Markdown export and raw JSON toggle.
+  - Added ADR D010 in `DECISIONS.md`.
+  - Added 11 deterministic tests in `backend/tests/test_demo_ui.py` covering static delivery, HTML contract, and all 9 critical review behaviors.
+  - Total test suite now passes 118 tests (+11 new tests, zero regressions).

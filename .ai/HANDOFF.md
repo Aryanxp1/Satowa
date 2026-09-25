@@ -87,40 +87,49 @@
    - 1 cleanly skipped test (live test without flag).
    - Zero regressions.
 
-## Test Summary Post-T007
+**T008 (Judge-Facing Review Experience):**
+1. UI Components & Visual Comparison:
+   - Added provenance cards displaying Site, Visit dates/labels, Source asset IDs, Permission status (`granted`, `pending_verification`, `revoked`), and Cloudinary verified badge.
+   - Dual display modes: side-by-side comparison and interactive split-reveal comparison slider with toggle button.
+   - High-resolution modal lightbox dialog for detailed visual inspection of evidence assets.
+   - Real-time client-side pair validation warning (chronology, permissions, distinct assets).
+2. Structured AI Proposal Presentation:
+   - Status badge (`Changed`, `Unchanged`, `Uncertain`, `Insufficient Evidence`).
+   - Concise AI observation summary and structured visual change list (`type`, `description`, `evidence`).
+   - Bounded Model Confidence gauge labeled `MODEL CONFIDENCE` with certainty disclaimer.
+   - Supporting evidence visual notes.
+3. Trust Invariant Distinction:
+   - Clear visual distinction: `AI PROPOSAL` (amber border, `⚠ AI suggestion — Human verification required` banner) vs `HUMAN VERIFIED RECORD` (emerald border, `✓ HUMAN VERIFIED RECORD` banner, reviewer identity, approval timestamp).
+   - Approval Invalidation: editing an approved observation immediately resets review status to `pending` and purges it from official reports.
+4. Uncertainty UX:
+   - Prominent callouts when AI cannot determine outcome with sufficient confidence or has insufficient evidence.
+   - Controlled human-friendly reasons displayed (Camera angle mismatch, Lighting difference, Insufficient visual overlap, etc.).
+5. Review Actions & Live Report Preview:
+   - Wired `[ Approve ]`, `[ Save Draft / Edit ]`, and `[ Reject ]` review actions.
+   - In-page live report preview: strictly excludes unapproved AI suggestions; includes Markdown export and raw JSON toggle.
+6. Testing:
+   - Added `backend/tests/test_demo_ui.py` covering static delivery and all 9 critical behaviors (11 tests).
+   - Total test suite now passes 118 tests (+11 new tests, zero regressions).
+
+## Test Summary Post-T008
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 109 |
-| **Passed** | 107 (+11 new tests passed) |
+| **Total Collected** | 120 |
+| **Passed** | 118 (+11 new demo UI tests passed) |
 | **Skipped** | 1 (live integration test) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~12.2s |
-
-## Live Integration Test Procedure
-
-To execute the live integration test against real Cloudinary and Gemini APIs:
-1. Ensure real API credentials are set in `backend/.env` or environment:
-   - `CLOUDINARY_CLOUD_NAME`
-   - `CLOUDINARY_API_KEY`
-   - `CLOUDINARY_API_SECRET`
-   - `GEMINI_API_KEY`
-2. Run read-only credential check scripts:
-   - `python scripts/check_cloudinary.py`
-   - `python scripts/check_gemini.py`
-3. Run the live test:
-   - PowerShell: `$env:RUN_LIVE_INTEGRATION="1"; .\venv\Scripts\python.exe -m pytest tests/test_integration_pipeline.py -k test_live_cloudinary_and_gemini_pipeline -v; Remove-Item Env:\RUN_LIVE_INTEGRATION`
-   - Bash: `RUN_LIVE_INTEGRATION=1 python -m pytest tests/test_integration_pipeline.py -k test_live_cloudinary_and_gemini_pipeline -v`
+| **Runtime** | ~20.4s |
 
 ## What Is Ready Next
 
-- T007 is **COMPLETE**.
-- Next task on the board: **T009 — Demo UI: Uncertainty Badge**.
+- T008 is **COMPLETE**.
+- Next task on the board: **T009 / T010 / T011**.
 
 ## Open Questions for User
 

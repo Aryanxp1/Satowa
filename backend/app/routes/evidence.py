@@ -294,7 +294,9 @@ async def select_pair(payload: PairInput):
              :reviewed_at,:created_at,:updated_at,:version)''', observation)
         store.revision(db, observation, 'drafted' if comparison.reliable else 'comparison_unreliable',
                        'system', observation['ai_draft'] or observation['reliability_reason'])
-    return observation
+    obs_response = dict(observation)
+    obs_response['comparison'] = comparison.model_dump()
+    return obs_response
 
 
 @router.get('/sites/{site_id}/observations')
