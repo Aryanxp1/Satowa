@@ -23,5 +23,19 @@
   - Updated `backend/app/services/ai_engine.py` mock prompt reasoning to explicitly state demo mode and human verification requirement; replaced `0.994` confidence with `0.95`.
   - Updated `backend/tests/test_api.py` to assert that no `99.4` percentage exists and that accuracy metric is identified as demo/synthetic.
   - Verified complete test suite: 48 passed, zero regressions.
+- **Cline**: Completed T005 (Evidence / Pair Validation Hardening):
+  - Strengthened `validate_pair` in `backend/app/routes/evidence.py` to authoritatively enforce server-side validation invariants:
+    - Same cleanup site validation across before and after visits.
+    - Strict chronological visit ordering (`before_visit['visited_on'] < after_visit['visited_on']`).
+    - Persistent asset existence verification in `assets` table (404 for missing before or after asset).
+    - Asset-to-visit and visit-to-site relational consistency with tamper detection against forged IDs.
+    - Media validity checks (supported image formats `jpeg/jpg/png/webp`, positive dimensions, secure URL).
+    - Evidence permission status enforcement (only `'granted'` permission permitted for pairs and reports).
+    - Rejection of cross-site tampering when editing existing observations (`422 Cannot change the site of an observation`).
+    - Filtered `report_rows` to guarantee only assets with `permission_status='granted'` appear in approved reports.
+  - Extended `PairInput` and `EditInput` schemas to support optional client-claimed `site_id`, `before_visit_id`, and `after_visit_id` with strict server-side validation.
+  - Added 13 focused tests covering Test Matrix items A through M (`test_pair_validation_matrix_*`).
+  - Verified full test suite: 61 passed, 1 pre-existing Windows-specific failure unchanged, zero regressions.
+
 
 

@@ -78,11 +78,40 @@
 
 ---
 
-## [ ] T005 — Gemini Prompt Schema Enhancement
+## [x] T005 — Evidence / Pair Validation Hardening
 **Owner:** Cline (Builder)  
 **Dependencies:** T002 ✅, T004 ✅  
-**Status:** NOT STARTED
+**Status:** COMPLETE (2026-09-26)
 
+**Scope Completed:**
+1. Strengthened server-side authoritative `validate_pair()` in `backend/app/routes/evidence.py`.
+2. Enforced:
+   - Same cleanup site validation across before and after visits.
+   - Chronological visit order (`before_visit['visited_on'] < after_visit['visited_on']`).
+   - Persistent asset existence verification in `assets` table (404 for missing before or after asset).
+   - Relational integrity: asset belongs to visit, visit belongs to site.
+   - Forgery and tamper protection: claimed site and visit verification against persisted data.
+   - Media format validation (`jpeg`, `jpg`, `png`, `webp`, positive dimensions, secure URL).
+   - Permission status validation (only `'granted'` permission permitted for pairs and reports).
+   - Cross-site observation modification rejection (`Cannot change the site of an observation`).
+   - Exclusion of non-granted or revoked assets from report generation.
+3. Extended `PairInput` and `EditInput` schemas to allow optional client-specified `site_id`, `before_visit_id`, and `after_visit_id`.
+4. Added 13 matrix tests in `backend/tests/test_evidence.py` covering tests A through M (`test_pair_validation_matrix_*`).
+5. Verified 61 passed tests; zero regressions.
+
+**Acceptance Criteria:**
+- All 13 matrix tests (A through M) pass. ✅
+- Existing 48 tests continue passing. ✅
+- Tampered asset IDs and cross-site injection rejected. ✅
+- Revoked permission assets rejected. ✅
+- Approval invalidated on evidence change. ✅
+
+---
+
+## [ ] T006 — Gemini Prompt Schema Enhancement
+**Owner:** Cline (Builder)  
+**Dependencies:** T002 ✅, T004 ✅, T005 ✅  
+**Status:** NOT STARTED
 
 **Scope:**
 - `backend/app/services/image_comparison.py` → Extend `Comparison` model to add `confidence: float | None` and `limitations: str | None`.
@@ -96,36 +125,37 @@
 
 ---
 
-## [ ] T006 — Cloudinary Live Validation Script
+## [ ] T007 — Cloudinary Live Validation Script
 **Owner:** Cline (Builder)  
-**Dependencies:** T002 ✅  
+**Dependencies:** T002 ✅, T005 ✅  
 **Status:** NOT STARTED
 
 ---
 
-## [ ] T007 — Gemini Live Validation Script
+## [ ] T008 — Gemini Live Validation Script
 **Owner:** Cline (Builder)  
-**Dependencies:** T005  
+**Dependencies:** T006  
 **Status:** NOT STARTED
 
 ---
 
-## [ ] T008 — Demo UI: Uncertainty Badge
+## [ ] T009 — Demo UI: Uncertainty Badge
 **Owner:** Cline (Builder)  
-**Dependencies:** T005  
+**Dependencies:** T006  
 **Status:** NOT STARTED
 
 ---
 
-## [ ] T009 — CI GitHub Actions
+## [ ] T010 — CI GitHub Actions
 **Owner:** Cline (Builder)  
-**Dependencies:** T002 ✅, T004 ✅, T005  
+**Dependencies:** T002 ✅, T004 ✅, T005 ✅, T006  
 **Status:** NOT STARTED
 
 ---
 
-## [ ] T010 — Demo Script & Documentation
+## [ ] T011 — Demo Script & Documentation
 **Owner:** AGY + User  
-**Dependencies:** T008  
+**Dependencies:** T009  
 **Status:** NOT STARTED
+
 

@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-26 by AGY / Cline
 
-## Current Status: T004 DEFUSE MOCK ACCURACY CLAIM COMPLETE
+## Current Status: T005 EVIDENCE / PAIR VALIDATION HARDENING COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T002 (2026-09-26)
+## Verified Test Baseline Post-T005 (2026-09-26)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=no -q
-Runtime: ~9.2 seconds
-Collected: 50 items
+Runtime: ~14.2 seconds
+Collected: 63 items
 
-PASSED: 48 (+3 new tests passed)
+PASSED: 61 (+13 new tests passed)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 ERRORS: 2   ← Collection/deprecation errors (Starlette/httpx testclient)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
@@ -54,15 +54,16 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Asset `permission_status` persistence & validation | ✅ Fully tested and passing (defaults to 'granted') |
 | Asset `thumbnail_url` persistence (nullable) | ✅ Fully tested and passing |
 | Non-destructive migration for assets & observations | ✅ Fully tested and passing |
-| Pair validation (cross-site, same-asset, inverted date) | ✅ Fully tested and passing |
+| Hardened pair validation (same site, visit ordering, asset existence, permission, media format) | ✅ Fully tested and passing (13-case test matrix) |
+| Server-side tamper protection (cross-site injection, ID forgery, site modification rejected) | ✅ Fully tested and passing |
 | Unreliable comparison → review_status='pending' | ✅ Fully tested and passing (reason preserved, no text invented) |
 | Review approve / reject | ✅ Fully tested and passing |
 | Edit approved → resets to pending | ✅ Fully tested and passing |
-| Evidence change → resets to pending | ✅ Fully tested and passing |
+| Evidence change → resets to pending and drops from approved report | ✅ Fully tested and passing |
 | Stale version 409 on review | ✅ Fully tested and passing |
 | Stale version 409 on edit | ✅ Fully tested and passing |
 | Reviewer identity comes from token, not payload | ✅ Fully tested and passing |
-| Report: only approved+approved_text included | ✅ Fully tested and passing |
+| Report: only approved+approved_text included and only 'granted' permission assets | ✅ Fully tested and passing |
 | Report: original Cloudinary URLs preserved | ✅ Fully tested and passing |
 | Measurements: require named reviewer | ✅ Fully tested and passing |
 | Measurements: require non-blank source | ✅ Fully tested and passing |
@@ -80,15 +81,16 @@ These are **non-blocking deprecation warnings** from the installed library versi
 
 ## Current Active Task
 
-**T004 — DEFUSE MOCK ACCURACY CLAIM** — COMPLETE
+**T005 — EVIDENCE / PAIR VALIDATION HARDENING** — COMPLETE
 
 ## Pending Tasks (Ordered)
 
-1. T005 — Gemini Prompt Schema Enhancement (4-state + confidence)
-2. T006 — Cloudinary Live Validation script
-3. T007 — Gemini Live Validation script
-4. T008 — Demo UI: uncertainty badge
-5. T009 — CI GitHub Actions
-6. T010 — Demo Script
+1. T006 — Gemini Prompt Schema Enhancement (4-state + confidence)
+2. T007 — Cloudinary Live Validation script
+3. T008 — Gemini Live Validation script
+4. T009 — Demo UI: uncertainty badge
+5. T010 — CI GitHub Actions
+6. T011 — Demo Script
+
 
 

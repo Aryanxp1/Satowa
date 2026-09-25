@@ -24,27 +24,43 @@
 4. Updated `backend/tests/test_api.py`: verified no `99.4` percentage remains in metrics and accuracy is explicitly identified as demo/synthetic.
 5. All 48 tests pass; zero regressions.
 
-## Test Summary Post-T004
+**T005 (Evidence / Pair Validation Hardening):**
+1. Hardened authoritative server-side `validate_pair` in `backend/app/routes/evidence.py`:
+   - Same cleanup site validation across before and after visits.
+   - Strict chronological visit ordering (`before_visit['visited_on'] < after_visit['visited_on']`).
+   - Persistent asset existence verification in `assets` table (404 for missing before or after asset).
+   - Relational consistency check between assets, visits, and sites.
+   - Forgery and tamper protection against manually changed asset or site IDs.
+   - Media validity checks (`jpeg`, `jpg`, `png`, `webp`, positive dimensions, secure URL).
+   - Permission status validation (only `'granted'` permission permitted for pairs and reports).
+   - Rejection of cross-site observation modification (`422 Cannot change the site of an observation`).
+   - Filtered `report_rows` to guarantee only assets with `permission_status='granted'` appear in approved reports.
+2. Extended `PairInput` and `EditInput` schemas to allow optional client-specified `site_id`, `before_visit_id`, and `after_visit_id`.
+3. Added 13 matrix tests in `backend/tests/test_evidence.py` covering tests A through M (`test_pair_validation_matrix_*`).
+4. Verified 61 passed tests; zero regressions.
+
+## Test Summary Post-T005
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 50 |
-| **Passed** | 48 |
+| **Total Collected** | 63 |
+| **Passed** | 61 (+13 new tests passed) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~10-23s |
+| **Runtime** | ~14.2s |
 
 ## What Is Ready Next
 
-- T004 is **COMPLETE**.
-- Next task on the board: **T005 — Gemini Prompt Schema Enhancement** (4-state status enum + confidence + limitations).
+- T005 is **COMPLETE**.
+- Next task on the board: **T006 — Gemini Prompt Schema Enhancement** (4-state status enum + confidence + limitations).
 
 ## Open Questions for User
 
 None. Awaiting user review and authorization to proceed with next milestone.
+
 
 

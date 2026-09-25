@@ -37,6 +37,9 @@ class VisitInput(BaseModel):
 class PairInput(BaseModel):
     before_asset_id: str = Field(min_length=1, max_length=128)
     after_asset_id: str = Field(min_length=1, max_length=128)
+    site_id: str | None = None
+    before_visit_id: str | None = None
+    after_visit_id: str | None = None
 
 
 class EditInput(BaseModel):
@@ -44,6 +47,9 @@ class EditInput(BaseModel):
     working_text: str | None = Field(default=None, max_length=600)
     before_asset_id: str | None = None
     after_asset_id: str | None = None
+    site_id: str | None = None
+    before_visit_id: str | None = None
+    after_visit_id: str | None = None
 
 
 class ReviewInput(BaseModel):
@@ -78,19 +84,110 @@ def require_observation(db, observation_id):
     return observation
 
 
-def validate_pair(db, before_id, after_id, site_id=None):
+VALID_IMAGE_FORMATS = {'jpeg', 'jpg', 'png', 'webp'}
+
+
+def validate_pair(
+    db,
+    before_id: str,
+    after_id: str,
+    site_id: str | None = None,
+    before_visit_id: str | None = None,
+    after_visit_id: str | None = None,
+):
+    """Authoritative server-side evidence pair validation.
+
+    Enforces invariants:
+    - Non-empty, distinct before and after asset IDs
+    - Both assets exist in the persistent store
+    - Both assets have valid media formats, secure URLs, and positive dimensions
+    - Both assets have acceptable permission_status ('granted')
+    - Both assets reference existing visits and match any claimed visits
+    - Both visits reference existing sites and match any claimed site
+    - Both visits belong to the same site
+    - The before visit strictly precedes the after visit chronologically
+    """
+    if not before_id or not after_id:
+        raise HTTPException(422, 'Both before and after evidence asset IDs must be provided')
     if before_id == after_id:
         raise HTTPException(422, 'Before and after evidence must differ')
-    sql = ('SELECT a.*, v.site_id, v.visited_on FROM assets a '
-           'JOIN visits v ON v.id=a.visit_id WHERE a.asset_id=?')
-    before, after = store.one(db, sql, (before_id,)), store.one(db, sql, (after_id,))
-    if not before or not after:
-        raise HTTPException(404, 'Evidence asset not found')
-    if before['site_id'] != after['site_id'] or (site_id and before['site_id'] != site_id):
+
+    # 1. Existence check on persistent assets table
+    before_asset = store.one(db, 'SELECT * FROM assets WHERE asset_id=?', (before_id,))
+    if not before_asset:
+        raise HTTPException(404, f'Evidence asset not found: before asset {before_id}')
+
+    after_asset = store.one(db, 'SELECT * FROM assets WHERE asset_id=?', (after_id,))
+    if not after_asset:
+        raise HTTPException(404, f'Evidence asset not found: after asset {after_id}')
+
+    # 2. Media validity (format, dimensions, secure URL)
+    before_fmt = (before_asset.get('format') or '').lower()
+    after_fmt = (after_asset.get('format') or '').lower()
+    if before_fmt not in VALID_IMAGE_FORMATS or not before_asset.get('secure_url'):
+        raise HTTPException(422, f'Before asset is not valid image evidence ({before_fmt})')
+    if after_fmt not in VALID_IMAGE_FORMATS or not after_asset.get('secure_url'):
+        raise HTTPException(422, f'After asset is not valid image evidence ({after_fmt})')
+    if (before_asset.get('width') or 0) <= 0 or (before_asset.get('height') or 0) <= 0:
+        raise HTTPException(422, 'Before asset has invalid dimensions')
+    if (after_asset.get('width') or 0) <= 0 or (after_asset.get('height') or 0) <= 0:
+        raise HTTPException(422, 'After asset has invalid dimensions')
+
+    # 3. Permission status check (only 'granted' permitted for evidence pairs)
+    if before_asset.get('permission_status') != 'granted':
+        raise HTTPException(
+            422,
+            f"Before asset permission is '{before_asset.get('permission_status')}', must be 'granted'"
+        )
+    if after_asset.get('permission_status') != 'granted':
+        raise HTTPException(
+            422,
+            f"After asset permission is '{after_asset.get('permission_status')}', must be 'granted'"
+        )
+
+    # 4. Visit existence and claimed visit verification
+    before_visit = store.one(db, 'SELECT * FROM visits WHERE id=?', (before_asset['visit_id'],))
+    if not before_visit:
+        raise HTTPException(422, f"Before asset references nonexistent visit: {before_asset['visit_id']}")
+
+    after_visit = store.one(db, 'SELECT * FROM visits WHERE id=?', (after_asset['visit_id'],))
+    if not after_visit:
+        raise HTTPException(422, f"After asset references nonexistent visit: {after_asset['visit_id']}")
+
+    if before_visit_id and before_asset['visit_id'] != before_visit_id:
+        raise HTTPException(422, 'Before asset does not belong to the claimed visit')
+    if after_visit_id and after_asset['visit_id'] != after_visit_id:
+        raise HTTPException(422, 'After asset does not belong to the claimed visit')
+
+    # 5. Site existence
+    before_site = store.one(db, 'SELECT * FROM sites WHERE id=?', (before_visit['site_id'],))
+    if not before_site:
+        raise HTTPException(422, f"Before visit references nonexistent site: {before_visit['site_id']}")
+
+    after_site = store.one(db, 'SELECT * FROM sites WHERE id=?', (after_visit['site_id'],))
+    if not after_site:
+        raise HTTPException(422, f"After visit references nonexistent site: {after_visit['site_id']}")
+
+    # 6. Site consistency: both belong to same site and match any claimed site
+    if before_visit['site_id'] != after_visit['site_id']:
         raise HTTPException(422, 'Both images must belong to the same site')
-    if before['visited_on'] >= after['visited_on']:
+
+    if site_id and (before_visit['site_id'] != site_id or after_visit['site_id'] != site_id):
+        raise HTTPException(422, 'Both images must belong to the same site')
+
+    # 7. Chronological ordering
+    if before_visit['visited_on'] >= after_visit['visited_on']:
         raise HTTPException(422, 'The before visit must precede the after visit')
-    return before, after
+
+    before_dict = dict(before_asset)
+    before_dict['site_id'] = before_visit['site_id']
+    before_dict['visited_on'] = before_visit['visited_on']
+
+    after_dict = dict(after_asset)
+    after_dict['site_id'] = after_visit['site_id']
+    after_dict['visited_on'] = after_visit['visited_on']
+
+    return before_dict, after_dict
 
 
 @router.post('/sites', status_code=201)
@@ -161,7 +258,14 @@ def list_visits(site_id: str):
 @router.post('/pairs', status_code=201)
 async def select_pair(payload: PairInput):
     with store.connection() as db:
-        before, after = validate_pair(db, payload.before_asset_id, payload.after_asset_id)
+        before, after = validate_pair(
+            db,
+            payload.before_asset_id,
+            payload.after_asset_id,
+            site_id=payload.site_id,
+            before_visit_id=payload.before_visit_id,
+            after_visit_id=payload.after_visit_id,
+        )
     comparison = await compare_images(before, after)
     now = store.timestamp()
     observation = {
@@ -176,7 +280,14 @@ async def select_pair(payload: PairInput):
     }
     with store.connection() as db:
         # Recheck after the external AI call; the chosen records are immutable.
-        validate_pair(db, payload.before_asset_id, payload.after_asset_id, before['site_id'])
+        validate_pair(
+            db,
+            payload.before_asset_id,
+            payload.after_asset_id,
+            site_id=payload.site_id or before['site_id'],
+            before_visit_id=payload.before_visit_id,
+            after_visit_id=payload.after_visit_id,
+        )
         db.execute('''INSERT INTO observations VALUES
             (:id,:site_id,:before_asset_id,:after_asset_id,:ai_draft,:working_text,
              :approved_text,:review_status,:reliability_reason,:reviewed_by,
@@ -242,9 +353,18 @@ def edit_observation(observation_id: str, payload: EditInput,
         observation = require_observation(db, observation_id)
         if payload.expected_version != observation['version']:
             raise HTTPException(409, 'Observation changed; reload before editing')
+        if payload.site_id and payload.site_id != observation['site_id']:
+            raise HTTPException(422, 'Cannot change the site of an observation')
         before_id = payload.before_asset_id or observation['before_asset_id']
         after_id = payload.after_asset_id or observation['after_asset_id']
-        validate_pair(db, before_id, after_id, observation['site_id'])
+        validate_pair(
+            db,
+            before_id,
+            after_id,
+            site_id=observation['site_id'],
+            before_visit_id=payload.before_visit_id,
+            after_visit_id=payload.after_visit_id,
+        )
         text = payload.working_text.strip() if payload.working_text is not None else observation['working_text']
         evidence_changed = (before_id != observation['before_asset_id'] or
                             after_id != observation['after_asset_id'])
@@ -305,6 +425,7 @@ def report_rows(db, site_id):
         JOIN visits bv ON bv.id=b.visit_id
         JOIN visits av ON av.id=a.visit_id
         WHERE o.site_id=? AND o.review_status='approved' AND o.approved_text IS NOT NULL
+          AND b.permission_status='granted' AND a.permission_status='granted'
         ORDER BY o.reviewed_at,o.id''', (site_id,))
 
 
