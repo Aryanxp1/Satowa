@@ -130,6 +130,7 @@ Thumbs.db
 
 # Local provider credentials
 credentials.json
+credential.json
 
 # Local review database
 *.sqlite3

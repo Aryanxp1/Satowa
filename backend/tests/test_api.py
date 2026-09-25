@@ -11,7 +11,7 @@ def test_root_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     data = response.json()
-    assert data["service"] == "Project LEX Backend API"
+    assert data["service"] == "Setowa Evidence API"
     assert data["status"] == "online"
     assert "docs_url" in data
 

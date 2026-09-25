@@ -1,77 +1,34 @@
-# 🚀 Project LEX — Code Cubicle Hackathon
+# Setowa
 
-> Built with passion by **Team LEX** for **Code Cubicle** (organized by **HackCulture**).
+**Cleanup evidence that can be checked.** Setowa is Team LEX's Code Cubicle 6.0 project for turning dated cleanup photos into a human-reviewed, source-linked report. The name combines *Setu* (bridge) and *Wa* (harmony): a bridge between field media and a shared account of what changed.
 
----
+> **AI proposes → evidence supports → a person verifies → approved records become the report.**
 
-## 👥 Team Members
+## What works
 
-| Name | Role / Focus Area | Contact / GitHub |
-| :--- | :--- | :--- |
-| **Aryan Vishwakarma** | Team Lead / Architecture & Full-Stack Integration | [@Aryanxp1](https://github.com/Aryanxp1) |
-| **Farhan Akhtar** | Core Development / Backend & Logic | Collaborator |
-| **Shubhr Gunjan** | Frontend UI/UX / Landing Showcase & Pitch | Collaborator |
+- Create a cleanup site and dated visits; upload permissioned JPEG, PNG, or WebP photos to Cloudinary with source attribution.
+- Select an earlier and later photo from the same site. The API rejects reversed dates, cross-site pairs, and the same asset twice.
+- Request an optional Gemini comparison. If credentials or evidence are inadequate, the app explains the uncertainty; a reviewer can write their own observation.
+- Approve, edit, or reject observations. Edits reset approval and stale review versions are rejected.
+- Export Markdown or JSON reports from saved approved observations, original evidence links, and measurements explicitly recorded with a source. Photos alone never establish a waste quantity.
+- Walk through a clearly labeled **synthetic** sample without Cloudinary or Gemini calls. It is a product demo, not proof of cleanup impact.
 
----
-
-## 📂 Hackathon Blueprint & Planning Docs
-
-To ensure flawless execution and avoid last-minute panic, all execution playbooks, templates, and schedules are documented in this repository:
-
-1. 📋 [**PLANNING.md**](./PLANNING.md) — Master strategy, feature scoping, and risk management plan.
-2. ⏱️ [**TIMELINE.md**](./TIMELINE.md) — Time management matrix, milestones, standup cadence, and deadline countdown.
-3. 🤝 [**ROLES_AND_WORKFLOW.md**](./ROLES_AND_WORKFLOW.md) — Team task allocation, Git branching strategy, and PR review etiquette.
-4. 💡 [**IDEATION_FRAMEWORK.md**](./IDEATION_FRAMEWORK.md) — Rapid brainstorming matrix ready for when the Problem Statement (PS) is released.
-5. 📦 [**SUBMISSION_KIT/**](./SUBMISSION_KIT/)
-   - 🎯 [Submission Checklist](./SUBMISSION_KIT/SUBMISSION_CHECKLIST.md) — Zero-failure pre-submission verification list.
-   - 📊 [PPT Pitch Outline](./SUBMISSION_KIT/PPT_OUTLINE.md) — 8-10 slide winning deck structure.
-   - 🎬 [Demo Video Script](./SUBMISSION_KIT/DEMO_VIDEO_SCRIPT.md) — 2-3 minute timed pitch & demo walkthrough script.
-
----
-
-## 🎯 High-Level Execution Rulebook
-
-1. **Phase 1: Idea Discussion & Finalization (Days 1–2 / First 25% of timeline)**
-   - Deconstruct PS requirements, brainstorm 3 ideas, evaluate feasibility & impact.
-   - Lock down tech stack, wireframes, and API contracts.
-
-2. **Phase 2: Core Development & Integration (Days 2–X / Next 50% of timeline)**
-   - Parallel sprint execution (Frontend, Backend/AI, Database).
-   - Regular branch merges and end-to-end integration tests.
-
-3. **Phase 3: The Golden Rule (Feature Freeze T-minus 24h)**
-   - **Zero new feature additions 1 day before the submission deadline.**
-   - All core user stories must be working end-to-end.
-
-4. **Phase 4: Final 24-Hour Polish & Submission (Final 25% of timeline)**
-   - Record & edit live product demo video.
-   - Polish presentation deck (PPT/Canva/Figma).
-   - Build/deploy live showcase website/landing page.
-   - Final deployment verification, form write-up, and submission.
-
----
-
-## 🛠️ Tech Stack (To be updated post-PS release)
-
-- **Frontend:** *(e.g., React / Vite / Next.js / Tailwind CSS)*
-- **Backend:** *(e.g., Node.js / Express / Python FastAPI)*
-- **Database / Cloud:** *(e.g., Supabase / Firebase / PostgreSQL / MongoDB)*
-- **AI / Integrations:** *(e.g., Gemini API / OpenAI / LangChain / HuggingFace)*
-- **Deployment:** *(Vercel / Netlify / Render / Railway)*
-
----
-
-## 🚀 Getting Started (Development Setup)
+## Run locally
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd LEX
-
-# Branch out for your feature
-git checkout -b feature/<your-name>-<feature-description>
+./run_local.sh
 ```
 
----
+Open the [workspace](http://127.0.0.1:8000/) or [showcase](http://127.0.0.1:8000/showcase/). The app redirects `/` to `/demo/`; API docs are at `/docs`. See [START_HERE.md](START_HERE.md) for the guided walkthrough and [backend/README.md](backend/README.md) for backend setup. Local provider keys belong in the ignored `credential.json` (copy `credential.example.json`) or `backend/.env`. Never commit keys or the SQLite database.
 
-*Good luck, Team LEX! Let's build something exceptional and take home the trophy.* 🏆
+## Architecture and project state
+
+The UI is served by FastAPI. SQLite holds Setowa's sites, visits, evidence references, observation revisions, reviews, and measurements. Cloudinary stores uploaded originals; Gemini is an optional comparison service. The [architecture](ARCHITECTURE.md) and [evidence API](backend/EVIDENCE_WORKFLOW.md) explain the flow and its limits.
+
+[LEX_Milestone.md](LEX_Milestone.md) records Aryan's Milestone 1 acceptance criteria and current validation status. The core local flow works and the test suite passes, but real permissioned field-pair evaluation and public deployment remain to be completed. Do not present the synthetic sample as field evidence or a live provider evaluation.
+
+## Team and collaboration
+
+Setowa is the product; **LEX** is the team: Aryan Vishwakarma (lead/integration), Farhan Akhtar (backend/evidence), and Shubh Gunjan (frontend/showcase). Features go through PRs into `dev`; tested releases move from `dev` to `main`. See [ROLES_AND_WORKFLOW.md](ROLES_AND_WORKFLOW.md).
+
+The repository is private during development. If the event requires a public repository, coordinate the release and disclosure of earlier work with the organizers before changing visibility. Git history and [START_HERE.md](START_HERE.md) retain the provenance of earlier work.

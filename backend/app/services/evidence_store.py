@@ -9,7 +9,8 @@ from app.config import settings
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sites (
- id TEXT PRIMARY KEY, name TEXT NOT NULL
+ id TEXT PRIMARY KEY, name TEXT NOT NULL,
+ location TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS visits (
  id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
@@ -28,13 +29,21 @@ CREATE TABLE IF NOT EXISTS observations (
  ai_draft TEXT, working_text TEXT, approved_text TEXT,
  review_status TEXT NOT NULL CHECK(review_status IN ('pending','approved','rejected','unreliable')),
  reliability_reason TEXT, reviewed_by TEXT, reviewed_at TEXT,
- created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+ version INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS observation_revisions (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  observation_id TEXT NOT NULL REFERENCES observations(id),
  action TEXT NOT NULL, actor TEXT NOT NULL, text TEXT, at TEXT NOT NULL,
  before_asset_id TEXT NOT NULL, after_asset_id TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS measurements (
+ id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
+ visit_id TEXT NOT NULL REFERENCES visits(id),
+ label TEXT NOT NULL, quantity REAL NOT NULL CHECK(quantity > 0),
+ unit TEXT NOT NULL CHECK(unit IN ('kg','bags','items')),
+ source TEXT NOT NULL, recorded_by TEXT NOT NULL, recorded_at TEXT NOT NULL
 );
 """
 
@@ -57,6 +66,15 @@ def connection():
     db.execute('PRAGMA busy_timeout=10000')
     try:
         db.executescript(SCHEMA)
+        # Existing local demo databases predate optimistic review versions.
+        columns = {row['name'] for row in db.execute('PRAGMA table_info(observations)')}
+        if 'version' not in columns:
+            db.execute('ALTER TABLE observations ADD COLUMN version INTEGER NOT NULL DEFAULT 1')
+        site_columns = {row['name'] for row in db.execute('PRAGMA table_info(sites)')}
+        if 'location' not in site_columns:
+            db.execute("ALTER TABLE sites ADD COLUMN location TEXT NOT NULL DEFAULT ''")
+        if 'description' not in site_columns:
+            db.execute("ALTER TABLE sites ADD COLUMN description TEXT NOT NULL DEFAULT ''")
         yield db
         db.commit()
     except Exception:
