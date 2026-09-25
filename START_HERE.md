@@ -58,7 +58,7 @@ the private local file. Click **Open projects**; the loopback-only app creates
 an HttpOnly local reviewer session, so you do not need to copy a token into the
 browser. Open the highlighted synthetic sample, follow **Your next step** to
 review its observation, then open **Report** and download the Markdown file.
-The sample report marks synthetic evidence clearly. New projects can record a
+The sample report marks synthetic evidence clearly. For the system boundaries, see [ARCHITECTURE.md](ARCHITECTURE.md); for Aryan's acceptance criteria and current status, see [LEX_Milestone.md](LEX_Milestone.md). New projects can record a
 name, location, description, dated visits, photos, observations, and sourced
 measurements. The theme switch persists light/dark preference in this browser.
 

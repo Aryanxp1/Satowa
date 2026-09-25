@@ -1,87 +1,24 @@
-# Cleanup evidence workflow API
+# Setowa evidence API
 
-Open the private demo page at `http://localhost:8000/demo/`. Configure
-`REVIEWER_TOKENS` as a JSON map of reviewer names to distinct secret tokens,
-for example `{"Farhan":"replace-with-long-random-token"}`. Use one of these
-tokens as `Authorization: Bearer <token>` for the demo workflow. The older
-`MEDIA_UPLOAD_TOKEN` still works for uploads and read access, but cannot edit
-or review observations. The server derives reviewer names from the token;
-request bodies cannot choose a reviewer. Tokens are held in page memory and
-must be entered again after a reload.
+The local app is at `http://127.0.0.1:8000/demo/`; run `./run_local.sh` from the repository root. API docs are at `/docs`. The script creates a loopback-only reviewer session and a clearly labeled synthetic project. The sample does not call Cloudinary or Gemini.
 
-For a complete local walkthrough without service keys, run `./run_local.sh`
-from the repository root. It creates a clearly synthetic two-visit project
-and a pending sample observation. The sample never uploads to Cloudinary or
-calls Gemini. The landing page is at `/showcase/`; the working app is `/demo/`.
+For API clients, configure `REVIEWER_TOKENS` as a JSON map of names to distinct tokens in ignored `backend/.env`. Send `Authorization: Bearer <token>`. The server derives the reviewer name from the token. `MEDIA_UPLOAD_TOKEN` is retained for upload/read access but cannot approve or edit observations. The browser's local session uses an HttpOnly cookie on loopback; it is not production authentication.
 
-Records persist to SQLite at `LEX_DB_PATH` (default `./lex.sqlite3`, relative
-to the process working directory). Mount a persistent volume in deployment.
-Named demo tokens are a small step toward attribution; they are not full user
-accounts, and anyone sharing a token can act as its owner.
+## Workflow
 
-Call these endpoints in order:
+1. `POST /api/v1/sites` creates a site; `GET /api/v1/sites` lists projects. `PATCH /api/v1/sites/{id}` edits site details.
+2. `POST /api/v1/sites/{id}/visits` records dated visits. `GET /api/v1/sites/{id}/visits` returns visits and registered assets.
+3. `POST /api/v1/media/images` accepts a permissioned JPEG/PNG/WebP, `project_id`, `source`, `visit_date`, and `visit_id`. The server checks the visit belongs to that site and date, then uploads to Cloudinary. The application stores original public ID, version, and secure URL.
+4. `POST /api/v1/pairs` takes `before_asset_id` and `after_asset_id`. Different assets, the same site, and strictly earlier-before-later visits are mandatory. It stores an observation with an AI draft when reliable or an explicit `unreliable` status/reason when not.
+5. `PATCH /api/v1/observations/{id}` edits working text or evidence with `expected_version`. Any actual edit invalidates prior approval; changing evidence also clears the old AI draft.
+6. `POST /api/v1/observations/{id}/review` accepts `decision: approve|reject`, `expected_version`, and approved `text` when approving. A stale version returns `409`. `GET /api/v1/observations/{id}` includes revision history.
+7. `GET /api/v1/sites/{id}/report` returns JSON from saved approved observations; `?format=markdown` downloads a report. Original evidence references are included. Pending, unreliable, and rejected observations never enter the report.
+8. `POST /api/v1/sites/{id}/measurements` stores a positive quantity, unit (`kg`, `bags`, `items`), visit, source, and reviewer. Measurements are never inferred from photos.
 
-1. `GET /api/v1/sites` lists saved sites. `POST /api/v1/sites` creates one
-   with `{"id":"river","name":"River Bend"}`.
-2. `POST /api/v1/sites/river/visits` twice with
-   `{"visited_on":"2026-09-01","label":"Before"}` and a later date. Each
-   response has a visit `id`.
-3. `POST /api/v1/media/images` with the existing multipart fields plus
-   `visit_id`. The `project_id` must be the site ID and `visit_date` must match
-   `visited_on`. Uploads without `visit_id` keep the old behavior but cannot be
-   selected as evidence until registered with a visit.
-4. `GET /api/v1/sites/river/visits` lists visits and saved Cloudinary assets.
-   `POST /api/v1/pairs` with
-   `{"before_asset_id":"...","after_asset_id":"..."}` validates the same
-   site and strictly ordered visit dates, then stores one observation. The
-   response contains `ai_draft`, `working_text`, `review_status`, and
-   `reliability_reason`.
-5. `PATCH /api/v1/observations/{id}` with `expected_version` plus
-   `working_text` or changed evidence IDs edits the observation. For example,
-   `{"expected_version":1,"working_text":"Less visible litter"}`. Every
-   actual edit increments `version` and clears approval. Changing evidence
-   clears the old AI draft and requires manual review of the new pair.
-6. `POST /api/v1/observations/{id}/review` with
-   `{"decision":"approve","expected_version":1,"text":"..."}` or
-   `{"decision":"reject","expected_version":1}`. Approval requires
-   nonblank text. The server returns `409` if the version changed since the
-   reviewer loaded it; reload before retrying. `GET /api/v1/observations/{id}`
-   returns persisted text and revision events. `GET
-   /api/v1/sites/river/observations` lists site records.
-7. `GET /api/v1/sites/river/report` returns JSON with only approved
-   observations, original Cloudinary URLs and asset versions. The synthetic
-   sample instead has local image URLs and is marked `synthetic_demo`. Add
-   `?format=markdown` to download a human-readable report. The measurements
-   array includes only quantities explicitly entered via
-   `POST /api/v1/sites/{site_id}/measurements`, with `visit_id`, `label`,
-   `quantity`, `unit` (`kg`, `bags`, or `items`), and a nonblank `source`.
-   `GET /api/v1/sites/{site_id}/measurements` lists them. Photos never imply
-   waste mass.
+## Provider and reliability behavior
 
-Comparison uses Gemini only when `GEMINI_API_KEY` is set. It sends two stored
-Cloudinary images to `GEMINI_VISION_MODEL`, which must return a structured JSON
-judgment. If configuration, image retrieval, model response, or visual evidence
-is inadequate, the observation is saved as `unreliable` with no AI draft and
-an explanation. A human can write and approve their own text after inspecting
-photos. The older `/api/v1/analyze` mock behavior is separate and does not
-create cleanup claims. Tests mock Cloudinary and Gemini; no live image
-comparison has been verified. The frontend should show uncertainty and never
-present an AI draft as an approved finding.
+Cloudinary is the source of truth for uploaded originals. Gemini is optional and receives selected images only when configured. When credentials, image retrieval, model output, or visual comparison are inadequate, Setowa records uncertainty instead of a confident change. A human can write and approve their own observation after inspecting the media. The legacy `/api/v1/analyze` mock route is separate from this evidence workflow.
 
-Upload only photos permissioned for public Cloudinary delivery. Image bytes are
-sent to Gemini for comparison when configured. A public app needs user
-accounts, rate limits, backups, database migrations, and a persistent database
-service.
+Tests mock both providers. No real cleanup pair has yet been validated in this repository. To evaluate live comparison, put private asset IDs and human comparability labels in a copy of `scripts/evaluation.example.json` outside Git, then run `python scripts/evaluate_pairs.py /path/to/private-pairs.json` from `backend/`. Include comparable and deliberately poor pairs. A correct reliability label does not prove the wording of an AI draft; review every sentence.
 
-### Evaluating actual comparisons
-
-With permissioned photos uploaded to different visits at the same site and a
-working `GEMINI_API_KEY`, copy `scripts/evaluation.example.json` outside the
-repository, replace the asset IDs, and mark whether a careful human thinks the
-pair is comparable. From `backend/`, run
-`python scripts/evaluate_pairs.py /path/to/private-pairs.json`. The script calls
-the real Cloudinary and Gemini services and reports which reliability decisions
-matched the human labels. Include both comparable and deliberately poor
-viewpoint/lighting pairs. Do not use a matching reliability label as proof that
-the drafted observation is factually correct; a reviewer still checks the text.
-No real cleanup photo pair was available for validation during this change.
+SQLite defaults to `backend/lex.sqlite3` when run from `backend/`. It and `credential.json`/`.env` are ignored. Public deployment needs user accounts, authorization, rate limits, persistent storage, backups, migrations, and an explicit media-permission review.
