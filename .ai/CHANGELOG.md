@@ -36,6 +36,24 @@
   - Extended `PairInput` and `EditInput` schemas to support optional client-claimed `site_id`, `before_visit_id`, and `after_visit_id` with strict server-side validation.
   - Added 13 focused tests covering Test Matrix items A through M (`test_pair_validation_matrix_*`).
   - Verified full test suite: 61 passed, 1 pre-existing Windows-specific failure unchanged, zero regressions.
+- **Cline**: Completed T006 (Structured AI Comparison / Uncertainty):
+  - Designed and implemented structured AI comparison proposal contract:
+    - 4-state enum `ComparisonStatus`: `changed`, `unchanged`, `uncertain`, `insufficient_evidence`.
+    - Bounded model confidence `[0.0, 1.0]`, explicitly representing model certainty rather than real-world accuracy.
+    - Controlled vocabulary enum `UncertaintyReason` for machine/human-readable reasoning.
+    - Structured `VisualChange` list for verified visual differences without invented measurements.
+    - Summary and evidence notes for technical review.
+  - Implemented strict safety guardrails:
+    - Rejection of unverified quantitative claims (weights, counts, percentages, bags) via `QUANTITATIVE_CLAIM_PATTERN`.
+    - Safe fallback handling for malformed JSON, provider failures, network timeouts, invalid enum values, and invalid confidence ranges.
+  - Review workflow integrity:
+    - AI comparison outputs are strictly proposals; created observations are ALWAYS `review_status = 'pending'` and `approved_text = None`.
+    - Unapproved observations are strictly excluded from downstream reports until explicit human review approval.
+  - Maintained full backward compatibility with legacy `reliable`, `observation`, and `reason` accessors.
+  - Added ADR D008 in `DECISIONS.md`.
+  - Added 35 new tests covering Test Matrix A through O: 34 tests in `test_image_comparison.py`, 1 test in `test_evidence.py`.
+  - Verified full test suite: 96 passed (up from 61), 1 pre-existing Windows failure unchanged, zero regressions.
+
 
 
 

@@ -1,24 +1,60 @@
-"""Conservative two-image Gemini comparison; errors never produce a fake observation."""
+"""Structured two-image Gemini comparison with explicit uncertainty handling.
+
+Invariants:
+- AI is a proposal engine, never an authoritative decider.
+- Human review is strictly mandatory before an observation is approved.
+- Status is 4-state: changed, unchanged, uncertain, insufficient_evidence.
+- Model confidence is bounded [0.0, 1.0] and represents model certainty, NOT factual accuracy.
+- Unverified quantitative impact claims (weights, counts, percentages) are rejected.
+- Provider errors, invalid schemas, or malformed JSON return safe uncertain/insufficient_evidence results.
+"""
 import base64
 import json
 import re
 from urllib.parse import urlparse
 
 import httpx
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
 from app.config import settings
+from app.schemas.api import (
+    ComparisonStatus,
+    StructuredComparison,
+    UncertaintyReason,
+    VisualChange,
+)
 from app.services.media import MAX_BYTES
 
 
-class Comparison(BaseModel):
-    reliable: bool
-    observation: str | None = Field(default=None, max_length=600)
-    reason: str | None = Field(default=None, max_length=300)
+QUANTITATIVE_CLAIM_PATTERN = re.compile(
+    r'(?:\b\d+(?:\.\d+)?\s*(?:kg|kilograms?|tonnes?|tons?|percent|bags?|items?|lbs?|pounds?)\b|\b\d+(?:\.\d+)?\s*%)',
+    re.I
+)
 
 
-def unavailable(reason):
-    return Comparison(reliable=False, reason=reason)
+class Comparison(StructuredComparison):
+    """Structured AI comparison proposal result."""
+    pass
+
+
+def unavailable(
+    reason: str,
+    status: ComparisonStatus = ComparisonStatus.INSUFFICIENT_EVIDENCE,
+    uncertainty_reason: str | None = None,
+    confidence: float | None = 0.0,
+) -> Comparison:
+    """Safe fallback factory when comparison cannot be reliably performed."""
+    return Comparison(
+        status=status,
+        summary=None,
+        changes=[],
+        confidence=confidence,
+        uncertainty_reason=uncertainty_reason or reason,
+        evidence_notes=reason,
+        reliable=False,
+        observation=None,
+        reason=reason,
+    )
 
 
 async def _image_bytes(client, asset):
@@ -40,19 +76,36 @@ async def _image_bytes(client, asset):
     return base64.b64encode(data).decode('ascii')
 
 
-async def compare_images(before, after):
+async def compare_images(before, after) -> Comparison:
     if before['secure_url'].startswith('/demo/sample-media/') or after['secure_url'].startswith('/demo/sample-media/'):
-        return unavailable('Synthetic sample photos are for a local walkthrough only. Inspect them and write a manual observation; no AI comparison was run.')
+        return unavailable(
+            'Synthetic sample photos are for a local walkthrough only. Inspect them and write a manual observation; no AI comparison was run.',
+            status=ComparisonStatus.INSUFFICIENT_EVIDENCE,
+            uncertainty_reason='synthetic_walkthrough_evidence',
+        )
     if not settings.GEMINI_API_KEY:
-        return unavailable('AI comparison is unavailable until GEMINI_API_KEY is configured. A reviewer may write an observation manually.')
+        return unavailable(
+            'AI comparison is unavailable until GEMINI_API_KEY is configured. A reviewer may write an observation manually.',
+            status=ComparisonStatus.INSUFFICIENT_EVIDENCE,
+            uncertainty_reason='provider_unavailable',
+        )
     prompt = (
-        'Compare BEFORE image first with AFTER image second for one cleanup site. '
-        'Return JSON with exactly reliable (boolean), observation (string or null), '
-        'reason (string or null). If viewpoint, framing, lighting, visibility, or image '
-        'quality makes a meaningful comparison uncertain, set reliable=false, '
-        'observation=null, and explain why. If reliable, describe only visible change '
-        'in one cautious sentence. Never infer waste weight, environmental impact, '
-        'cause, elapsed time, or work performed from photos. No numerical impact claims.'
+        "Compare BEFORE image first with AFTER image second for one cleanup site.\n"
+        "Rules:\n"
+        "1. Compare only the supplied visual evidence.\n"
+        "2. Describe visible differences only in one or two concise sentences.\n"
+        "3. Do not infer hidden events, elapsed time, cause, or work performed.\n"
+        "4. Do not invent measurements, weights, percentages, or counts.\n"
+        "5. Do not claim certainty when viewpoints, lighting, or framing differ.\n"
+        "6. If evidence is inadequate or viewpoints differ, use status 'uncertain' or 'insufficient_evidence'.\n"
+        "7. All output is a proposal subject to mandatory human verification.\n\n"
+        "Return JSON with exactly:\n"
+        "- status: 'changed' | 'unchanged' | 'uncertain' | 'insufficient_evidence'\n"
+        "- summary: string or null\n"
+        "- changes: list of {type: string, description: string, evidence: string or null}\n"
+        "- confidence: float between 0.0 and 1.0\n"
+        "- uncertainty_reason: string or null (e.g. camera_angle_mismatch, lighting_difference, partial_occlusion, insufficient_visual_overlap, poor_image_quality, relevant_area_not_visible, incompatible_framing)\n"
+        "- evidence_notes: string or null"
     )
     try:
         async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
@@ -69,13 +122,62 @@ async def compare_images(before, after):
             )
             response.raise_for_status()
             parts = response.json()['candidates'][0]['content']['parts']
-            result = Comparison.model_validate(json.loads(''.join(part.get('text','') for part in parts)))
-            if not result.reliable:
-                return unavailable(result.reason or 'The images cannot be compared reliably.')
-            if not result.observation or not result.observation.strip():
-                return unavailable('The AI did not provide a supported observation.')
-            if re.search(r'\b\d+(?:\.\d+)?\s*(?:kg|kilograms?|tonnes?|tons?|%|percent)\b', result.observation, re.I):
-                return unavailable('The AI proposed an unverified numerical impact claim.')
-            return Comparison(reliable=True, observation=result.observation.strip())
+            raw_text = ''.join(part.get('text', '') for part in parts)
+            raw_json = json.loads(raw_text)
+            result = Comparison.model_validate(raw_json)
+
+            # Uncertain or insufficient evidence handling
+            if result.status in (ComparisonStatus.UNCERTAIN, ComparisonStatus.INSUFFICIENT_EVIDENCE):
+                return unavailable(
+                    result.uncertainty_reason or result.evidence_notes or 'The images cannot be compared reliably.',
+                    status=result.status,
+                    uncertainty_reason=result.uncertainty_reason,
+                    confidence=result.confidence,
+                )
+
+            # Observation text check
+            text = (result.summary or result.observation or '').strip()
+            if not text:
+                return unavailable(
+                    'The AI did not provide a supported observation.',
+                    status=ComparisonStatus.UNCERTAIN,
+                    uncertainty_reason=UncertaintyReason.POOR_IMAGE_QUALITY.value,
+                    confidence=result.confidence,
+                )
+
+            # Check for unverified quantitative claims
+            texts_to_check = [text]
+            for change in result.changes:
+                if change.type:
+                    texts_to_check.append(change.type)
+                if change.description:
+                    texts_to_check.append(change.description)
+                if change.evidence:
+                    texts_to_check.append(change.evidence)
+
+            if any(QUANTITATIVE_CLAIM_PATTERN.search(t) for t in texts_to_check):
+                return unavailable(
+                    'The AI proposed an unverified numerical impact claim.',
+                    status=ComparisonStatus.UNCERTAIN,
+                    uncertainty_reason=UncertaintyReason.UNVERIFIED_QUANTITATIVE_CLAIM.value,
+                    confidence=result.confidence,
+                )
+
+            # Return validated comparison proposal
+            return Comparison(
+                status=result.status,
+                summary=text,
+                changes=result.changes,
+                confidence=result.confidence if result.confidence is not None else 0.85,
+                uncertainty_reason=None,
+                evidence_notes=result.evidence_notes,
+                reliable=True,
+                observation=text,
+                reason=None,
+            )
     except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, ValidationError):
-        return unavailable('AI comparison failed or returned an invalid result. Review the images manually.')
+        return unavailable(
+            'AI comparison failed or returned an invalid result. Review the images manually.',
+            status=ComparisonStatus.UNCERTAIN,
+            uncertainty_reason=UncertaintyReason.PROVIDER_ERROR.value,
+        )

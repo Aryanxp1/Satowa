@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-26 by AGY / Cline
 
-## Current Status: T005 EVIDENCE / PAIR VALIDATION HARDENING COMPLETE
+## Current Status: T006 STRUCTURED AI COMPARISON / UNCERTAINTY COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T005 (2026-09-26)
+## Verified Test Baseline Post-T006 (2026-09-26)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=no -q
-Runtime: ~14.2 seconds
-Collected: 63 items
+Runtime: ~8.5 seconds
+Collected: 98 items (44 in api/cred/evid + 39 in img_comp + 15 in other)
 
-PASSED: 61 (+13 new tests passed)
+PASSED: 96 (+35 new tests passed)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 ERRORS: 2   ← Collection/deprecation errors (Starlette/httpx testclient)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
@@ -72,25 +72,29 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Cloudinary file type/size validation | ✅ Fully tested and passing |
 | Cloudinary auth / missing config | ✅ Fully tested and passing |
 | Provider error redaction | ✅ Fully tested and passing |
+| Gemini: structured 4-state output (changed, unchanged, uncertain, insufficient_evidence) | ✅ Fully tested and passing |
+| Gemini: model confidence bounded [0.0, 1.0] (distinguished from accuracy) | ✅ Fully tested and passing |
+| Gemini: controlled uncertainty vocabulary & reason persistence | ✅ Fully tested and passing |
+| Gemini: rejection of unverified quantitative claims (weights, counts, percentages) | ✅ Fully tested and passing |
 | Gemini: output validates against trust rules | ✅ Fully tested and passing |
 | Gemini: untrusted URL rejected | ✅ Fully tested and passing |
 | Gemini: invalid model response refused | ✅ Fully tested and passing |
+| Observation review: AI proposals strictly pending until human approval | ✅ Fully tested and passing |
 | Local credential storage + session | ✅ Passes on Linux; **fails on Windows** (chmod) |
 | Site update (PATCH /sites/{id}) | ✅ Tested in test_local_setup (patch succeeds) |
 | Showcase / mock metrics truthfulness | ✅ Fully tested and passing (no unsupported 99.4% accuracy claim) |
 
 ## Current Active Task
 
-**T005 — EVIDENCE / PAIR VALIDATION HARDENING** — COMPLETE
+**T006 — STRUCTURED AI COMPARISON / UNCERTAINTY** — COMPLETE
 
 ## Pending Tasks (Ordered)
 
-1. T006 — Gemini Prompt Schema Enhancement (4-state + confidence)
-2. T007 — Cloudinary Live Validation script
-3. T008 — Gemini Live Validation script
-4. T009 — Demo UI: uncertainty badge
-5. T010 — CI GitHub Actions
-6. T011 — Demo Script
+1. T007 — Cloudinary Live Validation script
+2. T008 — Gemini Live Validation script
+3. T009 — Demo UI: uncertainty badge
+4. T010 — CI GitHub Actions
+5. T011 — Demo Script
 
 
 

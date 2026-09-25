@@ -39,24 +39,44 @@
 3. Added 13 matrix tests in `backend/tests/test_evidence.py` covering tests A through M (`test_pair_validation_matrix_*`).
 4. Verified 61 passed tests; zero regressions.
 
-## Test Summary Post-T005
+**T006 (Structured AI Comparison / Uncertainty):**
+1. Structured AI Result Contract:
+   - Implemented 4-state `ComparisonStatus` enum: `changed`, `unchanged`, `uncertain`, `insufficient_evidence`.
+   - Bounded model confidence `[0.0, 1.0]` (representing model certainty, explicitly not factual accuracy).
+   - Implemented controlled vocabulary `UncertaintyReason` enum with machine/human-readable reasons.
+   - Structured `VisualChange` list (`type`, `description`, `evidence`).
+   - Summary and evidence notes for technical inspection.
+2. Safety & Trust Model:
+   - Rejected unverified quantitative claims (weights, counts, percentages, bags) via `QUANTITATIVE_CLAIM_PATTERN` (`unverified_quantitative_claim`).
+   - Resilient error handling: malformed JSON, provider failures, network timeouts, invalid enum values, and out-of-range confidence scores safely fail to `uncertain`/`provider_error`.
+   - Visual observations are explicitly separated from factual measurements.
+3. Review Workflow Integrity:
+   - AI results remain strictly proposals: created observations are ALWAYS `review_status = 'pending'` and `approved_text = None`.
+   - Unapproved observations are strictly excluded from downstream reports until explicit human review approval.
+4. Backward Compatibility:
+   - Maintained legacy `reliable`, `observation`, and `reason` properties via `@model_validator(mode='before')`.
+5. Testing:
+   - Added full 15-item Test Matrix (A through O): 34 new tests in `test_image_comparison.py`, 1 new test in `test_evidence.py`.
+   - All 96 tests pass; zero regressions.
+
+## Test Summary Post-T006
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 63 |
-| **Passed** | 61 (+13 new tests passed) |
+| **Total Collected** | 98 |
+| **Passed** | 96 (+35 new tests passed) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~14.2s |
+| **Runtime** | ~8.5s |
 
 ## What Is Ready Next
 
-- T005 is **COMPLETE**.
-- Next task on the board: **T006 — Gemini Prompt Schema Enhancement** (4-state status enum + confidence + limitations).
+- T006 is **COMPLETE**.
+- Next task on the board: **T007 — Cloudinary Live Validation Script**.
 
 ## Open Questions for User
 

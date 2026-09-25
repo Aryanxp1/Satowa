@@ -592,3 +592,75 @@ def test_pair_validation_matrix_metadata_update_preserves_contract(monkeypatch):
     assert edited['version'] == original_version + 1
 
 
+def test_matrix_n_ai_result_always_pending_until_human_review(monkeypatch):
+    """Test N: AI result is strictly a proposal engine and cannot auto-approve.
+    - 'changed', 'uncertain', and 'insufficient_evidence' all create 'pending' observations.
+    - unapproved observations never appear in final reports.
+    - human reviewer approval is mandatory to graduate to 'approved'.
+    """
+    # 1. Structured 'changed' result
+    async def compare_changed(*args):
+        return image_comparison.Comparison(
+            status=image_comparison.ComparisonStatus.CHANGED,
+            summary='Visible reduction in trash on ground.',
+            confidence=0.89,
+            reliable=True,
+            observation='Visible reduction in trash on ground.'
+        )
+    monkeypatch.setattr('app.routes.evidence.compare_images', compare_changed)
+    b1, a1 = setup_site('site-n1', '2026-09-01', '2026-09-10')
+    obs1 = client.post('/api/v1/pairs', json={'before_asset_id': b1, 'after_asset_id': a1}, headers=HEADERS).json()
+    assert obs1['review_status'] == 'pending'
+    assert obs1['approved_text'] is None
+    assert obs1['ai_draft'] == 'Visible reduction in trash on ground.'
+    rep1 = client.get('/api/v1/sites/site-n1/report', headers=HEADERS).json()
+    assert len(rep1['observations']) == 0, "AI proposal must not appear in report prior to human review"
+
+    # 2. Structured 'uncertain' result
+    async def compare_uncertain(*args):
+        return image_comparison.Comparison(
+            status=image_comparison.ComparisonStatus.UNCERTAIN,
+            confidence=0.3,
+            uncertainty_reason='camera_angle_mismatch',
+            reliable=False,
+            reason='camera_angle_mismatch'
+        )
+    monkeypatch.setattr('app.routes.evidence.compare_images', compare_uncertain)
+    b2, a2 = setup_site('site-n2', '2026-09-01', '2026-09-10')
+    obs2 = client.post('/api/v1/pairs', json={'before_asset_id': b2, 'after_asset_id': a2}, headers=HEADERS).json()
+    assert obs2['review_status'] == 'pending'
+    assert obs2['approved_text'] is None
+    assert obs2['ai_draft'] is None
+    assert obs2['reliability_reason'] == 'camera_angle_mismatch'
+    rep2 = client.get('/api/v1/sites/site-n2/report', headers=HEADERS).json()
+    assert len(rep2['observations']) == 0
+
+    # 3. Structured 'insufficient_evidence' result
+    async def compare_insufficient(*args):
+        return image_comparison.Comparison(
+            status=image_comparison.ComparisonStatus.INSUFFICIENT_EVIDENCE,
+            confidence=0.05,
+            uncertainty_reason='poor_image_quality',
+            reliable=False,
+            reason='poor_image_quality'
+        )
+    monkeypatch.setattr('app.routes.evidence.compare_images', compare_insufficient)
+    b3, a3 = setup_site('site-n3', '2026-09-01', '2026-09-10')
+    obs3 = client.post('/api/v1/pairs', json={'before_asset_id': b3, 'after_asset_id': a3}, headers=HEADERS).json()
+    assert obs3['review_status'] == 'pending'
+    assert obs3['approved_text'] is None
+    assert obs3['ai_draft'] is None
+    assert obs3['reliability_reason'] == 'poor_image_quality'
+
+    # Human reviewer inspects and provides human-verified observation
+    approved = review(obs3['id'], 'approve', 'Human reviewer manually confirmed bank cleanup despite blur.', headers=HEADERS)
+    assert approved.status_code == 200
+    assert approved.json()['review_status'] == 'approved'
+    assert approved.json()['approved_text'] == 'Human reviewer manually confirmed bank cleanup despite blur.'
+
+    rep3 = client.get('/api/v1/sites/site-n3/report', headers=HEADERS).json()
+    assert len(rep3['observations']) == 1
+    assert rep3['observations'][0]['approved_text'] == 'Human reviewer manually confirmed bank cleanup despite blur.'
+
+
+

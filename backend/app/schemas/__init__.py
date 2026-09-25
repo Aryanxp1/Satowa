@@ -7,6 +7,10 @@ from app.schemas.api import (
     AnalyzeResponse,
     AssetResponse,
     PermissionStatus,
+    ComparisonStatus,
+    UncertaintyReason,
+    VisualChange,
+    StructuredComparison,
 )
 
 __all__ = [
@@ -17,5 +21,9 @@ __all__ = [
     "AnalyzeResponse",
     "AssetResponse",
     "PermissionStatus",
+    "ComparisonStatus",
+    "UncertaintyReason",
+    "VisualChange",
+    "StructuredComparison",
 ]
 
