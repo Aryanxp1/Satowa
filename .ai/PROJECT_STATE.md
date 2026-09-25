@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-26 by AGY / Cline
 
-## Current Status: T006 STRUCTURED AI COMPARISON / UNCERTAINTY COMPLETE
+## Current Status: T007 REAL CLOUDINARY -> GEMINI END-TO-END INTEGRATION COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,15 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T006 (2026-09-26)
+## Verified Test Baseline Post-T007 (2026-09-26)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=no -q
-Runtime: ~8.5 seconds
-Collected: 98 items (44 in api/cred/evid + 39 in img_comp + 15 in other)
+Runtime: ~12.2 seconds
+Collected: 109 items
 
-PASSED: 96 (+35 new tests passed)
+PASSED: 107 (+11 new deterministic integration tests passed)
+SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 ERRORS: 2   ← Collection/deprecation errors (Starlette/httpx testclient)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
@@ -83,18 +84,20 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Local credential storage + session | ✅ Passes on Linux; **fails on Windows** (chmod) |
 | Site update (PATCH /sites/{id}) | ✅ Tested in test_local_setup (patch succeeds) |
 | Showcase / mock metrics truthfulness | ✅ Fully tested and passing (no unsupported 99.4% accuracy claim) |
+| End-to-End Pipeline: Ingestion -> Visits -> Assets -> Pair -> Gemini -> Review -> Report | ✅ Fully tested and passing |
+| Error Matrix (A through J): deterministic provider failure tests | ✅ Fully tested and passing (10 tests) |
+| Live Integration Suite: real Cloudinary + Gemini test gated behind RUN_LIVE_INTEGRATION=1 | ✅ Cleanly skipping when flag not set or keys missing |
+| Read-only safe credential check scripts (`check_cloudinary.py`, `check_gemini.py`) | ✅ Zero secrets logged, safe exit status |
 
 ## Current Active Task
 
-**T006 — STRUCTURED AI COMPARISON / UNCERTAINTY** — COMPLETE
+**T007 — REAL CLOUDINARY -> GEMINI END-TO-END INTEGRATION** — COMPLETE
 
 ## Pending Tasks (Ordered)
 
-1. T007 — Cloudinary Live Validation script
-2. T008 — Gemini Live Validation script
-3. T009 — Demo UI: uncertainty badge
-4. T010 — CI GitHub Actions
-5. T011 — Demo Script
+1. T009 — Demo UI: uncertainty badge
+2. T010 — CI GitHub Actions
+3. T011 — Demo Script & Documentation
 
 
 

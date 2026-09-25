@@ -122,7 +122,14 @@ async def compare_images(before, after) -> Comparison:
             )
             response.raise_for_status()
             parts = response.json()['candidates'][0]['content']['parts']
-            raw_text = ''.join(part.get('text', '') for part in parts)
+            raw_text = ''.join(part.get('text', '') for part in parts).strip()
+            if raw_text.startswith('```'):
+                lines = raw_text.splitlines()
+                if lines and lines[0].startswith('```'):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith('```'):
+                    lines = lines[:-1]
+                raw_text = '\n'.join(lines).strip()
             raw_json = json.loads(raw_text)
             result = Comparison.model_validate(raw_json)
 

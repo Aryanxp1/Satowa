@@ -59,24 +59,68 @@
    - Added full 15-item Test Matrix (A through O): 34 new tests in `test_image_comparison.py`, 1 new test in `test_evidence.py`.
    - All 96 tests pass; zero regressions.
 
-## Test Summary Post-T006
+**T007 (Real Cloudinary -> Gemini End-to-End Integration):**
+1. Real Cloudinary -> Gemini Integration Pipeline:
+   - Ingestion: verified upload of images to Cloudinary, persisting `secure_url`, `public_id`, `width`, `height`, `format`, `permission_status`, and `thumbnail_url`.
+   - Local Binary Safety: images are never stored locally; only trusted Cloudinary references and metadata are stored.
+   - Multimodal Gemini Client: sends inline base64 streams retrieved directly from trusted Cloudinary paths; strips markdown code fences before JSON decoding; validates output against Pydantic model.
+   - Review Workflow Integrity: AI proposals default strictly to `review_status='pending'` and `approved_text=None`.
+   - Approval Invalidation: editing or mutating evidence immediately invalidates approvals back to `pending`.
+   - Report Generation: traceable observations with before/after URLs, dates, and reviewer attribution. Unapproved or revoked permission assets are excluded.
+2. Error Matrix (A through J) with Isolated Deterministic Tests:
+   - A: Missing Cloudinary credentials -> 503 error, no fake asset stored.
+   - B: Cloudinary upload failure -> 502 error, credentials redacted, no partial state.
+   - C: Invalid Cloudinary response -> 502 error.
+   - D: Missing Gemini credentials -> safe fallback, pending review status preserved.
+   - E: Gemini timeout / provider failure -> safe uncertain result, observation stays pending.
+   - F: Malformed Gemini response -> safe fallback without crash.
+   - G: Invalid structured Gemini response -> safe fallback to uncertain.
+   - H: Valid Gemini response -> draft proposed, strictly pending human review, excluded from report.
+   - I: Uncertain Gemini response -> preserves uncertainty_reason, pending for review.
+   - J: Insufficient evidence response -> preserves reason, pending for review.
+3. Live Integration Suite:
+   - `test_live_cloudinary_and_gemini_pipeline` executes real API calls ONLY when `RUN_LIVE_INTEGRATION=1` is set AND real credentials are configured in `.env`/environment.
+   - Skips cleanly when flag is not set or when credentials are dummy/placeholder values.
+   - Added read-only safe connectivity check script `backend/scripts/check_gemini.py` (matching `backend/scripts/check_cloudinary.py`).
+4. Testing & Verification:
+   - 107 passed tests (+11 new tests in `test_integration_pipeline.py`).
+   - 1 cleanly skipped test (live test without flag).
+   - Zero regressions.
+
+## Test Summary Post-T007
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 98 |
-| **Passed** | 96 (+35 new tests passed) |
+| **Total Collected** | 109 |
+| **Passed** | 107 (+11 new tests passed) |
+| **Skipped** | 1 (live integration test) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~8.5s |
+| **Runtime** | ~12.2s |
+
+## Live Integration Test Procedure
+
+To execute the live integration test against real Cloudinary and Gemini APIs:
+1. Ensure real API credentials are set in `backend/.env` or environment:
+   - `CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY`
+   - `CLOUDINARY_API_SECRET`
+   - `GEMINI_API_KEY`
+2. Run read-only credential check scripts:
+   - `python scripts/check_cloudinary.py`
+   - `python scripts/check_gemini.py`
+3. Run the live test:
+   - PowerShell: `$env:RUN_LIVE_INTEGRATION="1"; .\venv\Scripts\python.exe -m pytest tests/test_integration_pipeline.py -k test_live_cloudinary_and_gemini_pipeline -v; Remove-Item Env:\RUN_LIVE_INTEGRATION`
+   - Bash: `RUN_LIVE_INTEGRATION=1 python -m pytest tests/test_integration_pipeline.py -k test_live_cloudinary_and_gemini_pipeline -v`
 
 ## What Is Ready Next
 
-- T006 is **COMPLETE**.
-- Next task on the board: **T007 — Cloudinary Live Validation Script**.
+- T007 is **COMPLETE**.
+- Next task on the board: **T009 — Demo UI: Uncertainty Badge**.
 
 ## Open Questions for User
 

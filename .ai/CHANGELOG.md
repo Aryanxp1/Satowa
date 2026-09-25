@@ -52,7 +52,22 @@
   - Maintained full backward compatibility with legacy `reliable`, `observation`, and `reason` accessors.
   - Added ADR D008 in `DECISIONS.md`.
   - Added 35 new tests covering Test Matrix A through O: 34 tests in `test_image_comparison.py`, 1 test in `test_evidence.py`.
-  - Verified full test suite: 96 passed (up from 61), 1 pre-existing Windows failure unchanged, zero regressions.
+- **Cline / AGY**: Completed T007 (Real Cloudinary -> Gemini End-to-End Integration):
+  - End-to-End Integration Pipeline:
+    - Verified real Cloudinary upload handling: persists `secure_url`, `public_id`, `width`, `height`, `format`, `permission_status`, and `thumbnail_url`.
+    - Local Binary Protection: strictly prohibits storing image binaries on the backend; all operations reference trusted Cloudinary URLs.
+    - Gemini Multimodal Client: added code fence stripping for markdown-wrapped model responses; validated structured output schema.
+    - Evidence Review Integrity: AI outputs strictly proposal-only (`review_status='pending'`, `approved_text=None`); human review approval required before inclusion in report.
+    - Approval Invalidation: editing an observation or changing evidence immediately resets approval to `pending` and drops it from reports.
+    - Report Traceability: verified before/after assets, dates, URLs, and reviewer attribution in JSON and markdown reports; excluded revoked permission assets.
+  - Deterministic Error Matrix (A through J):
+    - Added comprehensive unit tests in `backend/tests/test_integration_pipeline.py` covering: missing Cloudinary credentials (503), upload failure (502, secrets redacted), invalid Cloudinary response (502), missing Gemini credentials (safe fallback, pending), Gemini timeout/failure (safe uncertain, pending), malformed JSON (safe fallback), invalid schema (safe fallback), valid response (draft proposed, pending, excluded from report until approval), uncertain response (uncertainty_reason preserved), insufficient evidence response (reason preserved).
+  - Live Integration Suite:
+    - Added `test_live_cloudinary_and_gemini_pipeline` gated strictly by `RUN_LIVE_INTEGRATION=1`.
+    - Skips cleanly when flag is not set or when credentials are dummy/placeholder values.
+    - Added read-only safe connectivity check scripts: `backend/scripts/check_cloudinary.py` and `backend/scripts/check_gemini.py`.
+  - Added ADR D009 in `DECISIONS.md`.
+  - Total test suite now passes 107 tests (+11 new tests in `test_integration_pipeline.py`, 1 skipped live test, zero regressions).
 
 
 
