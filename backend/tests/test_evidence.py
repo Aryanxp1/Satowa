@@ -231,7 +231,7 @@ def test_demo_served_by_backend():
                       follow_redirects=False).headers['location'] == '/demo/'
     html = client.get('/demo/')
     assert html.status_code == 200
-    assert 'Better evidence.' in html.text
+    assert 'See the change.' in html.text
     assert client.get('/demo/app.js').status_code == 200
 
 

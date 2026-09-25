@@ -1,6 +1,6 @@
-# LEX: start here
+# Setowa: start here
 
-LEX is a cleanup evidence app for Code Cubicle's Cloudinary problem statement.
+Setowa is Team LEX's cleanup evidence app for Code Cubicle's Cloudinary problem statement.
 It links field images to dated visits, helps compare a before/after pair, keeps
 AI suggestions separate from human decisions, and exports only reviewed
 observations and measurements a person explicitly entered.
@@ -11,7 +11,7 @@ observations and measurements a person explicitly entered.
    planning files, backend scaffold, showcase, and submission material. The
    original documents assigned Aryan integration, Farhan backend/AI, and Shubh
    UI/showcase responsibilities.
-2. **Selected one problem statement.** Of the three supplied challenges, LEX
+2. **Selected one problem statement.** Of the three supplied challenges, Setowa
    now focuses on the Cloudinary impact and sustainability media platform.
    The organizer's message said combining problem statements was not allowed.
 3. **Narrowed the product.** Instead of trying to build many disconnected AI
@@ -27,13 +27,15 @@ observations and measurements a person explicitly entered.
    of existing work; its short commit history does not mean the work began
    there. Disclose earlier work according to the event's rules.
 6. **Made review safer.** Named reviewer tokens identify edit/review actions.
-   Version checks reject stale approvals. PR
-   [#1](https://github.com/farhanakhtar0x66/LEX/pull/1) targets `dev` and is
-   open for review.
+   Version checks reject stale approvals. Feature work is reviewed through
+   pull requests into `dev` under the team's workflow.
 7. **Built this local walkthrough.** The showcase now explains the real
    product. The app has a seeded synthetic riverbank project, before/after
    viewing, review actions, media filtering, optional source-backed
    measurements, and report export. The sample images are not field evidence.
+8. **Named the product Setowa.** *Setu* (bridge) and *Wa* (harmony) describe
+   the link between field media and a shared, supportable account of change.
+   LEX remains the team name.
 
 ## Run it on this Mac
 

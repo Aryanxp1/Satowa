@@ -22,9 +22,9 @@ logger = logging.getLogger("lex.main")
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="Project LEX — AI & Analytics Engine",
+    title="Setowa — Evidence API",
     description=(
-        "Core Backend & AI Inference Service for Team LEX at Code Cubicle Hackathon. "
+        "Setowa, built by Team LEX for Code Cubicle. "
         "Reviewable cleanup evidence, cautious image comparison, and grounded reports."
     ),
     version=__version__,
@@ -59,7 +59,7 @@ async def root(request: Request):
     if 'text/html' in request.headers.get('accept', ''):
         return RedirectResponse('/demo/', status_code=307)
     return {
-        'service': 'Project LEX Backend API',
+        'service': 'Setowa Evidence API',
         'team': 'Team LEX (Code Cubicle Hackathon)',
         'version': __version__,
         'status': 'online',

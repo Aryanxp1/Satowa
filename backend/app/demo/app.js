@@ -367,11 +367,11 @@
     document.documentElement.dataset.theme = theme;
     $('theme-toggle').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
     $('theme-toggle').setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
-    localStorage.setItem('lex-theme', theme);
+    localStorage.setItem('setowa-theme', theme);
   }
 
   $('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
-  applyTheme(localStorage.getItem('lex-theme') === 'dark' ? 'dark' : 'light');
+  applyTheme((localStorage.getItem('setowa-theme') || localStorage.getItem('lex-theme')) === 'dark' ? 'dark' : 'light');
 
   $('enter-workspace').addEventListener('click', () => run(async () => { await connectLocal(); location.hash = '#projects'; }));
   $('credential-form').addEventListener('submit', event => {
@@ -453,7 +453,7 @@
   $('export').addEventListener('click', () => run(async () => {
     const response = await request(`/sites/${encodeURIComponent(state.site)}/report?format=markdown`);
     const blob = await response.blob(); const url = URL.createObjectURL(blob);
-    const link = element('a'); link.href = url; link.download = `lex-${state.site}-report.md`;
+    const link = element('a'); link.href = url; link.download = `setowa-${state.site}-report.md`;
     document.body.append(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notice('Reviewed report downloaded.');

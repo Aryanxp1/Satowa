@@ -322,7 +322,7 @@ def export_report(site_id: str, format: Literal['json','markdown'] = Query(defau
     if format == 'json':
         return {'site': site, 'generated_at': store.timestamp(), 'observations': observations,
                 'recorded_measurements': measurements, 'synthetic_demo': demo_only}
-    lines = [f'# {escape(site["name"])} — Cleanup Evidence Report', '',
+    lines = [f'# {escape(site["name"])} — Setowa Evidence Report', '',
              'Only reviewed observations and explicitly recorded measurements are included.', '']
     if demo_only:
         lines += ['**SYNTHETIC DEMO — NOT FIELD EVIDENCE**', '']
@@ -341,4 +341,4 @@ def export_report(site_id: str, format: Literal['json','markdown'] = Query(defau
     else:
         lines += ['No measurements were recorded.', '']
     return Response('\n'.join(lines), media_type='text/markdown',
-                    headers={'Content-Disposition': f'attachment; filename="lex-{site_id}-report.md"'})
+                    headers={'Content-Disposition': f'attachment; filename="setowa-{site_id}-report.md"'})
