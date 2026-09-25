@@ -17,4 +17,11 @@
   - Updated `CHECK` constraint on `observations.review_status` to `('pending','approved','rejected')`.
   - Added `AssetResponse` and `PermissionStatus` to `schemas/api.py` and exported them in `schemas/__init__.py`.
   - Added 3 focused migration, persistence, and validation tests; verified all 48 tests pass (1 pre-existing Windows failure unchanged, zero regressions).
+- **Cline**: Completed T004 (Defuse the Mock Accuracy Claim):
+  - Removed unsupported `99.4%` and `10x` claims from `backend/app/routes/analyze.py` (`get_mock_stats`).
+  - Labeled showcase metrics explicitly as `Unbenchmarked (Demo)`, `Simulated Mock`, and `Assisted Review / Human In The Loop`.
+  - Updated `backend/app/services/ai_engine.py` mock prompt reasoning to explicitly state demo mode and human verification requirement; replaced `0.994` confidence with `0.95`.
+  - Updated `backend/tests/test_api.py` to assert that no `99.4` percentage exists and that accuracy metric is identified as demo/synthetic.
+  - Verified complete test suite: 48 passed, zero regressions.
+
 

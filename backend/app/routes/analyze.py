@@ -32,25 +32,26 @@ async def get_mock_stats():
     """
     Returns live showcase metrics matching the hackathon landing page.
     Allows frontend to dynamically query and bind showcase widgets.
+    Explicitly labeled as synthetic/demo metrics without ungrounded accuracy claims.
     """
     return ShowcaseStatsResponse(
         metrics=[
             MetricStat(
                 label="Response Latency",
                 value="~120ms",
-                trend="Optimized",
-                status="positive"
+                trend="Simulated Mock",
+                status="neutral"
             ),
             MetricStat(
                 label="AI Accuracy",
-                value="99.4%",
-                trend="High-Confidence",
-                status="positive"
+                value="Unbenchmarked (Demo)",
+                trend="Synthetic / Human Gate",
+                status="neutral"
             ),
             MetricStat(
                 label="Automation Gain",
-                value="10x",
-                trend="Time Saved",
+                value="Assisted Review",
+                trend="Human In The Loop",
                 status="positive"
             ),
         ],

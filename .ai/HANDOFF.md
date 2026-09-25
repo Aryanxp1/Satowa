@@ -15,28 +15,36 @@
 5. Safely migrated legacy `unreliable` review status rows to `pending`.
 6. Updated `observations.review_status` `CHECK` constraint to `('pending','approved','rejected')`.
 7. Exposed `AssetResponse` and `PermissionStatus` in Pydantic API schemas.
-8. Added regression and unit tests: 48 tests now pass (up from 45). Zero regressions.
+8. Added regression and unit tests: 48 tests pass. Zero regressions.  
 
-## Test Summary Post-T002
+**T004 (Defuse Mock Accuracy Claim):**
+1. Identified all instances of `99.4` and ungrounded accuracy claims across codebase.
+2. Updated `backend/app/routes/analyze.py`: defused `AI Accuracy` metric by removing `99.4%` and `10x`, labeling values as `Unbenchmarked (Demo)` and `Assisted Review / Human In The Loop`.
+3. Updated `backend/app/services/ai_engine.py`: updated mock prompt analysis response to explicitly state demo mode and human verification requirement; replaced `0.994` with `0.95`.
+4. Updated `backend/tests/test_api.py`: verified no `99.4` percentage remains in metrics and accuracy is explicitly identified as demo/synthetic.
+5. All 48 tests pass; zero regressions.
+
+## Test Summary Post-T004
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ --tb=no -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 50 (+3 new tests) |
-| **Passed** | 48 (+3 passed) |
+| **Total Collected** | 50 |
+| **Passed** | 48 |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Errors** | 2 (collection/deprecation, non-blocking) |
 | **Warnings** | 2 (httpx/starlette deprecation) |
-| **Runtime** | ~9.2s |
+| **Runtime** | ~10-23s |
 
 ## What Is Ready Next
 
-- T002 is **COMPLETE**.
-- Next task on the board: **T003a — Sanitize Mock Stats** (`99.4%` hardcoded mock stats in `analyze.py` replaced with live SQLite table counts).
+- T004 is **COMPLETE**.
+- Next task on the board: **T005 — Gemini Prompt Schema Enhancement** (4-state status enum + confidence + limitations).
 
 ## Open Questions for User
 
 None. Awaiting user review and authorization to proceed with next milestone.
+
 

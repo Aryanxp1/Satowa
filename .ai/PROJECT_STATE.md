@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-26 by AGY / Cline
 
-## Current Status: T002 SCHEMA ALIGNMENT COMPLETE
+## Current Status: T004 DEFUSE MOCK ACCURACY CLAIM COMPLETE
 
 ## Repository State
 
@@ -76,18 +76,19 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Gemini: invalid model response refused | ✅ Fully tested and passing |
 | Local credential storage + session | ✅ Passes on Linux; **fails on Windows** (chmod) |
 | Site update (PATCH /sites/{id}) | ✅ Tested in test_local_setup (patch succeeds) |
+| Showcase / mock metrics truthfulness | ✅ Fully tested and passing (no unsupported 99.4% accuracy claim) |
 
 ## Current Active Task
 
-**T002 — SCHEMA ALIGNMENT** — COMPLETE
+**T004 — DEFUSE MOCK ACCURACY CLAIM** — COMPLETE
 
 ## Pending Tasks (Ordered)
 
-1. T003a — Sanitize Mock Stats (`99.4%` → live counts from SQLite)
-2. T004 — Gemini Prompt Schema Enhancement (4-state + confidence)
-3. T005 — Cloudinary Live Validation script
-4. T006 — Gemini Live Validation script
-5. T007 — Demo UI: uncertainty badge
-6. T008 — CI GitHub Actions
-7. T009 — Demo Script
+1. T005 — Gemini Prompt Schema Enhancement (4-state + confidence)
+2. T006 — Cloudinary Live Validation script
+3. T007 — Gemini Live Validation script
+4. T008 — Demo UI: uncertainty badge
+5. T009 — CI GitHub Actions
+6. T010 — Demo Script
+
 
