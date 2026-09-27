@@ -76,4 +76,6 @@ async def root(request: Request):
         'mock_mode': settings.USE_MOCK or not bool(settings.GEMINI_API_KEY),
         'docs_url': '/docs',
         'healthcheck': '/api/v1/health',
+        'readiness': '/api/v1/ready',
+        'public_demo_story': '/share/pst_demo_mombasa_coastal_2026',
     }

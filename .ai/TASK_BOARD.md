@@ -625,11 +625,41 @@
 
 ---
 
-## [ ] T019 — Hackathon Demo & Production Hardening
-**Owner:** TBD  
+## [x] T019 — Hackathon Demo & Production Hardening
+**Owner:** AGY + Aryan  
 **Dependencies:** T018 ✅  
-**Status:** NEXT  
-**Goal:** Final hackathon presentation hardening, end-to-end demo script preparation, system resilience, and polished documentation.
+**Status:** COMPLETE (2026-09-27)  
+**Goal:** Final hackathon presentation hardening, end-to-end demo script preparation, system resilience, operational readiness, and polished documentation.
+
+**Scope Completed:**
+1. **Deterministic Demo Dataset & Seed (`scripts/seed_demo.py`, `scripts/setup_local_demo.py`):**
+   - Implemented `seed_demo_dataset()` populating `proj_mombasa_marine` ("Mombasa Marine Litter & Mangrove Restoration"), `site_nyali_creek`, 3 chronological visits, 3 Cloudinary media assets (baseline photo, cleanup action video, post-verification photo), 3 video frame derivations (`1.5s`, `4.0s`, `8.0s`), 3 frame analyses, 3 structured media intelligence records, approved evidence observation pair (`obs_mombasa_creek`), physical weigh slip measurement (320 kg net waste collected), and published impact story with share token `pst_demo_mombasa_coastal_2026`.
+   - Idempotent and maintains legacy `demo-riverbank` fixtures for backward test compatibility.
+2. **One-Command Cross-Platform Demo Startup (`scripts/start_demo.py`):**
+   - Startup launcher that safely audits environment variables without secret leaks, ensures reviewer tokens, seeds demo dataset, displays visual localhost banner, and starts uvicorn server.
+3. **Safe Environment & Production Validation (`services/env_validator.py`):**
+   - `validate_environment()`: Classifies variables as `configured` or `missing` without leaking secret values.
+   - `validate_production_readiness()`: Enforces safety invariants in production (disallows `USE_MOCK`, forbids `*` or `localhost` in CORS allowed origins, requires non-memory database path, checks provider keys).
+4. **Health & Readiness Probes (`routes/health.py`, `schemas/api.py`):**
+   - `GET /api/v1/health`: Lightweight liveness probe reporting service status, version, environment, and mock mode.
+   - `GET /api/v1/ready`: Operational readiness probe verifying SQLite database ping (`SELECT 1`), Cloudinary configuration status, and Gemini configuration status without exposing credentials.
+5. **Unified CLI Path (`app/cli.py`, `setowa_cli.py`):**
+   - Reuses core backend services without logic duplication:
+     - `setowa_cli.py skill list`: Lists registered skills from `SkillRegistry`.
+     - `setowa_cli.py workflow list`: Lists workflow definitions from `WorkflowStore`.
+     - `setowa_cli.py workflow run wf_evidence_compare`: Executes topological DAG workflow using default demo inputs.
+     - `setowa_cli.py run status <id>`: Displays execution metrics, latency, and node results.
+     - `setowa_cli.py story show proj_mombasa_marine`: Displays impact story narrative, uncertainty notes, and public share URL.
+     - `setowa_cli.py ingest <dir>`: Ingests directory of media files with per-file error isolation.
+6. **Automated End-to-End Smoke Test (`scripts/smoke_test.py`):**
+   - Complete 9-stage validation: (1) Health/Readiness, (2) Ingestion/Organization, (3) Cloudinary delivery, (4) AI intelligence, (5) Skill execution, (6) Workflow DAG run, (7) Human review & verification, (8) Published impact story, (9) Public share HTML/JSON & 404 gating.
+   - All 9 phases verified passing.
+7. **Comprehensive Demo Documentation:**
+   - `docs/DEMO_RUNBOOK.md`: 10-section operational runbook covering prerequisites, setup, 5-minute walkthrough sequence, CLI commands, troubleshooting, and reset.
+   - `docs/DEMO_SCRIPT.md`: Complete 5-minute pitch narrative for judges highlighting Cloudinary programmable media, Gemini multimodal reasoning, skill reusability, DAG composability, human verification governance, and public impact sharing.
+8. **Testing & Quality Assurance (`tests/test_demo_hardening.py`):**
+   - 18 comprehensive tests covering startup env validation, missing var detection, health probe, readiness probe, deterministic seed, CLI happy path, CLI failure handling, complete demo flow, public story smoke, secret leak checks, CORS behavior, production configuration safety, error response sanitization, existing Cloudinary compatibility, existing Gemini compatibility, existing SkillRuntime compatibility, existing WorkflowEngine compatibility, and evidence review compatibility.
+   - Full test suite: **296 passed**, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 2 warnings, 0 functional regressions.
 
 
 

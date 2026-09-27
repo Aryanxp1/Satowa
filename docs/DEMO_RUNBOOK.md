@@ -1,196 +1,237 @@
-# LEX Demo Runbook
+# SETOWA Demo Runbook
 
-This document provides a concise, step-by-step guide to run and present the LEX (Land Evidence Exchange) verification workflow for judges and evaluators.
+This document provides a concise, step-by-step guide to run and present the complete **SETOWA (Sustainability Evidence, Tracking & Observation Workflow Architecture)** system for judges, evaluators, and teammates.
 
 ---
 
 ## 1. Prerequisites
 
 - **Python**: 3.11+ (with `venv`)
-- **Web Browser**: Modern Chromium, Firefox, or Safari
-- **Optional CLI Utilities**: `curl`, `bash` (for `run_local.sh`), `node` (for linting demo JS)
+- **Web Browser**: Modern Chromium, Firefox, Safari, or Edge
+- **Optional CLI Utilities**: `curl`, `bash` (for `run_local.sh`)
 - **External Accounts (Optional for live mode)**:
-  - Cloudinary account (Cloud name, API Key, API Secret)
-  - Google Gemini API Key
+  - Cloudinary account (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`)
+  - Google Gemini API (`GEMINI_API_KEY`)
 
-*Note: In local simulated mode, no external credentials or network connectivity are required.*
+*Note: In local mode with pre-seeded demonstration data or fallback mode, no active network calls to AI providers are required to explore the full UI, DAG workflows, and public impact stories.*
 
 ---
 
 ## 2. Environment Variables
 
-> **CRITICAL SECURITY RULE:** Never commit or hardcode credential values. Store in `.env` (ignored by git) or set directly in your shell environment.
+> **CRITICAL SECURITY RULE:** Never commit or hardcode credential values. Store in `backend/.env` (gitignored) or `credential.json` (gitignored), or set directly in your shell environment.
 
-Required/supported variable names:
+Supported variable names:
 
 | Variable Name | Purpose | Required in Mock Mode? |
 |---|---|---|
-| `GEMINI_API_KEY` | Google Gemini multimodal AI evaluation | No (falls back to local/mock) |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary asset hosting cloud name | No |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud account name | No (falls back to local URLs) |
 | `CLOUDINARY_API_KEY` | Cloudinary API access key | No |
 | `CLOUDINARY_API_SECRET` | Cloudinary API access secret | No |
-| `LEX_PORT` | Port for the backend service (default: `8000`) | No |
-| `LEX_DB_PATH` | Path to SQLite database (default: `lex.sqlite3`) | No |
-| `LEX_UPLOAD_SECRET` | Secret token required for review/upload mutations | No (defaults to local development token) |
+| `GEMINI_API_KEY` | Google Gemini multimodal AI evaluation | No (falls back to deterministic heuristics) |
+| `GEMINI_VISION_MODEL` | Gemini vision model override (default: `gemini-3.8-flash`) | No |
+| `ENVIRONMENT` | Environment name (`development` or `production`) | No |
+| `USE_MOCK` | Explicitly enforce mock mode (`true`/`false`) | No |
+| `PORT` | Local server port (default: `8000`) | No |
+| `LEX_DB_PATH` | Path to SQLite database (default: `./lex.sqlite3`) | No |
 
 ---
 
-## 3. Backend Startup
+## 3. Database & Demo Data Initialization
 
-### Standard Single-Command Launch (Recommended)
+SETOWA automatically seeds a deterministic, verified coastal restoration demonstration dataset upon startup or via direct command:
+
+```bash
+cd backend
+python scripts/seed_demo.py
+```
+
+This populates:
+1. **Project**: `proj_mombasa_marine` (Mombasa Marine Litter & Mangrove Restoration)
+2. **Site**: `site_nyali_creek` (Nyali Creek Mangrove Shoreline)
+3. **Chronological Visits**: Baseline Assessment (Sept 2), Cleanup Action (Sept 14), Post-Audit (Sept 22)
+4. **Cloudinary Assets**: Pre-cleanup photo, field walkthrough video, post-cleanup verification photo
+5. **Video Frame Analytics**: Timestamped frame extractions via Cloudinary offset transformations
+6. **Media Intelligence**: Multi-label ecological tags (`coastal`, `vegetation`, `litter`), signals, observations
+7. **Approved Evidence**: Human-verified before/after pair with field lead signature
+8. **Physical Measurement**: Certified municipal weigh slip (320.0 kg net waste collected)
+9. **Published Impact Story**: Chronological timeline, comparative proof cards, and public share token (`pst_demo_mombasa_coastal_2026`)
+
+---
+
+## 4. One-Command Startup
+
+### Standard Single-Command Launch (Linux / macOS / Git Bash)
 From repository root:
 ```bash
 ./run_local.sh
 ```
 
-### Manual Fresh Start (Cross-Platform)
+### Windows / Cross-Platform Launch (Python)
+From `backend/`:
+```bash
+python scripts/start_demo.py
+```
+
+The startup script will:
+- Safely audit environment variables without exposing secret values
+- Ensure reviewer authorization credentials exist
+- Seed the deterministic demo dataset
+- Print the live workspace and public URLs
+- Start FastAPI on `http://127.0.0.1:8000`
+
+---
+
+## 5. System Health & Readiness Verification
+
+Verify service status before presenting:
+
+- **Liveness Probe**: `GET http://127.0.0.1:8000/api/v1/health`
+- **Readiness Probe**: `GET http://127.0.0.1:8000/api/v1/ready`
+  - Returns database readiness, Cloudinary configuration status, and Gemini readiness.
+- **Automated Smoke Test**:
+  ```bash
+  cd backend
+  python scripts/smoke_test.py
+  ```
+  Runs through all 9 lifecycle phases in ~2 seconds.
+
+---
+
+## 6. The 5-Minute Judge Demo Sequence
+
+The presentation follows ONE coherent, verifiable narrative:
+
+```
+FIELD MEDIA  →  CLOUDINARY  →  WORKSPACE  →  MEDIA INTELLIGENCE
+     ↓
+   SKILLS    →  WORKFLOWS   →  EVIDENCE   →  HUMAN VERIFICATION
+     ↓
+IMPACT STORY →  PUBLIC SHARE
+```
+
+### Step 1: Open the Setowa Workspace
+- Navigate to `http://127.0.0.1:8000/demo/`
+- Click **Open projects →** and select **Mombasa Marine Litter & Mangrove Restoration** (`proj_mombasa_marine`).
+
+### Step 2: Cloudinary-Powered Media Library
+- Click the **Media library** tab.
+- Highlight the multi-type evidence collection:
+  - Baseline image (`creek_baseline_debris.jpg`)
+  - Cleanup action video (`creek_cleanup_action.mp4`) with poster frame derived at offset 0
+  - Post-intervention verification photo (`creek_post_cleanup.jpg`)
+- Show Cloudinary URL badges and filter by Media Type or Permission Status.
+
+### Step 3: Frame Analytics on Video Asset
+- On the video card, click **🎬 Frame Analytics**.
+- Show the video playback modal with derived frame intervals (1.5s, 4.0s, 8.0s).
+- Demonstrate that frames are extracted on-the-fly via Cloudinary video transformations without re-encoding.
+
+### Step 4: AI Media Intelligence
+- In the Media Library, click **View Intelligence** on an asset.
+- Show structured Gemini visual intelligence:
+  - Strictly observed facts vs inferred hypotheses
+  - Controlled tags (`coastal`, `vegetation`, `litter`, `cleanup_activity`)
+  - Controlled signals (`marine_debris`, `human_activity`)
+  - Model provenance and execution latency.
+
+### Step 5: Skills Runtime
+- Click the **Skills** tab.
+- Explain the 4 modular, contract-bound skills:
+  - `media-metadata@1.0.0`
+  - `evidence-comparison@1.0.0`
+  - `field-frame-observation@1.0.0`
+  - `media-intelligence@1.0.0`
+- Open the in-page execution tester to demonstrate bounded inputs and schema validation.
+
+### Step 6: Visual Workflow Builder
+- Click the **Workflows** tab.
+- Select the built-in **Before-After Evidence Comparison** pipeline (`wf_evidence_compare`).
+- Show the interactive DAG canvas:
+  - Node 01 (`before_meta`) and Node 02 (`after_meta`) run media inspection.
+  - Node 03 (`compare`) ingests metadata and performs structured AI evidence comparison.
+- Click **Run Workflow** to show real-time topological execution, latency metrics, and failure boundaries.
+
+### Step 7: Human Review & Verification (The Trust Boundary)
+- Click the **Review** tab.
+- Emphasize the core thesis of SETOWA: **AI output is strictly a proposal, never an unverified fact.**
+- Show the side-by-side comparative inspection with the split-reveal slider.
+- Review the observation:
+  - State: **Approved** (or demonstrate editing/rejecting).
+  - Reviewer: **Farhan (Field Lead)** with timestamp audit.
+  - Explicit uncertainty notes: visual boundaries, lighting caveats.
+
+### Step 8: Impact Story & Sustainability Timeline
+- Click the **Impact Story** tab.
+- Present the synthesized Project Dossier:
+  - Grounded summary narrative referencing only verified evidence and the 320.0 kg certified municipal weigh slip.
+  - Zero fabricated carbon offsets or ungrounded percentages.
+  - Chronological spine ordering baseline photos, action video, physical measurements, and approved findings.
+
+### Step 9: Public Share Experience
+- At the top of the Impact Story tab, click **Open Public Story ↗** (or visit `http://127.0.0.1:8000/share/pst_demo_mombasa_coastal_2026`).
+- Present the read-only, high-fidelity public experience:
+  - High-resolution Cloudinary hero image and responsive media.
+  - Interactive before/after split slider.
+  - Chronological timeline spine with event badges.
+  - Verified findings counter showing only approved observations.
+  - Prominent uncertainty caveats callout.
+  - Press `Ctrl+P` (or Print) to show the built-in print stylesheet for offline PDF reporting.
+
+---
+
+## 7. Command-Line Interface (CLI) Demo Path
+
+For technical evaluators, SETOWA features a first-class CLI sharing the exact same backend domain services:
+
 ```bash
 cd backend
-python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
 
-pip install -r requirements.txt
-python scripts/setup_local_demo.py
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+# 1. List registered skills
+python setowa_cli.py skill list
+
+# 2. List available workflow DAGs
+python setowa_cli.py workflow list
+
+# 3. Execute the before-after comparison workflow
+python setowa_cli.py workflow run wf_evidence_compare
+
+# 4. Inspect workflow execution details
+python setowa_cli.py run status <execution_id>
+
+# 5. Display published Impact Story with public share URL
+python setowa_cli.py story show proj_mombasa_marine
 ```
 
-Verify backend is healthy:
-- Navigate to: `http://localhost:8000/health` (or `http://127.0.0.1:8000/demo/`)
+---
+
+## 8. Troubleshooting
+
+- **Database Lock / Busy**:
+  - If SQLite reports `database is locked`, ensure no long-running interactive database browsers hold write locks.
+- **Port 8000 Already in Use**:
+  - Run on a custom port: `PORT=8080 python scripts/start_demo.py` or `./run_local.sh`.
+- **Cloudinary Media Not Loading**:
+  - Check network connectivity or verify credentials with `python scripts/check_cloudinary.py`.
+- **Gemini Offline / Rate-Limited**:
+  - The system automatically engages deterministic offline heuristics; the full workflow continues to execute without crashing.
 
 ---
 
-## 4. Frontend Startup
+## 9. Known Limitations
 
-The judge review interface is served directly from the FastAPI application as static, zero-dependency HTML/CSS/JavaScript.
-
-1. Once the backend is running, open:
-   ```
-   http://127.0.0.1:8000/demo/
-   ```
-2. The UI loads automatically with live API connectivity.
-3. No Node.js build process or webpack dev server is needed.
+- **POSIX Permissions on Windows**:
+  - Windows NTFS file systems do not enforce POSIX permission bits (`chmod 0o600`), resulting in one environment-specific test skip/assertion difference in `test_local_setup.py`. This does not affect application functionality or Linux/macOS production environments.
+- **Microplastics Scope**:
+  - Visual models cannot detect subsurface soil microplastics; this limitation is explicitly surfaced in the Impact Story uncertainty notes.
 
 ---
 
-## 5. Cloudinary Setup
+## 10. Demo Reset & Cleanup
 
-### For Live Cloudinary Uploads:
-1. In the demo UI top navigation, enter:
-   - **Cloud Name**
-   - **API Key**
-   - **API Secret**
-2. Click **Save Credentials Locally**. These credentials are stored strictly in session storage and transmitted securely via bearer auth headers.
-3. When evidence files are uploaded via **Add Evidence**, they are dispatched to Cloudinary and return verified public URLs.
-
-### Without Cloudinary:
-- Enter valid image URLs directly into the Asset URL field or use pre-populated demo evidence.
-
----
-
-## 6. Gemini Setup
-
-### For Live Gemini Multimodal Comparison:
-1. In the demo UI top navigation, enter:
-   - **Gemini API Key**
-2. Click **Save Credentials Locally**.
-3. During pair validation, the backend invokes the Gemini multimodal vision model (`gemini-2.5-flash`) to generate visual difference analysis and confidence estimates.
-
-### Without Gemini (Local Mock / Simulation):
-- Leave the Gemini API Key blank.
-- The system automatically engages the simulated AI engine, providing structured visual difference proposals without external network requests.
-
----
-
-## 7. Exact Demo Sequence (Happy Path)
-
-Follow this 8-step journey:
-
+To restore the demo to its pristine initial state:
+```bash
+cd backend
+python scripts/seed_demo.py
 ```
-CREATE / SELECT SITE
-        ↓
-ADD BEFORE EVIDENCE (Visit 1)
-        ↓
-ADD AFTER EVIDENCE (Visit 2)
-        ↓
-VALIDATE PAIR
-        ↓
-RUN GEMINI ANALYSIS
-        ↓
-SHOW AI PROPOSAL
-        ↓
-HUMAN REVIEW
-        ↓
-APPROVE / EDIT / REJECT
-        ↓
-GENERATE REPORT
-```
-
-1. **Create Site**:
-   - In the **Sites** panel, click **+ New Site**.
-   - Enter Name (e.g., `Mangrove Restoration Project`) and Location (`Sector 7 Inlet`).
-   - Click **Save Site**.
-
-2. **Add Baseline Visit (Before)**:
-   - Under Visits, click **+ Add Visit**.
-   - Date: `2026-09-01`, Label: `Baseline Assessment`. Click **Save Visit**.
-
-3. **Add Followup Visit (After)**:
-   - Click **+ Add Visit**.
-   - Date: `2026-09-15`, Label: `Post-Cleanup Followup`. Click **Save Visit**.
-
-4. **Add Evidence Assets**:
-   - For Visit 1: Click **Add Evidence**, supply baseline image URL, Source (`Field Photo`), ensure Permission is `granted`.
-   - For Visit 2: Click **Add Evidence**, supply followup image URL, Source (`Field Photo`), ensure Permission is `granted`.
-
-5. **Validate Pair & Run Gemini Analysis**:
-   - In the **Evidence Pairing & Comparison** panel, select Before Asset and After Asset.
-   - Click **Compare Evidence with Gemini**.
-   - Observe loading state (`"Comparing with Gemini..."`).
-   - Pair validation verifies chronological ordering, matching site, and permission validity.
-
-6. **Inspect AI Proposal**:
-   - The UI displays **AI-Generated Visual Assessment** with confidence, detected category changes, and draft summary.
-   - Initial status is explicitly displayed as: **Pending Human Review**.
-   - *Note: Notice that the official site report does NOT include this observation yet.*
-
-7. **Human Review (Approve / Edit / Reject)**:
-   - Click **Review Observation**.
-   - Review the AI proposal text, refine observation text if desired.
-   - Click **Approve Observation**.
-   - The observation status updates to **Human-Verified Observation** (`Approved`).
-
-8. **Generate Official Report**:
-   - In the Report panel, click **Generate Report** or **Download Report (.md)**.
-   - Confirm that the approved observation and human-verified findings are rendered in the certified export.
-
----
-
-## 8. Expected Result
-
-- **Integrity**: Only human-verified observations appear in the final report. Unapproved proposals remain strictly excluded.
-- **Audit Trail**: The report includes timestamps, visit chronology, asset provenance, reviewer identity, and revision history.
-- **Safety**: Language explicitly distinguishes between **AI-generated visual assessments** and **Human-verified observations**.
-
----
-
-## 9. Failure Handling & Recovery Steps
-
-| Failure Scenario | Visual Indicator | System Behavior | Recovery Action |
-|---|---|---|---|
-| **Missing Cloudinary Config** | Error banner: `"Upload failed"` | No asset created, no partial records. | Enter Cloudinary credentials or provide direct image URL. |
-| **Invalid Visit Chronology** | Error banner: `"Before visit date must precede after visit date"` | HTTP 400 rejection; database remains clean. | Select assets where Before visit is older than After visit. |
-| **Revoked Permission** | Error banner: `"Asset has ungranted permission status"` | HTTP 400 rejection. | Use assets with `granted` permission status. |
-| **Gemini Unavailable / Timeout** | Error banner: `"Gemini service unavailable. Please retry or verify API credentials."` | Safe fallback or explicit user notice; no crash. | Verify internet connectivity or use mock mode. |
-| **Uncertain Comparison (e.g. Angle Mismatch)** | Status badge: `Uncertain`, reason details displayed. | Review status remains pending; observation is flagged for manual inspection. | Reviewer manually enters field notes or requests re-photographing. |
-| **Concurrent Review Conflict** | Error banner: `"Review conflict: this observation was updated by another reviewer"` | HTTP 409 rejection; prevents stale overwrites. | Refresh the page and review the latest revision. |
-
----
-
-## 10. Judge Safety Reminders
-
-- **Never state**: *"AI proved cleanup happened."*
-- **Always state**: *"AI-generated visual assessment. Human verification required."*
-- **Approved status**: *"Human-verified observation."*
+This idempotently resets all projects, visits, assets, workflow executions, and impact stories.

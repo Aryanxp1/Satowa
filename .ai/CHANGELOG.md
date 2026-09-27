@@ -4,7 +4,30 @@
 ## [Unreleased]
 
 ### 2026-09-27
-- **AGY**: Completed T018 (Public / Shareable Impact Experience):
+- **AGY**: Completed T019 (Hackathon Demo + Production Hardening):
+  - Safe Environment & Production Validation (`backend/app/services/env_validator.py`):
+    - Implemented `validate_environment(settings)`: classifies environment variables as `configured` or `missing` without leaking secrets or values.
+    - Implemented `validate_production_readiness(settings)`: blocks production deployment if `USE_MOCK` is true, if `ALLOWED_ORIGINS` has wildcard `*` or `localhost`, if database is in-memory (`:memory:`), or if required Cloudinary/Gemini credentials are missing.
+  - Health & Readiness Probes (`backend/app/routes/health.py`, `backend/app/schemas/api.py`, `backend/app/schemas/__init__.py`):
+    - `GET /api/v1/health`: Liveness probe reporting status, version, environment, and mock_mode.
+    - `GET /api/v1/ready`: Operational readiness probe pinging SQLite (`SELECT 1`), checking Cloudinary and Gemini configuration status without exposing credentials, returning 200 when ready or 503 with specific degraded reasons.
+    - Root route `/` in `backend/app/main.py`: Advertises `/api/v1/ready` readiness endpoint, health check, and direct public demo story link.
+  - Deterministic Demo Seed Dataset (`backend/scripts/seed_demo.py`, `backend/scripts/setup_local_demo.py`):
+    - Created idempotent multi-site demo dataset for Mombasa Marine Litter & Mangrove Restoration (`proj_mombasa_marine`), Nyali Creek (`site_nyali_creek`), 3 chronological visits, 3 media items (`ast_mombasa_before`, `ast_mombasa_video`, `ast_mombasa_after`), derived video frames in `video_frames`, intelligence in `media_intelligence`, approved observation pair in `observations`, weigh slip in `measurements`, and published impact story with share token `pst_demo_mombasa_coastal_2026`.
+    - Preserved legacy `demo-riverbank` fixtures for backward test compatibility.
+  - Cross-Platform Demo Startup (`backend/scripts/start_demo.py`):
+    - One-command launcher (`python scripts/start_demo.py`) that checks environment, seeds demo dataset, displays ASCII banner with quick-access links, and starts Uvicorn.
+  - Unified CLI Path (`backend/app/cli.py`, `backend/setowa_cli.py`):
+    - Implemented CLI commands: `skill list`, `workflow list`, `workflow run <id>`, `run status <id>`, `story show <proj_id>`, and `ingest <dir>` reusing backend domain services directly with JSON output support.
+  - Documentation:
+    - `docs/DEMO_RUNBOOK.md`: 10-section operational runbook covering prerequisites, setup, quickstart, CLI, live script, verification, troubleshooting, and tear-down.
+    - `docs/DEMO_SCRIPT.md`: 5-minute hackathon pitch narrative detailing Cloudinary programmable media, Gemini multimodal reasoning, skill contracts, and human verification.
+  - Automated Smoke Test (`backend/scripts/smoke_test.py`):
+    - 9-phase automated test verifying health, ingestion, Cloudinary delivery, Gemini intelligence, skills, workflows, verification, impact story, and public share gating. All 9 phases passed.
+  - Testing & Quality Assurance (`backend/tests/test_demo_hardening.py`):
+    - Added 18 comprehensive tests covering all 18 demo hardening requirements.
+    - Verified full test suite: 296 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure (`test_local_setup.py:62`), 0 functional regressions (+18 new tests).
+  - Added ADR D021 in `DECISIONS.md`.
   - Database Schema & Migration (`evidence_store.py`): Added `share_token TEXT UNIQUE` column to `impact_stories` table with unique index `idx_impact_stories_share_token` and non-destructive migration guard. Added persistence helpers `get_impact_story_by_share_token()`, `set_impact_story_share_token()`, and `get_asset = get_media_item` alias.
   - Public Projection & Schemas (`schemas/api.py`, `schemas/__init__.py`): Defined `PublicImpactStory`, `PublicTimelineEvent`, `PublicBeforeAfterCard`, and `ShareStoryResponse`. Sanitized projection stripping internal DB IDs, reviewer auth tokens, secret environment variables, and private operational data.
   - Public Story Service (`services/public_story.py`): Implemented 128-bit cryptographically secure URL-safe share token generation (`pst_` prefix), rotation, and revocation. Implemented `get_public_impact_story()` with published-status gating (draft and in_review strictly return 404), asset provenance resolution (`assets.source`), and site name resolution. Implemented `render_public_story_html()` producing clean standalone HTML5 with Open Graph social metadata, Cloudinary hero media, before/after comparison split cards, chronological timeline spine with event badges, verified findings callout, explicit uncertainty caveats, and `@media print` styles.

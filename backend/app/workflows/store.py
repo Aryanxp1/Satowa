@@ -1,5 +1,6 @@
 """Persistence store for SETOWA workflows and execution history using SQLite."""
 import json
+import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -155,41 +156,63 @@ class WorkflowStore:
 
     def get(self, workflow_id: str) -> Optional[WorkflowDefinition]:
         """Retrieve a workflow by its ID."""
-        with connection() as db:
-            cur = db.execute("SELECT definition_json FROM workflows WHERE id = ?", (workflow_id,))
-            row = cur.fetchone()
-            if not row:
-                return None
-            data = json.loads(row["definition_json"])
-            return WorkflowDefinition(**data)
+        try:
+            with connection() as db:
+                cur = db.execute("SELECT definition_json FROM workflows WHERE id = ?", (workflow_id,))
+                row = cur.fetchone()
+                if not row:
+                    return None
+                data = json.loads(row["definition_json"])
+                return WorkflowDefinition(**data)
+        except sqlite3.OperationalError:
+            self._ensure_schema()
+            self._seed_builtins()
+            with connection() as db:
+                cur = db.execute("SELECT definition_json FROM workflows WHERE id = ?", (workflow_id,))
+                row = cur.fetchone()
+                if not row:
+                    return None
+                data = json.loads(row["definition_json"])
+                return WorkflowDefinition(**data)
 
     def list(self) -> List[WorkflowSummary]:
         """List summary descriptions of all stored workflows."""
-        with connection() as db:
-            cur = db.execute(
-                "SELECT id, name, version, description, definition_json, updated_at FROM workflows ORDER BY updated_at DESC"
-            )
-            summaries = []
-            for row in cur.fetchall():
-                try:
-                    data = json.loads(row["definition_json"])
-                    node_count = len(data.get("nodes", []))
-                    edge_count = len(data.get("edges", []))
-                except Exception:
-                    node_count = 0
-                    edge_count = 0
-                summaries.append(
-                    WorkflowSummary(
-                        id=row["id"],
-                        name=row["name"],
-                        version=row["version"],
-                        description=row["description"] or "",
-                        node_count=node_count,
-                        edge_count=edge_count,
-                        updated_at=row["updated_at"],
-                    )
+        try:
+            with connection() as db:
+                cur = db.execute(
+                    "SELECT id, name, version, description, definition_json, updated_at FROM workflows ORDER BY updated_at DESC"
                 )
-            return summaries
+                rows = cur.fetchall()
+        except sqlite3.OperationalError:
+            self._ensure_schema()
+            self._seed_builtins()
+            with connection() as db:
+                cur = db.execute(
+                    "SELECT id, name, version, description, definition_json, updated_at FROM workflows ORDER BY updated_at DESC"
+                )
+                rows = cur.fetchall()
+
+        summaries = []
+        for row in rows:
+            try:
+                data = json.loads(row["definition_json"])
+                node_count = len(data.get("nodes", []))
+                edge_count = len(data.get("edges", []))
+            except Exception:
+                node_count = 0
+                edge_count = 0
+            summaries.append(
+                WorkflowSummary(
+                    id=row["id"],
+                    name=row["name"],
+                    version=row["version"],
+                    description=row["description"] or "",
+                    node_count=node_count,
+                    edge_count=edge_count,
+                    updated_at=row["updated_at"],
+                )
+            )
+        return summaries
 
     def update(self, workflow: WorkflowDefinition) -> Optional[WorkflowDefinition]:
         """Update an existing workflow definition."""

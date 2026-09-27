@@ -25,5 +25,5 @@ def ensure_local_env():
 
 if __name__ == '__main__':
     ensure_local_env()
-    from seed_local_demo import seed
-    seed()
+    from seed_demo import seed_demo_dataset
+    seed_demo_dataset()

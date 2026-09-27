@@ -1,6 +1,7 @@
 """Schemas module export."""
 from app.schemas.api import (
     HealthResponse,
+    ReadinessResponse,
     MetricStat,
     ShowcaseStatsResponse,
     AnalyzeRequest,
@@ -45,6 +46,7 @@ from app.skills import (
 
 __all__ = [
     "HealthResponse",
+    "ReadinessResponse",
     "MetricStat",
     "ShowcaseStatsResponse",
     "AnalyzeRequest",

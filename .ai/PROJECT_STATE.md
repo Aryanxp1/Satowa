@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-27 by AGY
 
-## Current Status: T018 PUBLIC / SHAREABLE IMPACT EXPERIENCE COMPLETE
+## Current Status: T019 HACKATHON DEMO + PRODUCTION HARDENING COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T018 (2026-09-27)
+## Verified Test Baseline Post-T019 (2026-09-27)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ -q
-Runtime: ~50 seconds
-Collected: 280 items
+Runtime: ~54 seconds
+Collected: 298 items
 
-PASSED: 278 (+25 new T018 Public Shareable Impact Experience tests, 0 regressions)
+PASSED: 296 (+18 new T019 Demo & Production Hardening tests, 0 regressions)
 SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)

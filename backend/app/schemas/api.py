@@ -12,6 +12,17 @@ class HealthResponse(BaseModel):
     mock_mode: bool = Field(..., description="Whether fallback mock mode is active")
 
 
+class ReadinessResponse(BaseModel):
+    """Readiness probe endpoint response."""
+    status: str = Field("ready", description="Overall readiness status ('ready' or 'degraded')")
+    application: str = Field("ready", description="Application service status")
+    database: str = Field("ready", description="Database operational status")
+    cloudinary: str = Field(..., description="Cloudinary configuration status ('configured' or 'missing')")
+    gemini: str = Field(..., description="Gemini configuration status ('configured' or 'missing')")
+    environment: str = Field(..., description="Deployment environment")
+    mode: str = Field(..., description="Operating mode ('live' or 'mock/fallback')")
+
+
 class MetricStat(BaseModel):
     """Showcase metric statistics."""
     label: str
