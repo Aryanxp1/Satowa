@@ -29,6 +29,10 @@ from app.schemas.api import (
     ImpactStoryResponse,
     GenerateImpactStoryRequest,
     UpdateImpactStoryRequest,
+    ShareStoryResponse,
+    PublicTimelineEvent,
+    PublicBeforeAfterCard,
+    PublicImpactStory,
 )
 from app.skills import (
     SkillManifest,
@@ -69,6 +73,10 @@ __all__ = [
     "ImpactStoryResponse",
     "GenerateImpactStoryRequest",
     "UpdateImpactStoryRequest",
+    "ShareStoryResponse",
+    "PublicTimelineEvent",
+    "PublicBeforeAfterCard",
+    "PublicImpactStory",
     "SkillManifest",
     "SkillInputDefinition",
     "SkillOutputDefinition",

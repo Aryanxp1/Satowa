@@ -7,6 +7,7 @@ from app.routes.media import require_upload_token
 from app.schemas.api import (
     GenerateImpactStoryRequest,
     ImpactStoryResponse,
+    ShareStoryResponse,
     TimelineEvent,
     UpdateImpactStoryRequest,
 )
@@ -17,6 +18,11 @@ from app.services.impact_story import (
     get_project_impact_story,
     get_story_timeline_events,
     update_impact_story_fields,
+)
+from app.services.public_story import (
+    ensure_story_share_token,
+    revoke_story_share_token,
+    rotate_story_share_token,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Impact Stories"], dependencies=[Depends(require_upload_token)])
@@ -99,3 +105,61 @@ def get_impact_story_timeline_endpoint(story_id: str):
         if not story:
             raise HTTPException(status_code=404, detail=f"Impact story '{story_id}' not found")
         return get_story_timeline_events(db, story_id)
+
+
+@router.post("/impact-stories/{story_id}/share", response_model=ShareStoryResponse)
+def share_impact_story_endpoint(story_id: str):
+    """Ensure a share token exists for the impact story, returning share metadata."""
+    with store.connection() as db:
+        story = store.get_impact_story(db, story_id)
+        if not story:
+            raise HTTPException(status_code=404, detail=f"Impact story '{story_id}' not found")
+        token = ensure_story_share_token(db, story_id)
+        status = story.get("status", "draft")
+        return ShareStoryResponse(
+            story_id=story_id,
+            project_id=story["project_id"],
+            status=status,
+            share_token=token,
+            share_url=f"/share/{token}" if token else None,
+            is_public=(status == "published" and bool(token)),
+        )
+
+
+@router.post("/impact-stories/{story_id}/share/rotate", response_model=ShareStoryResponse)
+def rotate_impact_story_share_endpoint(story_id: str):
+    """Rotate the share token for an impact story, invalidating any previous share URL."""
+    with store.connection() as db:
+        story = store.get_impact_story(db, story_id)
+        if not story:
+            raise HTTPException(status_code=404, detail=f"Impact story '{story_id}' not found")
+        new_token = rotate_story_share_token(db, story_id)
+        status = story.get("status", "draft")
+        return ShareStoryResponse(
+            story_id=story_id,
+            project_id=story["project_id"],
+            status=status,
+            share_token=new_token,
+            share_url=f"/share/{new_token}" if new_token else None,
+            is_public=(status == "published" and bool(new_token)),
+        )
+
+
+@router.post("/impact-stories/{story_id}/share/revoke", response_model=ShareStoryResponse)
+def revoke_impact_story_share_endpoint(story_id: str):
+    """Revoke public sharing for an impact story."""
+    with store.connection() as db:
+        story = store.get_impact_story(db, story_id)
+        if not story:
+            raise HTTPException(status_code=404, detail=f"Impact story '{story_id}' not found")
+        revoke_story_share_token(db, story_id)
+        status = story.get("status", "draft")
+        return ShareStoryResponse(
+            story_id=story_id,
+            project_id=story["project_id"],
+            status=status,
+            share_token=None,
+            share_url=None,
+            is_public=False,
+        )
+

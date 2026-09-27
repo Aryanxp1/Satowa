@@ -428,6 +428,8 @@ class ImpactStoryResponse(BaseModel):
     status: str
     summary_narrative: Optional[str] = None
     uncertainty_note: Optional[str] = None
+    share_token: Optional[str] = None
+    share_url: Optional[str] = None
     date_range: Dict[str, Optional[str]] = Field(default_factory=dict)
     metrics: Dict[str, Any] = Field(default_factory=dict)
     events: List[TimelineEvent] = Field(default_factory=list)
@@ -450,5 +452,73 @@ class UpdateImpactStoryRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     summary_narrative: Optional[str] = None
+    share_token: Optional[str] = None
+
+
+class ShareStoryResponse(BaseModel):
+    """Public share token information for an impact story."""
+    story_id: str
+    project_id: str
+    status: str
+    share_token: Optional[str] = None
+    share_url: Optional[str] = None
+    is_public: bool = False
+
+
+class PublicTimelineEvent(BaseModel):
+    """Public read-only projection of a timeline event."""
+    event_type: str
+    timestamp_date: str
+    title: str
+    description: Optional[str] = None
+    site_name: Optional[str] = None
+    primary_media_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    media_type: Optional[str] = None
+    verification_status: str = "unverified"
+    observations: List[str] = Field(default_factory=list)
+    uncertainty: Optional[str] = None
+    source_attribution: Optional[str] = None
+    source_provenance: Optional[str] = None
+
+
+class PublicBeforeAfterCard(BaseModel):
+    """Public read-only projection of a before/after comparative evidence card."""
+    site_name: Optional[str] = None
+    before_media_url: str
+    before_date: Optional[str] = None
+    after_media_url: str
+    after_date: Optional[str] = None
+    verification_status: str = "pending"
+    approved_text: Optional[str] = None
+    verified_text: Optional[str] = None
+    proposal_text: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    reviewer_role: Optional[str] = None
+    uncertainty: Optional[str] = None
+    detected_changes: List[str] = Field(default_factory=list)
+
+
+class PublicImpactStory(BaseModel):
+    """Public-safe, read-only projection of a published impact story."""
+    public_token: str
+    public_id: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    summary_narrative: Optional[str] = None
+    uncertainty_note: Optional[str] = None
+    project_name: str
+    project_description: Optional[str] = None
+    date_range: Dict[str, Optional[str]] = Field(default_factory=dict)
+    hero_media_url: Optional[str] = None
+    hero_thumbnail_url: Optional[str] = None
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+    verified_findings_count: int = 0
+    timeline: List[PublicTimelineEvent] = Field(default_factory=list)
+    before_after: List[PublicBeforeAfterCard] = Field(default_factory=list)
+    published_at: str
+    share_url: str
+    social_meta: Dict[str, str] = Field(default_factory=dict)
+
 
 

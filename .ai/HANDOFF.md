@@ -279,29 +279,43 @@
 - Live Gemini Validation: Real multimodal narrative synthesis verified with `GEMINI_API_KEY` (683 characters, strictly grounded, zero secrets leaked).
 - Added ADR D019 in `DECISIONS.md`.
 
-## Test Summary Post-T017
+**T018 (Public / Shareable Impact Experience):**
+- Database Schema & Migration: Added `share_token TEXT UNIQUE` column to `impact_stories` table with unique index `idx_impact_stories_share_token` and non-destructive migration guard.
+- Share Token Architecture: Generated 128-bit cryptographically secure URL-safe tokens (`pst_` prefix via `secrets.token_urlsafe(16)`), with support for generation, rotation, and revocation.
+- Published Status Gating: Only stories with `status == "published"` are publicly accessible. Draft and in_review stories strictly return 404 without leaking whether unpublished records exist.
+- Public-Safe Data Projection (`PublicImpactStory`): Sanitized projection stripping internal DB IDs, reviewer auth tokens, secret environment variables, and private operational data.
+- Read-Only Public Presentation:
+  - HTML route: `GET /share/{public_token}` returning responsive standalone HTML5 with Setowa design language, Open Graph social share metadata, Cloudinary-powered hero media, before/after comparison split cards, chronological timeline spine with event badges, verified findings callout, explicit uncertainty caveats, and `@media print` export styles.
+  - JSON API route: `GET /api/v1/public/impact/{public_token}` returning public-safe projection.
+- Internal Workspace Share Controls: Added share bar in `#tab-impact` with "Open Public Story", "Copy Share Link", "Rotate", and "Revoke" buttons, dynamically rendered based on story publication status.
+- Testing: 25 targeted tests in `tests/test_public_story.py` passed; 278 total tests passed (+25 new tests, zero regressions).
+- Live System Validation: Tested against `proj_default` on live server; verified draft/in_review 404, published 200 HTML & JSON, Cloudinary hero media, timeline events, before/after evidence, zero secrets, zero reviewer tokens.
+- Added ADR D020 in `DECISIONS.md`.
+
+## Test Summary Post-T018
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 255 |
-| **Passed** | 253 (+23 new T017 tests, 0 regressions) |
+| **Total Collected** | 280 |
+| **Passed** | 278 (+25 new T018 tests, 0 regressions) |
 | **Skipped** | 1 (live integration test gated by RUN_LIVE_INTEGRATION=1) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Warnings** | 2 (httpx/starlette deprecation, non-blocking) |
-| **Runtime** | ~48s |
+| **Runtime** | ~50s |
 
 ## What Is Ready Next
 
-- T017 is **COMPLETE**.
-- Next assigned milestone: **T018 — Public / Shareable Impact Experience**.
-  - Goal: Create clean share-ready presentation or export view without compromising provenance or trust model integrity.
+- T018 is **COMPLETE**.
+- Next assigned milestone: **T019 — Hackathon Demo & Production Hardening**.
+  - Goal: Final hackathon presentation hardening, end-to-end demo script preparation, system resilience, and polished documentation.
 
 ## Open Questions for User
 
-None. T017 is fully implemented, tested, verified live with real Gemini credentials, and ready for review.
+None. T018 is fully implemented, tested, verified live on real project data, and ready for review.
+
 
 
 

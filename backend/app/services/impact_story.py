@@ -665,6 +665,7 @@ async def generate_impact_story(
             events_models = [row_to_timeline_event(e) for e in stored_events]
             cards = build_before_after_cards(db, project_id)
             meta = safe_json_loads(existing_story.get("metadata_json"), {})
+            stk = existing_story.get("share_token")
             return ImpactStoryResponse(
                 id=existing_story["id"],
                 project_id=project_id,
@@ -672,6 +673,8 @@ async def generate_impact_story(
                 title=existing_story["title"],
                 description=existing_story.get("description"),
                 status=existing_story.get("status", "draft"),
+                share_token=stk,
+                share_url=f"/share/{stk}" if stk else None,
                 summary_narrative=existing_story.get("summary_narrative"),
                 uncertainty_note=existing_story.get("uncertainty_note"),
                 date_range=meta.get("date_range", {}),
@@ -744,6 +747,7 @@ async def generate_impact_story(
     saved_events = store.save_impact_story_events(db, story_id, raw_events)
     events_models = [row_to_timeline_event(e) for e in saved_events]
 
+    saved_stk = saved_story.get("share_token")
     return ImpactStoryResponse(
         id=saved_story["id"],
         project_id=project_id,
@@ -751,6 +755,8 @@ async def generate_impact_story(
         title=saved_story["title"],
         description=saved_story.get("description"),
         status=saved_story.get("status", "draft"),
+        share_token=saved_stk,
+        share_url=f"/share/{saved_stk}" if saved_stk else None,
         summary_narrative=saved_story.get("summary_narrative"),
         uncertainty_note=saved_story.get("uncertainty_note"),
         date_range=date_range,
@@ -774,6 +780,7 @@ def get_impact_story_by_id(db, story_id: str) -> Optional[ImpactStoryResponse]:
     cards = build_before_after_cards(db, story["project_id"])
     meta = safe_json_loads(story.get("metadata_json"), {})
 
+    stk = story.get("share_token")
     return ImpactStoryResponse(
         id=story["id"],
         project_id=story["project_id"],
@@ -781,6 +788,8 @@ def get_impact_story_by_id(db, story_id: str) -> Optional[ImpactStoryResponse]:
         title=story["title"],
         description=story.get("description"),
         status=story.get("status", "draft"),
+        share_token=stk,
+        share_url=f"/share/{stk}" if stk else None,
         summary_narrative=story.get("summary_narrative"),
         uncertainty_note=story.get("uncertainty_note"),
         date_range=meta.get("date_range", {}),
@@ -802,6 +811,13 @@ def get_project_impact_story(db, project_id: str) -> Optional[ImpactStoryRespons
 
 def update_impact_story_fields(db, story_id: str, updates: dict) -> Optional[ImpactStoryResponse]:
     """Update editable fields on an impact story."""
+    # If transitioning to published, ensure a share token is generated if none exists
+    if updates.get("status") == "published":
+        existing = store.get_impact_story(db, story_id)
+        if existing and not existing.get("share_token"):
+            from app.services.public_story import generate_share_token
+            updates["share_token"] = generate_share_token()
+
     updated = store.update_impact_story(db, story_id, updates)
     if not updated:
         return None

@@ -580,10 +580,57 @@
 
 ---
 
-## [ ] T018 — Public / Shareable Impact Experience
-**Owner:** TBD  
+## [x] T018 — Public / Shareable Impact Experience
+**Owner:** AGY  
 **Dependencies:** T017 ✅  
-**Status:** NEXT
+**Status:** COMPLETE (2026-09-27)  
+**Goal:** Create a polished, read-only public presentation and public-safe API projection of a published SETOWA Impact Story accessible via secure share token without requiring internal workspace credentials.
+
+**Scope Completed:**
+1. Database Schema & Migration (`evidence_store.py`):
+   - Added `share_token TEXT UNIQUE` column to `impact_stories` table.
+   - Added non-destructive runtime migration guard and unique index `idx_impact_stories_share_token`.
+   - Added persistence helper methods: `get_impact_story_by_share_token()` and `set_impact_story_share_token()`.
+   - Added `get_asset = get_media_item` alias and updated `save_impact_story` / `update_impact_story`.
+2. Public Projection & Pydantic Schemas (`schemas/api.py`, `schemas/__init__.py`):
+   - Added `share_token` and `share_url` to `ImpactStoryResponse`.
+   - Added `ShareStoryResponse` schema.
+   - Added `PublicTimelineEvent`, `PublicBeforeAfterCard` (with `verified_text`), and `PublicImpactStory` models.
+   - Stripped all internal database IDs, reviewer auth tokens, secret environment variables, and private operational data from public projection.
+3. Public Story Service Layer (`services/public_story.py`):
+   - Implemented `generate_share_token()` with 128-bit cryptographically secure URL-safe tokens (`pst_` prefix).
+   - Implemented `ensure_story_share_token()`, `rotate_story_share_token()`, and `revoke_story_share_token()`.
+   - Implemented `get_public_impact_story()` with strict published-status gating (draft and in_review return 404 without leaking record existence), media provenance resolution (`assets.source`), and site name resolution (`sites.name`).
+   - Implemented `render_public_story_html()` producing clean standalone HTML5 with Setowa design language, Open Graph social share metadata, Cloudinary-powered hero media, before/after comparison split cards, chronological timeline spine with event badges, verified findings callout, explicit uncertainty caveats, and `@media print` export styles.
+4. Internal Impact Story Lifecycle Integration (`services/impact_story.py`):
+   - Updated `generate_impact_story` and `get_impact_story_by_id` to include share token and URL.
+   - Auto-generated `share_token` when story status transitions to `published`.
+5. Public and Internal REST APIs:
+   - Created `routes/public_impact.py` mounted at `/` in `main.py`:
+     - `GET /share/{public_token}`: HTML public presentation.
+     - `GET /api/v1/public/impact/{public_token}`: Public-safe JSON projection.
+   - Updated `routes/impact_stories.py` with share management endpoints:
+     - `POST /api/v1/impact-stories/{story_id}/share`: Generate/retrieve share token.
+     - `POST /api/v1/impact-stories/{story_id}/share/rotate`: Invalidate previous token and issue new token.
+     - `POST /api/v1/impact-stories/{story_id}/share/revoke`: Revoke public access.
+6. Setowa Workspace UI Extension (`backend/app/demo/`):
+   - Added `#btn-top-open-public` and `#impact-share-bar` inside `#tab-impact`.
+   - Added interactive controls for "Open Public Story", "Copy Share Link", "Rotate Link", and "Revoke Link".
+   - Integrated dynamic share bar rendering into `renderImpactStory` and `renderEmptyImpactStory`.
+7. Testing & Quality Assurance:
+   - 25 targeted tests in `tests/test_public_story.py` covering published access, draft/in_review blocking (404), invalid tokens, public projection safety, secret exclusion, reviewer token exclusion, verification badges, pending/rejected/uncertain finding handling, timeline preservation, before/after preservation, Cloudinary URL delivery, provenance preservation, public API, public page HTML route, share token generation and uniqueness, token rotation and revocation, Open Graph metadata, and backward compatibility.
+   - Full test suite: 278 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 0 functional regressions.
+8. Live System Validation:
+   - Live validation on real project (`proj_default`): draft/in_review correctly returned 404; published returned 200 HTML and 200 JSON with Cloudinary hero media, timeline events, before/after evidence, zero secrets, zero reviewer tokens.
+
+---
+
+## [ ] T019 — Hackathon Demo & Production Hardening
+**Owner:** TBD  
+**Dependencies:** T018 ✅  
+**Status:** NEXT  
+**Goal:** Final hackathon presentation hardening, end-to-end demo script preparation, system resilience, and polished documentation.
+
 
 
 

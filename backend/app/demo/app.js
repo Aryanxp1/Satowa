@@ -2733,6 +2733,8 @@
     if (timelineContainer) {
       timelineContainer.innerHTML = '<div class="empty-state">No timeline events generated yet. Click Generate Story above.</div>';
     }
+
+    renderShareControls(null);
   }
 
   function renderImpactStory(story) {
@@ -2779,6 +2781,7 @@
       }
     }
 
+    renderShareControls(story);
     renderBeforeAfterCards(story.before_after_cards || []);
     renderTimelineEvents(story.events || []);
   }
@@ -2970,7 +2973,120 @@
     }
   }
 
-  // T017 Impact Story Event Listeners
+  // ==========================================================================
+  // Milestone T018: Public Share Experience Controls
+  // ==========================================================================
+
+  function renderShareControls(story) {
+    const isPublished = story && story.status === 'published';
+    const shareToken = story ? story.share_token : null;
+    const sharePath = story && story.share_url ? story.share_url : (shareToken ? `/share/${shareToken}` : null);
+    const fullShareUrl = sharePath ? `${window.location.origin}${sharePath}` : null;
+
+    const icon = $('share-status-icon');
+    const label = $('share-status-label');
+    const display = $('share-url-display');
+    const openBtn = $('btn-open-public-story');
+    const copyBtn = $('btn-copy-share-link');
+    const rotateBtn = $('btn-rotate-share-link');
+    const revokeBtn = $('btn-revoke-share-link');
+    const topOpenBtn = $('btn-top-open-public');
+
+    if (!story) {
+      if (icon) icon.textContent = '🔒';
+      if (label) label.textContent = 'Private';
+      if (display) display.textContent = 'Story must be generated and published to share publicly.';
+      if (openBtn) openBtn.disabled = true;
+      if (copyBtn) copyBtn.disabled = true;
+      if (rotateBtn) rotateBtn.disabled = true;
+      if (revokeBtn) revokeBtn.disabled = true;
+      if (topOpenBtn) topOpenBtn.hidden = true;
+      return;
+    }
+
+    if (isPublished && shareToken) {
+      if (icon) icon.textContent = '🌐';
+      if (label) label.textContent = 'Published & Public';
+      if (display) {
+        display.innerHTML = `<a href="/share/${encodeURIComponent(shareToken)}" target="_blank" rel="noopener" style="color:var(--brand-primary,#0284c7); text-decoration:underline;">${fullShareUrl}</a>`;
+      }
+      if (openBtn) {
+        openBtn.disabled = false;
+        openBtn.onclick = () => window.open(`/share/${encodeURIComponent(shareToken)}`, '_blank', 'noopener');
+      }
+      if (copyBtn) {
+        copyBtn.disabled = false;
+        copyBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(fullShareUrl);
+            notice('Public share link copied to clipboard!');
+          } catch {
+            prompt('Public Share Link:', fullShareUrl);
+          }
+        };
+      }
+      if (rotateBtn) {
+        rotateBtn.disabled = false;
+        rotateBtn.onclick = rotateShareLinkAction;
+      }
+      if (revokeBtn) {
+        revokeBtn.disabled = false;
+        revokeBtn.onclick = revokeShareLinkAction;
+      }
+      if (topOpenBtn) {
+        topOpenBtn.hidden = false;
+        topOpenBtn.onclick = () => window.open(`/share/${encodeURIComponent(shareToken)}`, '_blank', 'noopener');
+      }
+    } else {
+      if (icon) icon.textContent = '🔒';
+      const statusLabel = (story.status || 'draft').replace('_', ' ').toUpperCase();
+      if (label) label.textContent = `Private (${statusLabel})`;
+      if (display) {
+        display.textContent = 'Public sharing is gated. Change status to "Published" above to enable public access.';
+      }
+      if (openBtn) openBtn.disabled = true;
+      if (copyBtn) copyBtn.disabled = true;
+      if (rotateBtn) rotateBtn.disabled = true;
+      if (revokeBtn) revokeBtn.disabled = true;
+      if (topOpenBtn) topOpenBtn.hidden = true;
+    }
+  }
+
+  async function rotateShareLinkAction() {
+    if (!state.impactStory || !state.impactStory.id) return;
+    if (!confirm('Rotate share link? The current link will immediately stop working.')) return;
+    try {
+      const res = await request(`/impact-stories/${encodeURIComponent(state.impactStory.id)}/share/rotate`, {
+        method: 'POST',
+      });
+      state.impactStory.share_token = res.share_token;
+      state.impactStory.share_url = res.share_url;
+      renderShareControls(state.impactStory);
+      notice('Share link rotated successfully! Old links are now invalid.');
+    } catch (err) {
+      console.error('Failed to rotate share link:', err);
+      notice(`Failed to rotate link: ${sanitizeErrorMessage(err)}`, true);
+    }
+  }
+
+  async function revokeShareLinkAction() {
+    if (!state.impactStory || !state.impactStory.id) return;
+    if (!confirm('Revoke public access? The story will no longer be accessible via any public link.')) return;
+    try {
+      const res = await request(`/impact-stories/${encodeURIComponent(state.impactStory.id)}/share/revoke`, {
+        method: 'POST',
+      });
+      state.impactStory.share_token = null;
+      state.impactStory.share_url = null;
+      renderShareControls(state.impactStory);
+      notice('Public access revoked. The story is now private.');
+    } catch (err) {
+      console.error('Failed to revoke share link:', err);
+      notice(`Failed to revoke link: ${sanitizeErrorMessage(err)}`, true);
+    }
+  }
+
+  // T017 / T018 Impact Story Event Listeners
   const generateImpactBtn = $('btn-generate-impact');
   if (generateImpactBtn) generateImpactBtn.addEventListener('click', generateImpactStoryAction);
   const refreshImpactBtn = $('btn-refresh-impact');

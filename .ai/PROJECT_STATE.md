@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-27 by AGY
 
-## Current Status: T017 SUSTAINABILITY TIMELINE + IMPACT STORY COMPLETE
+## Current Status: T018 PUBLIC / SHAREABLE IMPACT EXPERIENCE COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T017 (2026-09-27)
+## Verified Test Baseline Post-T018 (2026-09-27)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ -q
-Runtime: ~48 seconds
-Collected: 255 items
+Runtime: ~50 seconds
+Collected: 280 items
 
-PASSED: 253 (+23 new T017 Sustainability Timeline & Impact Story tests, 0 regressions)
+PASSED: 278 (+25 new T018 Public Shareable Impact Experience tests, 0 regressions)
 SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
@@ -153,12 +153,18 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Impact Story REST APIs (`/api/v1/projects/{project_id}/impact-story`, `/api/v1/impact-stories/{story_id}`) | ✅ Fully tested and passing |
 | Setowa Workspace Impact Story Tab, Timeline Spine, and Comparison Gallery | ✅ Verified in demo client |
 | Live Gemini Narrative Generation with real configured credentials | ✅ Verified live (2026-09-27) |
+| Public Share Token Generation (128-bit cryptographically secure, rotation & revocation) | ✅ Fully tested and passing |
+| Published Status Gating (draft & in_review strictly return 404 without leaking existence) | ✅ Fully tested and passing |
+| Public-Safe Data Projection (all internal DB IDs, reviewer tokens, and secrets stripped) | ✅ Fully tested and passing |
+| Public Story HTML View (`/share/{token}`) with Open Graph meta, Cloudinary hero, before/after, timeline, and print styling | ✅ Fully tested and passing |
+| Public Story REST API (`/api/v1/public/impact/{token}`) | ✅ Fully tested and passing |
+| Workspace Share Bar & Controls (Open Public Story, Copy Link, Rotate, Revoke) | ✅ Verified in demo client |
 
 ## Current Active Milestone
 
-**T017 — SUSTAINABILITY TIMELINE + IMPACT STORY** — COMPLETE
+**T018 — PUBLIC / SHAREABLE IMPACT EXPERIENCE** — COMPLETE
 
 ## Next Milestone
 
-**T018 — Public / Shareable Impact Experience**
+**T019 — Hackathon Demo & Production Hardening**
 

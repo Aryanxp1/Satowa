@@ -343,6 +343,7 @@
                   <p id="impact-date-range" class="meta">Date range: Calculating...</p>
                 </div>
                 <div class="impact-actions">
+                  <button id="btn-top-open-public" class="button button-small secondary" type="button" hidden title="Open public presentation">🔗 Public View</button>
                   <button id="btn-generate-impact" class="button primary" type="button">Generate Story →</button>
                   <button id="btn-refresh-impact" class="button secondary" type="button">Refresh</button>
                 </div>
@@ -369,6 +370,21 @@
                     <option value="in_review">Status: In Review</option>
                     <option value="published">Status: Published</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- Public Sharing Bar (Milestone T018) -->
+              <div id="impact-share-bar" class="impact-share-bar" style="margin-top: 14px; padding: 12px 14px; background: rgba(0,0,0,0.03); border: 1px solid var(--border, #e2e8f0); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div class="share-info" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                  <span id="share-status-icon">🔒</span>
+                  <span id="share-status-label" style="font-weight: 600;">Private</span>
+                  <span id="share-url-display" class="meta" style="word-break: break-all;">Story must be published to share publicly.</span>
+                </div>
+                <div id="share-actions-group" class="share-actions-group" style="display: flex; gap: 8px;">
+                  <button id="btn-open-public-story" class="button button-small primary" type="button" disabled title="Open read-only public story presentation">🔗 Open Public Story</button>
+                  <button id="btn-copy-share-link" class="button button-small secondary" type="button" disabled title="Copy shareable public link">📋 Copy Link</button>
+                  <button id="btn-rotate-share-link" class="button button-small secondary" type="button" disabled title="Rotate share token (invalidates old link)">🔄 Rotate</button>
+                  <button id="btn-revoke-share-link" class="button button-small secondary" type="button" disabled title="Revoke public access">🚫 Revoke</button>
                 </div>
               </div>
               <div id="impact-narrative-text" class="impact-narrative-content">

@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS impact_stories (
  status TEXT NOT NULL DEFAULT 'draft',
  summary_narrative TEXT,
  uncertainty_note TEXT,
+ share_token TEXT UNIQUE,
  metadata_json TEXT,
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
@@ -172,6 +173,8 @@ _POST_MIGRATION_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_impact_stories_project ON impact_stories(project_id)',
     'CREATE INDEX IF NOT EXISTS idx_impact_story_events_story ON impact_story_events(story_id, event_order)',
     'CREATE INDEX IF NOT EXISTS idx_impact_story_events_type ON impact_story_events(event_type)',
+    # T018 indexes
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_impact_stories_share_token ON impact_stories(share_token)',
 ]
 
 
@@ -241,6 +244,11 @@ def connection():
             db.execute("ALTER TABLE assets ADD COLUMN project_id TEXT REFERENCES projects(id)")
         if 'captured_at' not in asset_columns:
             db.execute("ALTER TABLE assets ADD COLUMN captured_at TEXT")
+
+        # Migrate impact_stories table for T018 share_token
+        story_columns = {row['name'] for row in db.execute('PRAGMA table_info(impact_stories)')}
+        if 'share_token' not in story_columns:
+            db.execute("ALTER TABLE impact_stories ADD COLUMN share_token TEXT")
 
         # All indexes applied after migration so columns are guaranteed to exist
         for idx_sql in _POST_MIGRATION_INDEXES:
@@ -382,6 +390,10 @@ def save_asset(db, asset_data: dict) -> dict:
 def get_media_item(db, asset_id: str) -> dict | None:
     """Retrieve full media asset record by asset_id."""
     return one(db, 'SELECT * FROM assets WHERE asset_id=?', (asset_id,))
+
+
+get_asset = get_media_item
+
 
 
 def list_media(db, project_id: str | None = None, media_type: str | None = None,
@@ -650,15 +662,16 @@ def save_impact_story(db, data: dict) -> dict:
         '''
         INSERT INTO impact_stories (
             id, project_id, title, description, status,
-            summary_narrative, uncertainty_note, metadata_json,
+            summary_narrative, uncertainty_note, share_token, metadata_json,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             title=excluded.title,
             description=excluded.description,
             status=excluded.status,
             summary_narrative=excluded.summary_narrative,
             uncertainty_note=excluded.uncertainty_note,
+            share_token=COALESCE(excluded.share_token, impact_stories.share_token),
             metadata_json=excluded.metadata_json,
             updated_at=excluded.updated_at
         ''',
@@ -670,6 +683,7 @@ def save_impact_story(db, data: dict) -> dict:
             data.get('status', 'draft'),
             data.get('summary_narrative'),
             data.get('uncertainty_note'),
+            data.get('share_token'),
             data.get('metadata_json'),
             created_at,
             updated_at,
@@ -678,7 +692,7 @@ def save_impact_story(db, data: dict) -> dict:
     data['id'] = story_id
     data['created_at'] = created_at
     data['updated_at'] = updated_at
-    return data
+    return get_impact_story(db, story_id)
 
 
 def get_impact_story(db, story_id: str) -> dict | None:
@@ -691,12 +705,28 @@ def get_project_impact_story(db, project_id: str) -> dict | None:
     return one(db, 'SELECT * FROM impact_stories WHERE project_id=? ORDER BY updated_at DESC LIMIT 1', (project_id,))
 
 
+def get_impact_story_by_share_token(db, share_token: str) -> dict | None:
+    """Retrieve an impact story by its public share token."""
+    if not share_token:
+        return None
+    return one(db, 'SELECT * FROM impact_stories WHERE share_token=?', (share_token,))
+
+
+def set_impact_story_share_token(db, story_id: str, share_token: str | None) -> dict | None:
+    """Update or revoke the public share token for an impact story."""
+    db.execute(
+        'UPDATE impact_stories SET share_token=?, updated_at=? WHERE id=?',
+        (share_token, timestamp(), story_id)
+    )
+    return get_impact_story(db, story_id)
+
+
 def update_impact_story(db, story_id: str, updates: dict) -> dict | None:
     """Update fields on an existing impact story."""
     existing = get_impact_story(db, story_id)
     if not existing:
         return None
-    allowed = {'title', 'description', 'status', 'summary_narrative', 'uncertainty_note', 'metadata_json'}
+    allowed = {'title', 'description', 'status', 'summary_narrative', 'uncertainty_note', 'metadata_json', 'share_token'}
     fields = []
     values = []
     for k, v in updates.items():
