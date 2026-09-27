@@ -65,7 +65,7 @@
     <section id="project-page" class="page project-page" aria-labelledby="project-title" hidden>
       <div class="project-heading"><a href="#projects" class="back-link">← All projects</a><div class="project-heading-row"><div><p id="project-kicker" class="kicker">03 / PROJECT WORKSPACE</p><h1 id="project-title">Loading project…</h1><p id="project-subtitle"></p></div><span id="project-badge" class="project-badge">EVIDENCE RECORD</span></div></div>
       <div class="project-layout">
-        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><div id="integration-status" class="sidebar-status"></div></aside>
+        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="media-library" class="tab-button">Media library</button><button data-tab="skills" class="tab-button">Skills</button><button data-tab="workflows" class="tab-button">Workflows</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><div id="integration-status" class="sidebar-status"></div></aside>
         <div class="project-content">
           <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
 
@@ -79,6 +79,219 @@
           <section id="tab-visits" class="tab-panel" hidden aria-labelledby="visits-title"><div class="content-title"><p class="kicker">01 / FIELD RECORD</p><h2 id="visits-title">Visits & photographs.</h2><p>One date per visit. Use photos you have permission to upload.</p></div>
             <form id="visit-form" class="paper-card compact-form"><div class="form-grid"><label>Visit date<input name="visited_on" type="date" required></label><label>Visit label<input name="label" required maxlength="120" placeholder="Before cleanup"></label></div><button class="button primary" type="submit">Add visit</button></form>
             <label class="search-label">Search visits or photo sources<input id="media-filter" type="search" placeholder="Type a date, visit, or source"></label><div id="visits" class="visit-grid empty">No visits yet.</div>
+          </section>
+
+          <section id="tab-media-library" class="tab-panel" hidden aria-labelledby="media-library-title">
+            <div class="content-title">
+              <p class="kicker">01B / MEDIA ASSET PIPELINE</p>
+              <h2 id="media-library-title">Media library & bulk ingestion.</h2>
+              <p>Store, transform, and deliver environmental evidence via Cloudinary with derived poster frames, responsive previews, and video processing.</p>
+            </div>
+
+            <div class="media-library-toolbar">
+              <div class="media-filters">
+                <label>Media Type
+                  <select id="media-type-filter">
+                    <option value="">All media (Images & Videos)</option>
+                    <option value="image">Images only</option>
+                    <option value="video">Videos only</option>
+                  </select>
+                </label>
+                <label>Permission Status
+                  <select id="media-perm-filter">
+                    <option value="">All permissions</option>
+                    <option value="granted">Granted</option>
+                    <option value="pending_verification">Pending verification</option>
+                    <option value="revoked">Revoked</option>
+                  </select>
+                </label>
+                <label>AI Intelligence
+                  <select id="media-ai-status-filter">
+                    <option value="">All AI status</option>
+                    <option value="analyzed">Analyzed</option>
+                    <option value="uncertain">Uncertain</option>
+                    <option value="insufficient_evidence">Insufficient evidence</option>
+                    <option value="unanalyzed">Unanalyzed</option>
+                  </select>
+                </label>
+                <label class="media-search-label">Search collection
+                  <input id="media-search-input" type="search" placeholder="Search by filename, source, or ID...">
+                </label>
+                <label class="media-tag-label">AI Tag / Signal
+                  <input id="media-tag-input" type="search" placeholder="Filter by tag (vegetation, debris...)...">
+                </label>
+              </div>
+            </div>
+
+            <details id="bulk-upload-details" class="bulk-upload-panel paper-card">
+              <summary><strong>+ Bulk Ingest Media Collection</strong> <span>Upload multiple files ▾</span></summary>
+              <form id="bulk-upload-form" class="bulk-form">
+                <p>Select multiple photographs (JPEG, PNG, WebP) and MP4/WebM videos. The Setowa media pipeline uploads directly to Cloudinary, extracts metadata and duration, generates responsive previews and video poster frames, and links the collection to this project.</p>
+                <div class="form-grid">
+                  <label class="full-width">Media Files (Multiple images or videos)
+                    <input id="bulk-files-input" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" required>
+                  </label>
+                  <label>Collection Date
+                    <input id="bulk-date-input" type="date" required>
+                  </label>
+                  <label>Permission Status
+                    <select id="bulk-perm-select">
+                      <option value="granted">Granted (Verified consent)</option>
+                      <option value="pending_verification">Pending verification</option>
+                      <option value="revoked">Revoked</option>
+                    </select>
+                  </label>
+                  <label class="full-width">Source Attribution
+                    <input id="bulk-source-input" maxlength="200" required placeholder="e.g. Ranger Drone Sweep / Cleanup Team Volunteer">
+                  </label>
+                </div>
+                <div class="bulk-actions-row">
+                  <button id="bulk-submit-btn" class="button primary" type="submit">Ingest Collection to Cloudinary →</button>
+                  <span id="bulk-upload-status" class="bulk-status-text"></span>
+                </div>
+                <div id="bulk-results-box" class="bulk-results-box" hidden></div>
+              </form>
+            </details>
+
+            <div id="media-library-grid" class="media-library-grid empty">No media assets found.</div>
+          </section>
+
+          <section id="tab-skills" class="tab-panel" hidden aria-labelledby="skills-title">
+            <div class="content-title">
+              <p class="kicker">01C / VISUAL INTELLIGENCE SKILLS</p>
+              <h2 id="skills-title">Setowa Skill Registry & Runtime.</h2>
+              <p>Reusable, versioned visual-AI and deterministic capabilities consuming typed inputs and producing structured, verifiable outputs.</p>
+            </div>
+
+            <div class="skills-header-row">
+              <span class="skills-count-badge" id="skills-count-badge">2 Skills Registered</span>
+              <p class="skills-disclaimer">ℹ Skills declare typed inputs, outputs, and permissions. AI confidence reflects model certainty, not factual accuracy.</p>
+            </div>
+
+            <div id="skills-list-grid" class="skills-grid"></div>
+
+            <div id="skill-tester-panel" class="skill-tester-panel paper-card" hidden>
+              <div class="tester-header">
+                <div>
+                  <h3 id="tester-skill-title">Test Skill</h3>
+                  <p id="tester-skill-desc"></p>
+                </div>
+                <button type="button" id="close-tester-btn" class="button button-small secondary">✕ Close</button>
+              </div>
+              <form id="skill-test-form">
+                <div id="tester-inputs-container" class="form-grid"></div>
+                <div class="tester-actions-row">
+                  <button id="run-skill-btn" class="button primary" type="submit">Execute Skill →</button>
+                  <span id="skill-run-status" class="bulk-status-text"></span>
+                </div>
+              </form>
+              <div id="skill-run-output" class="skill-run-output" hidden>
+                <h4>Execution Result</h4>
+                <div class="skill-result-meta" id="skill-result-meta"></div>
+                <pre id="skill-result-json" class="report-json-view"></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-workflows" class="tab-panel" hidden aria-labelledby="workflows-title">
+            <div class="content-title">
+              <p class="kicker">01D / COMPOSABLE WORKFLOW STUDIO</p>
+              <h2 id="workflows-title">Visual Workflow Engine & Builder.</h2>
+              <p>Compose reusable Setowa Skills into declarative Directed Acyclic Graph (DAG) pipelines with dependency tracking and topological execution.</p>
+            </div>
+
+            <!-- Workflow Studio Toolbar -->
+            <div class="wf-toolbar paper-card">
+              <div class="wf-toolbar-left">
+                <label class="wf-select-label">Workflow:
+                  <select id="wf-selector"></select>
+                </label>
+                <input id="wf-name-input" type="text" placeholder="Workflow Name" class="wf-name-input" value="New Workflow">
+                <input id="wf-version-input" type="text" placeholder="1.0.0" class="wf-version-input" value="1.0.0" style="width: 70px;">
+              </div>
+              <div class="wf-toolbar-right">
+                <span id="wf-status-badge" class="badge">Draft</span>
+                <button id="wf-new-btn" type="button" class="button secondary button-small">+ New</button>
+                <button id="wf-validate-btn" type="button" class="button secondary button-small">Validate</button>
+                <button id="wf-save-btn" type="button" class="button secondary button-small">Save</button>
+                <button id="wf-run-btn" type="button" class="button primary button-small">▶ Run</button>
+                <button id="wf-clear-btn" type="button" class="button secondary button-small">Clear</button>
+              </div>
+            </div>
+
+            <div id="wf-validation-alert" class="pair-warning" hidden></div>
+
+            <!-- Workflow 3-Column Studio -->
+            <div class="wf-studio-grid">
+              <!-- Left: Skill Palette -->
+              <div class="wf-palette-col paper-card">
+                <div class="wf-col-header">
+                  <h4>Skill Palette</h4>
+                  <small>Click to add node</small>
+                </div>
+                <div id="wf-palette-list" class="wf-palette-list"></div>
+              </div>
+
+              <!-- Center: Interactive Canvas -->
+              <div class="wf-canvas-col paper-card">
+                <div class="wf-col-header">
+                  <h4>DAG Canvas</h4>
+                  <small id="wf-canvas-meta">0 nodes, 0 edges</small>
+                </div>
+                <div id="wf-canvas-container" class="wf-canvas-container">
+                  <svg id="wf-canvas-svg" class="wf-canvas-svg"></svg>
+                  <div id="wf-canvas-nodes" class="wf-canvas-nodes">
+                    <div id="wf-canvas-empty" class="wf-canvas-empty">
+                      <p><strong>Canvas is empty</strong></p>
+                      <p>Select a skill from the palette on the left or load an existing workflow from the toolbar above.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Node Inspector -->
+              <div class="wf-inspector-col paper-card">
+                <div class="wf-col-header">
+                  <h4>Node Inspector</h4>
+                </div>
+                <div id="wf-inspector-content" class="wf-inspector-content">
+                  <p class="muted">Select a node on the canvas to configure its inputs and connections.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom: Execution & Results Panel -->
+            <div id="wf-execution-panel" class="wf-execution-panel paper-card">
+              <div class="wf-exec-header">
+                <div>
+                  <h3>Workflow Execution</h3>
+                  <p>Trigger execution with typed inputs and inspect topological step results.</p>
+                </div>
+                <div id="wf-exec-status-badge" class="badge">Idle</div>
+              </div>
+
+              <form id="wf-exec-form" class="compact-form">
+                <div id="wf-exec-inputs" class="form-grid"></div>
+                <div class="bulk-actions-row">
+                  <button id="wf-exec-submit-btn" class="button primary" type="submit">Execute Workflow →</button>
+                  <span id="wf-exec-status-text" class="bulk-status-text"></span>
+                </div>
+              </form>
+
+              <div id="wf-exec-results" class="wf-exec-results" hidden>
+                <div class="wf-exec-metrics-row">
+                  <div><strong>Status:</strong> <span id="wf-res-status"></span></div>
+                  <div><strong>Duration:</strong> <span id="wf-res-duration"></span></div>
+                  <div><strong>Execution ID:</strong> <code id="wf-res-id"></code></div>
+                </div>
+                <h4>Topological Step Results</h4>
+                <div id="wf-res-steps" class="wf-res-steps-grid"></div>
+                <div class="wf-res-details-box">
+                  <h4>Selected Step Details</h4>
+                  <pre id="wf-step-detail-json" class="report-json-view">Click any step above to inspect its inputs, outputs, errors, and telemetry.</pre>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title"><div class="content-title"><p class="kicker">02 / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
@@ -117,14 +330,166 @@
       </div>
     </section>
   </main>
-  <dialog id="lightbox-modal" class="lightbox-modal" aria-label="Evidence Photo Lightbox">
+  <dialog id="lightbox-modal" class="lightbox-modal" aria-label="Evidence Media Lightbox">
     <div class="lightbox-content">
-      <button id="lightbox-close" class="lightbox-close" type="button" aria-label="Close photo preview">✕ Close</button>
+      <button id="lightbox-close" class="lightbox-close" type="button" aria-label="Close media preview">✕ Close</button>
       <img id="lightbox-img" alt="Enlarged field evidence photo">
+      <video id="lightbox-video" controls playsinline style="display:none; max-width:80vw; max-height:70vh; border-radius:4px;"></video>
       <div class="lightbox-meta">
-        <h4 id="lightbox-title"></h4>
-        <p id="lightbox-details"></p>
-        <span id="lightbox-badge" class="badge"></span>
+        <div>
+          <h4 id="lightbox-title"></h4>
+          <p id="lightbox-details"></p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span id="lightbox-type-badge" class="badge"></span>
+          <span id="lightbox-badge" class="badge"></span>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="frames-modal" class="frames-modal" aria-label="Video Frame Analytics">
+    <div class="frames-modal-content">
+      <div class="frames-modal-header">
+        <div>
+          <span class="kicker">SETOWA FIELD VIDEO ANALYTICS</span>
+          <h3 id="frames-modal-title">Frame Derivation &amp; Visual Observation</h3>
+          <p id="frames-modal-subtitle" class="frames-meta"></p>
+        </div>
+        <button id="frames-close-btn" class="button quiet" type="button" aria-label="Close frame analytics">✕ Close</button>
+      </div>
+
+      <div class="frames-modal-body">
+        <div class="frames-left-pane">
+          <div class="frames-video-box">
+            <video id="frames-video-player" controls playsinline></video>
+          </div>
+
+          <div class="paper-card frames-config-card">
+            <h4>Sampling Strategy</h4>
+            <div class="form-grid">
+              <label>Strategy
+                <select id="frame-strategy-select">
+                  <option value="interval">Interval (Every N seconds)</option>
+                  <option value="uniform">Uniform (N evenly spaced)</option>
+                </select>
+              </label>
+              <label id="frame-param-label">Interval (Seconds)
+                <input id="frame-param-input" type="number" min="0.5" max="30" step="0.5" value="2.0">
+              </label>
+              <label>Max Frame Limit
+                <input id="frame-max-input" type="number" min="1" max="60" value="20">
+              </label>
+            </div>
+            <div class="frames-actions-row">
+              <button id="btn-extract-frames" class="button primary button-small" type="button">Extract Frames →</button>
+              <span id="extract-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+
+          <div class="paper-card frames-analyze-card">
+            <h4>Visual Intelligence (SkillRuntime)</h4>
+            <p class="frames-info-note">Executes <code>field-frame-observation@1.0.0</code> via SETOWA SkillRuntime using Gemini vision intelligence.</p>
+            <div class="frames-actions-row">
+              <button id="btn-analyze-frames" class="button secondary button-small" type="button">Analyze All Extracted Frames</button>
+              <span id="analyze-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="frames-right-pane">
+          <div id="frames-summary-card" class="paper-card frames-summary-card" hidden>
+            <div class="summary-card-header">
+              <h4>Aggregated Video Observation</h4>
+              <span id="summary-status-badge" class="badge"></span>
+            </div>
+            <p id="summary-text" class="summary-text"></p>
+            <div class="summary-signals-wrap">
+              <strong>Detected Signals:</strong>
+              <div id="summary-signals-tags" class="summary-signals-tags"></div>
+            </div>
+            <div id="summary-warnings-box" class="summary-warnings-box" hidden></div>
+          </div>
+
+          <div class="timeline-header-row">
+            <h4>Sampled Frames Timeline</h4>
+            <span id="frames-count-badge" class="badge">0 frames</span>
+          </div>
+          <div id="frames-timeline-container" class="frames-timeline-container empty">
+            No frames extracted yet. Choose a sampling strategy and click "Extract Frames".
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="intelligence-modal" class="lightbox-dialog frames-modal" aria-labelledby="intel-modal-title">
+    <div class="lightbox-card frames-modal-card">
+      <div class="lightbox-header">
+        <div>
+          <span class="kicker">01D / STRUCTURED AI MEDIA INTELLIGENCE</span>
+          <h3 id="intel-modal-title">Media Intelligence & Provenance</h3>
+        </div>
+        <button id="close-intel-modal" class="button secondary button-small" type="button" aria-label="Close intelligence dialog">Close ✕</button>
+      </div>
+
+      <div class="frames-modal-body">
+        <div class="frames-left-pane">
+          <div class="frames-video-box">
+            <img id="intel-preview-img" src="" alt="Media asset preview" style="max-height: 240px; width: 100%; object-fit: contain; border-radius: 4px;">
+          </div>
+          <div class="paper-card">
+            <h4>Asset Provenance</h4>
+            <div id="intel-provenance-info" class="meta" style="line-height: 1.6;"></div>
+            <div class="frames-actions-row" style="margin-top: 12px;">
+              <button id="btn-reanalyze-asset" class="button primary button-small" type="button">🔄 Re-analyze Asset</button>
+              <span id="reanalyze-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="frames-right-pane">
+          <div id="intel-details-card" class="paper-card">
+            <div class="summary-card-header">
+              <h4>Structured AI Findings</h4>
+              <span id="intel-status-badge" class="badge"></span>
+            </div>
+            <p id="intel-description-text" class="summary-text" style="font-size: 15px; margin: 8px 0;"></p>
+            
+            <div style="margin: 12px 0;">
+              <strong>Observations (Observed vs Inferred):</strong>
+              <ul id="intel-observations-list" style="margin: 6px 0 12px 18px; padding: 0;"></ul>
+            </div>
+
+            <div class="summary-signals-wrap">
+              <strong>Controlled Tags:</strong>
+              <div id="intel-tags-container" class="summary-signals-tags" style="margin-top: 4px;"></div>
+            </div>
+
+            <div class="summary-signals-wrap" style="margin-top: 10px;">
+              <strong>Visual Signals:</strong>
+              <div id="intel-signals-container" class="summary-signals-tags" style="margin-top: 4px;"></div>
+            </div>
+
+            <div id="intel-activity-wrap" style="margin-top: 10px;" hidden>
+              <strong>Activity Classification:</strong>
+              <span id="intel-activity-pill" class="delivery-pill" style="margin-left: 6px;"></span>
+            </div>
+
+            <div id="intel-uncertainty-box" class="warning-callout" style="margin-top: 12px;" hidden>
+              <strong>Uncertainty / Ambiguity:</strong>
+              <p id="intel-uncertainty-text" style="margin: 4px 0 0 0;"></p>
+            </div>
+
+            <div id="intel-warnings-box" class="warning-callout" style="margin-top: 8px;" hidden>
+              <strong>Quality Warnings:</strong>
+              <ul id="intel-warnings-list" style="margin: 4px 0 0 16px; padding: 0;"></ul>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <h4>Analysis History & Audit Trail</h4>
+            <div id="intel-history-container" style="max-height: 180px; overflow-y: auto; font-size: 13px;"></div>
+          </div>
+        </div>
       </div>
     </div>
   </dialog>

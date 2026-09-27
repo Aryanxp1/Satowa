@@ -65,7 +65,7 @@ def test_upload_preserves_identity(provider, fmt, mime):
     (picture(), 'image/jpeg', 415), (picture('GIF'), 'image/gif', 415),
     (b'x' * (media.MAX_BYTES + 1), 'image/png', 413),
     (picture()[:40], 'image/png', 422),
-])
+], ids=['empty', 'not_image', 'wrong_mime', 'gif', 'oversized', 'truncated'])
 def test_invalid_files_never_reach_provider(provider, data, mime, status):
     assert post(data, mime).status_code == status
     provider.assert_not_called()

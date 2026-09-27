@@ -1,7 +1,7 @@
 """Site visits, evidence selection, human review, and grounded exports."""
 from datetime import date
 from html import escape
-from typing import Literal
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
@@ -21,12 +21,18 @@ class SiteInput(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     location: str = Field(default='', max_length=120)
     description: str = Field(default='', max_length=600)
+    project_id: Optional[str] = Field(default=None, pattern=r'^[a-z0-9][a-z0-9_-]{0,63}$')
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class SiteUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     location: str = Field(default='', max_length=120)
     description: str = Field(default='', max_length=600)
+    project_id: Optional[str] = Field(default=None, pattern=r'^[a-z0-9][a-z0-9_-]{0,63}$')
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class VisitInput(BaseModel):
@@ -195,19 +201,71 @@ def create_site(payload: SiteInput):
     name = payload.name.strip()
     if not name:
         raise HTTPException(422, 'Site name must not be blank')
+    now = store.timestamp()
+    # Use supplied project_id or fall back to default project
+    project_id = (payload.project_id or '').strip() or 'proj_default'
     with store.connection() as db:
         if store.one(db, 'SELECT id FROM sites WHERE id=?', (payload.id,)):
             raise HTTPException(409, 'Site already exists')
-        db.execute('INSERT INTO sites(id,name,location,description) VALUES (?,?,?,?)',
-                   (payload.id, name, payload.location.strip(), payload.description.strip()))
-    return {'id': payload.id, 'name': name, 'location': payload.location.strip(),
-            'description': payload.description.strip()}
+        # Verify project exists
+        if not store.get_project(db, project_id):
+            raise HTTPException(404, f"Project '{project_id}' not found")
+        db.execute(
+            'INSERT INTO sites(id,name,location,description,project_id,latitude,longitude,created_at) VALUES (?,?,?,?,?,?,?,?)',
+            (payload.id, name, payload.location.strip(), payload.description.strip(),
+             project_id, payload.latitude, payload.longitude, now)
+        )
+    return {
+        'id': payload.id, 'name': name, 'location': payload.location.strip(),
+        'description': payload.description.strip(), 'project_id': project_id,
+        'latitude': payload.latitude, 'longitude': payload.longitude, 'created_at': now,
+    }
 
 
 @router.get('/sites')
-def list_sites():
+def list_sites(project_id: Optional[str] = Query(default=None)):
     with store.connection() as db:
+        if project_id:
+            return store.rows(db, 'SELECT * FROM sites WHERE project_id=? ORDER BY name,id', (project_id,))
         return store.rows(db, 'SELECT * FROM sites ORDER BY name,id')
+
+
+@router.get('/sites/{site_id}/detail')
+def get_site_detail(site_id: str):
+    """Retrieve site record with aggregate media metrics."""
+    from app.services.media_query import get_site_summary
+    with store.connection() as db:
+        return get_site_summary(db, site_id)
+
+
+@router.get('/sites/{site_id}/media')
+def get_site_media(
+    site_id: str,
+    media_type: Optional[Literal['image', 'video']] = None,
+    permission_status: Optional[Literal['granted', 'pending_verification', 'revoked']] = None,
+    date_from: Optional[str] = Query(default=None),
+    date_to: Optional[str] = Query(default=None),
+    sort: Literal['desc', 'asc'] = 'desc',
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """Retrieve paginated media assets for a specific site."""
+    from app.services.media_query import MediaQueryFilters, query_media_assets, validate_date_string
+    validated_from = validate_date_string(date_from, 'date_from')
+    validated_to = validate_date_string(date_to, 'date_to')
+    with store.connection() as db:
+        require_site(db, site_id)
+        filters = MediaQueryFilters(
+            site_id=site_id,
+            media_type=media_type,
+            permission_status=permission_status,
+            date_from=validated_from,
+            date_to=validated_to,
+            sort=sort,
+            page=page,
+            limit=limit,
+        )
+        return query_media_assets(db, filters)
 
 
 @router.patch('/sites/{site_id}')
@@ -217,8 +275,11 @@ def update_site(site_id: str, payload: SiteUpdate, reviewer: str = Depends(requi
         raise HTTPException(422, 'Site name must not be blank')
     with store.connection() as db:
         require_site(db, site_id)
-        db.execute('UPDATE sites SET name=?,location=?,description=? WHERE id=?',
-                   (name, payload.location.strip(), payload.description.strip(), site_id))
+        db.execute(
+            'UPDATE sites SET name=?,location=?,description=?,latitude=?,longitude=? WHERE id=?',
+            (name, payload.location.strip(), payload.description.strip(),
+             payload.latitude, payload.longitude, site_id)
+        )
         return require_site(db, site_id)
 
 

@@ -1,0 +1,31 @@
+{
+  "qualifying_tool": "Cloudinary AI Power Start",
+  "setup_date": "2026-09-27",
+  "stack": {
+    "backend": "python/fastapi",
+    "frontend": "vanilla-js",
+    "sdk": "cloudinary-python",
+    "sdk_version": "1.46.2"
+  },
+  "agent_tooling": {
+    "skills_installed": [
+      "cloudinary-docs",
+      "cloudinary-transformations"
+    ],
+    "skills_source": "cloudinary-devs/skills",
+    "skills_location": ".agents/skills",
+    "skills_lock": "skills-lock.json",
+    "mcp_servers": [
+      "cloudinary-asset-mgmt",
+      "cloudinary-env-config"
+    ],
+    "mcp_config": ".mcp.json"
+  },
+  "setup_validation": {
+    "sdk_verified": true,
+    "skills_verified": true,
+    "mcp_verified": true,
+    "unit_and_pipeline_tests_passed": true,
+    "live_credentials_present": false
+  }
+}

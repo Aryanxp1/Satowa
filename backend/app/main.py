@@ -12,6 +12,9 @@ from app.routes.media import router as media_router
 from app.routes.health import router as health_router
 from app.routes.analyze import router as analyze_router
 from app.routes.local_setup import router as local_setup_router
+from app.routes.skills import router as skills_router
+from app.routes.workflows import router as workflows_router
+from app.routes.projects import router as projects_router
 
 # Configure logging
 logging.basicConfig(
@@ -43,10 +46,13 @@ app.add_middleware(
 
 # Register route modules
 app.include_router(media_router)
+app.include_router(projects_router)
 app.include_router(evidence_router)
 app.include_router(health_router)
 app.include_router(analyze_router)
 app.include_router(local_setup_router)
+app.include_router(skills_router)
+app.include_router(workflows_router)
 app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
 showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
 if showcase_dir.is_dir():

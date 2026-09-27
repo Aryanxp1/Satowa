@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
-# Last Updated: 2026-09-26 by AGY / Cline
+# Last Updated: 2026-09-27 by AGY
 
-## Current Status: T009 DEMO HARDENING & END-TO-END QA COMPLETE
+## Current Status: T016 AI MEDIA INTELLIGENCE + DISCOVERY FOUNDATION COMPLETE
 
 ## Repository State
 
@@ -10,19 +10,19 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T009 (2026-09-26)
+## Verified Test Baseline Post-T016 (2026-09-27)
 
 ```
-Command: .\venv\Scripts\python.exe -m pytest tests/ --tb=short -q
-Runtime: ~38.2 seconds
-Collected: 129 items
+Command: .\venv\Scripts\python.exe -m pytest tests/ -q
+Runtime: ~26 seconds
+Collected: 232 items
 
-PASSED: 127 (+9 comprehensive end-to-end journey tests passed)
+PASSED: 230 (+20 new T016 AI Media Intelligence tests, 0 regressions)
 SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
-ERRORS: 2   ← Collection/deprecation errors (Starlette/httpx testclient)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
 ```
+
 
 ## One Failing Test — Root Cause
 
@@ -103,15 +103,54 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Demo Startup: `run_local.sh` and `setup_local_demo.py` hardened for cross-platform/clean starts | ✅ Verified |
 | End-to-End QA Suite: 9 comprehensive tests in `test_e2e_journey.py` covering full lifecycle and failure paths | ✅ Fully tested and passing |
 | Demo Runbook: `docs/DEMO_RUNBOOK.md` with step-by-step judge sequence and safety guidelines | ✅ Complete |
+| Bulk Ingestion Pipeline (`POST /api/v1/media/bulk`): multi-file upload with safe per-file error isolation | ✅ Fully tested and passing |
+| Video Pipeline (`POST /api/v1/media/videos`): MP4/WebM ingestion, container header check, duration extraction, poster frame at offset 0 | ✅ Fully tested and passing |
+| Programmable Media Delivery: Cloudinary transformations (`f_auto,q_auto`, `w_1200,h_900,c_limit`, `w_640,h_480`) | ✅ Fully tested and passing |
+| Asset Metadata Persistence: `site_id`, `media_type`, `processing_status`, `original_filename`, `duration`, `preview_url`, `created_at` in SQLite | ✅ Fully tested and passing |
+| Setowa Media Library UI: media type filter, permission filter, search, multi-file upload accordion, responsive cards | ✅ Verified in demo client |
+| Inline Video Playback: Lightbox modal with HTML5 `<video controls>` support | ✅ Verified in demo client |
+| Ingest Collection CLI (`backend/scripts/ingest_collection.py`): standalone CLI for bulk file ingestion | ✅ Verified and passing |
+| Skill Manifest & Contract Validation (`models.py`, `validation.py`): declarative schema, typed inputs/outputs, semver, permissions | ✅ Fully tested and passing |
+| Skill Registry (`registry.py`): registration, multi-version management, duplicate rejection, latest semver resolution | ✅ Fully tested and passing |
+| Skill Runtime (`runtime.py`): permission enforcement, input type checking, latency telemetry, safe error boundaries | ✅ Fully tested and passing |
+| Built-in Skill `media-metadata@1.0.0`: deterministic Cloudinary delivery and dimensions extraction | ✅ Fully tested and passing |
+| Built-in Skill `evidence-comparison@1.0.0`: structured before/after comparison reusing image_comparison service | ✅ Fully tested and passing |
+| Skill API Routes (`GET /api/v1/skills`, `GET /api/v1/skills/{name}`, `POST /api/v1/skills/{name}/execute`) | ✅ Fully tested and passing |
+| Setowa Workspace Skills UI: responsive skill cards, version/kind/model badges, interactive in-page execution tester | ✅ Verified in demo client |
+| Workflow Definition Schema & Models (`WorkflowDefinition`, `WorkflowNode`, `WorkflowEdge`) | ✅ Fully tested and passing |
+| Deterministic DAG Engine (`DAGGraph`): Kahn's algorithm, DFS cycle detection, self-loop rejection | ✅ Fully tested and passing |
+| Strict DAG Validation: node uniqueness, skill/version resolution, port compatibility, reference binding | ✅ Fully tested and passing |
+| Workflow Execution Engine: executes via T012 SkillRuntime, resolves dynamic state propagation | ✅ Fully tested and passing |
+| Failure Propagation: downstream nodes marked `skipped` when dependencies fail | ✅ Fully tested and passing |
+| SQLite Persistence: `workflows` and `workflow_executions` tables with seeded built-ins | ✅ Fully tested and passing |
+| Workflow REST APIs: CRUD, validation (`/validate`, `/validate-draft`), execution, history | ✅ Fully tested and passing |
+| Visual Workflow Builder UI: Skill Palette, DAG Canvas with SVG connections, Node Inspector, Execution Panel | ✅ Verified in demo client |
+| Built-in Multi-Skill Pipeline (`wf_evidence_compare`): Metadata -> Metadata -> Evidence Comparison | ✅ Fully tested and passing |
+| Cloudinary Video Offset Transformation: timestamp/offset frame derivation (`so_<ts>`, `.jpg`, `c_fill,h_225,w_400`) | ✅ Fully tested and passing |
+| Deterministic Video Sampling: interval, uniform, and custom timestamp strategies with boundary limit safety (`max_frames <= 60`) | ✅ Fully tested and passing |
+| Video Frame Provenance & Persistence: `video_frames` table linking `frame_id`, `asset_id`, `timestamp_seconds`, `source_video_url` | ✅ Fully tested and passing |
+| Built-in Skill `field-frame-observation@1.0.0`: structured visual intelligence on frames via Gemini multimodal API | ✅ Fully tested and passing |
+| Frame Observation Persistence: `frame_analyses` table with aggregated video-level summary and signal tags | ✅ Fully tested and passing |
+| Video Frame REST APIs: extraction, listing, single-frame inspect, frame analysis, aggregated report | ✅ Fully tested and passing |
+| Setowa Workspace Frame Analytics UI: `#frames-modal` with HTML5 video player, sampling strategy selector, frame timeline, signals & observations | ✅ Verified in demo client |
+| Project / site media grouping by `project_id` | ✅ Fully tested and passing |
+| Spatial-temporal asset queries (`/media/query`, `/media/timeline`) | ✅ Fully tested and passing |
+| Legacy DB migration (project_id, latitude, longitude, captured_at on sites + assets) | ✅ Fully tested and passing |
+| `save_asset` idempotency on duplicate Cloudinary asset_id | ✅ Fully tested and passing |
+| All indexes moved to post-migration block (safe on pre-T015 databases) | ✅ Verified |
+| Structured Media Intelligence Schema (`media_intelligence` table) | ✅ Fully tested and passing |
+| Built-in Skill `media-intelligence@1.0.0` (taxonomies, grounding, uncertainty, warnings) | ✅ Fully tested and passing |
+| Asset & Frame Intelligence Persistence with complete provenance and audit trail | ✅ Fully tested and passing |
+| Media Analysis REST APIs (`/analyze`, `/intelligence`, `/history`, `/reanalyze`, `/analyze-batch`) | ✅ Fully tested and passing |
+| Structured Discovery Filtering (`/media/query`, `/media` by `tag`, `signal`, `ai_status`) | ✅ Fully tested and passing |
+| Media Library UI Intelligence Badges, Tag Filters, Action Triggers, and Modal | ✅ Verified in demo client |
+| Live Gemini Multimodal Inference (`gemini-flash-latest`) against Cloudinary media | ✅ Verified live (2026-09-27) |
 
-## Current Active Task
+## Current Active Milestone
 
-**T009 — DEMO HARDENING & END-TO-END QA** — COMPLETE
+**T016 — AI MEDIA INTELLIGENCE + DISCOVERY FOUNDATION** — COMPLETE
 
-## Pending Tasks (Ordered)
+## Next Milestone
 
-1. T010 — CI GitHub Actions
-2. T011 — Final Presentation Package / Demo Delivery
-
-
+**T017 — Sustainability Timeline / Impact Story**
 

@@ -44,6 +44,8 @@ class AnalyzeResponse(BaseModel):
 
 
 PermissionStatus = Literal['granted', 'pending_verification', 'revoked']
+MediaType = Literal['image', 'video']
+ProcessingStatus = Literal['ready', 'processing', 'failed']
 
 
 class AssetResponse(BaseModel):
@@ -53,14 +55,130 @@ class AssetResponse(BaseModel):
     version: int
     secure_url: str
     thumbnail_url: Optional[str] = None
+    preview_url: Optional[str] = None
     source: str
-    width: int
-    height: int
+    width: Optional[int] = None
+    height: Optional[int] = None
+    duration: Optional[float] = None
     format: str
+    media_type: str = "image"
+    processing_status: str = "ready"
+    site_id: Optional[str] = None
+    visit_id: Optional[str] = None
+    original_filename: Optional[str] = None
+    created_at: Optional[str] = None
     permission_status: str = Field(
         default="granted",
         description="Explicit evidence permission status: 'granted', 'pending_verification', 'revoked'"
     )
+
+
+class MediaItemResponse(BaseModel):
+    """Full media library asset item representation."""
+    asset_id: str
+    public_id: str
+    version: int
+    secure_url: str
+    thumbnail_url: Optional[str] = None
+    preview_url: Optional[str] = None
+    source: str
+    media_type: str = "image"
+    width: Optional[int] = None
+    height: Optional[int] = None
+    duration: Optional[float] = None
+    format: str
+    permission_status: str = "granted"
+    processing_status: str = "ready"
+    site_id: Optional[str] = None
+    project_id: Optional[str] = None
+    captured_at: Optional[str] = None
+    visit_id: Optional[str] = None
+    original_filename: Optional[str] = None
+    created_at: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ProjectCreate(BaseModel):
+    """Payload for creating a project."""
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=600)
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ProjectSummaryResponse(BaseModel):
+    """Project record with aggregate media and site metrics."""
+    project_id: str
+    name: str
+    description: str = ""
+    created_at: str
+    site_count: int = 0
+    media_count: int = 0
+    image_count: int = 0
+    video_count: int = 0
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class SiteSummaryResponse(BaseModel):
+    """Site record with location metadata and aggregate media metrics."""
+    site_id: str
+    project_id: Optional[str] = None
+    name: str
+    location: str = ""
+    description: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    created_at: Optional[str] = None
+    media_count: int = 0
+    image_count: int = 0
+    video_count: int = 0
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class PaginatedMediaQueryResponse(BaseModel):
+    """Standard multi-dimensional media query response."""
+    items: List[MediaItemResponse]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+    filters: Dict[str, Any]
+
+
+class TimelineBucket(BaseModel):
+    """A collection of media assets grouped by date."""
+    date: str
+    count: int
+    items: List[MediaItemResponse]
+
+
+class TimelineMediaResponse(BaseModel):
+    """Media assets organized into date-based timeline buckets."""
+    total_items: int
+    total_dates: int
+    filters: Dict[str, Any]
+    buckets: List[TimelineBucket]
+
+
+class BulkMediaItemResult(BaseModel):
+    """Result of an individual file ingestion within a bulk batch."""
+    filename: str
+    status: Literal['success', 'failed']
+    asset: Optional[MediaItemResponse] = None
+    error: Optional[str] = None
+
+
+class BulkMediaUploadResponse(BaseModel):
+    """Aggregate response for bulk media collection ingestion."""
+    total_files: int
+    successful: int
+    failed: int
+    results: List[BulkMediaItemResult]
+
 
 
 class ComparisonStatus(str, Enum):
@@ -168,4 +286,66 @@ class StructuredComparison(BaseModel):
                     data['uncertainty_reason'] = data.get('reason')
                     data.setdefault('confidence', 0.0)
         return data
+
+
+class IntelligenceStatus(str, Enum):
+    """Lifecycle status of AI media intelligence analysis."""
+    PENDING = "pending"
+    ANALYZING = "analyzing"
+    ANALYZED = "analyzed"
+    UNCERTAIN = "uncertain"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+    FAILED = "failed"
+    UNAVAILABLE = "unavailable"
+
+
+class MediaIntelligenceRecord(BaseModel):
+    """Structured AI intelligence record for an asset or frame."""
+    id: str
+    asset_id: str
+    frame_id: Optional[str] = None
+    status: str
+    description: Optional[str] = None
+    observations: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    signals: List[str] = Field(default_factory=list)
+    activity: Optional[str] = None
+    warnings: List[str] = Field(default_factory=list)
+    uncertainty: Optional[str] = None
+    evidence: Optional[Dict[str, Any]] = None
+    model_provider: Optional[str] = None
+    model_name: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+class MediaAnalysisRequest(BaseModel):
+    """Request payload to analyze or re-analyze a media asset or frame."""
+    frame_id: Optional[str] = None
+    context: Optional[str] = None
+    force_reanalyze: bool = False
+
+
+class BatchMediaAnalysisRequest(BaseModel):
+    """Bounded, safe batch analysis request (max 20 assets)."""
+    asset_ids: List[str] = Field(..., min_length=1, max_length=20)
+    context: Optional[str] = None
+
+
+class BatchMediaAnalysisItemResult(BaseModel):
+    """Per-asset outcome of batch analysis."""
+    asset_id: str
+    success: bool
+    status: str
+    error: Optional[str] = None
+    intelligence: Optional[MediaIntelligenceRecord] = None
+
+
+class BatchMediaAnalysisResponse(BaseModel):
+    """Aggregated batch analysis execution summary."""
+    total: int
+    processed: int
+    successful: int
+    failed: int
+    results: List[BatchMediaAnalysisItemResult]
 

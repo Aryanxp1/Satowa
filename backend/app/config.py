@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     # SQLite persistence for sites, visits, evidence, and review history.
     LEX_DB_PATH: str = "./lex.sqlite3"
-    GEMINI_VISION_MODEL: str = "gemini-2.5-flash"
+    GEMINI_VISION_MODEL: str = "gemini-3.8-flash"
 
     # CORS origins
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080,https://lex-app.vercel.app"

@@ -3,6 +3,62 @@
 
 ## [Unreleased]
 
+### 2026-09-27
+- **AGY**: Completed T016 (AI Media Intelligence + Discovery Foundation):
+  - Roadmap Reconciliation: Aligned roadmap numbering across `SETOWA_MASTER_PLAN.md` and `.ai/DECISIONS.md` (ADR D017, D018). Preserved T014 (Field Video Ingestion + Frame Analytics) and T015 (Spatial-Temporal Grouping). Established T016 as AI Media Intelligence, T017 as Sustainability Timeline.
+  - Schema & Persistence (`evidence_store.py`): Created `media_intelligence` table with indexed `asset_id`, `status`, and `frame_id`. Added `save_media_intelligence()`, `get_media_intelligence()`, and `get_media_intelligence_history()`. Updated `list_media()` with deterministic filtering by `tag`, `signal`, and `ai_status`.
+  - Built-in Skill `media-intelligence@1.0.0` (`app/skills/builtins/media_intelligence.py`): Created structured visual intelligence skill executing via `SkillRuntime`. Built controlled taxonomies (`CONTROLLED_TAGS`, `CONTROLLED_SIGNALS`). Implemented strict OBSERVED vs INFERRED grounding, uncertainty extraction, and warning flags. Multi-model fallback (`gemini-flash-latest`, `gemini-3.8-flash`) and offline resilience.
+  - Service Layer (`app/services/media_intelligence.py`): Added `analyze_asset`, `get_asset_intelligence`, `get_asset_intelligence_history`, and bounded `analyze_batch` with isolated per-asset failure boundaries.
+  - REST APIs (`app/routes/media.py`): Implemented `/api/v1/media/{asset_id}/analyze`, `/intelligence`, `/intelligence/history`, `/reanalyze`, `frames/{frame_id}/analyze`, and `analyze-batch`. Enhanced `/api/v1/media/query` and `/api/v1/media` with tag/signal/status discovery filters.
+  - Media Library UI Extension (`backend/app/demo/`): Extended toolbar with AI status and tag filters. Added status badges, description summaries, tag/signal pills, and warning indicators to asset cards. Added interactive `#intelligence-modal` for inspecting observations, signals, warnings, uncertainty, and analysis audit history.
+  - Testing & Validation (`tests/test_media_intelligence.py`): Added 20 comprehensive tests covering all edge cases. Verified full test suite (230 passed, 1 skipped, 1 pre-existing Windows chmod baseline, 0 regressions). Conducted live Gemini multimodal validation with `gemini-flash-latest` against Cloudinary media (PASS, zero secrets leaked).
+- **AGY**: Completed T015 (Project / Location / Timeline Media Grouping & Spatial-Temporal Queries):
+  - Added `projects` table and updated `sites` and `assets` schemas with `project_id`, `latitude`, `longitude`, `captured_at`.
+  - Implemented `media_query.py` service for multi-dimensional spatial-temporal asset queries, day-bucketed timelines, and project summaries.
+  - Added project/site/media query REST endpoints.
+  - Added 21 targeted tests in `tests/test_media_query.py` (210 passed, 0 regressions).
+  - Cloudinary Permission & Precheck: Verified MASTER ADMIN authenticated access and video creation/upload capability (`ping: ok`). Verified existing T011 video ingestion pipeline (`resource_type="video"`), container header validation, duration persistence, and poster frame generation.
+  - Frame Extraction & Transformation (`backend/app/services/video_frames.py`): Implemented on-the-fly frame derivation using Cloudinary video transformations (`start_offset="so_<ts>"`, `.jpg` format, and `c_fill,h_225,w_400,so_<ts>` thumbnails) without local video download or re-encoding. Deterministic interval, uniform, and custom timestamp sampling with safety bounds (`max_frames <= 60`).
+  - Frame Provenance & Persistence (`backend/app/services/evidence_store.py`): Added `video_frames` table schema and data access helpers (`save_video_frame`, `get_video_frames_by_asset`, `get_video_frame`, `delete_video_frames_by_asset`). Frame model captures unambiguous provenance: `frame_id`, `asset_id`, `frame_index`, `timestamp_seconds`, `frame_url`, `thumbnail_url`, `source_video_url`, `width`, `height`, `extraction_method`.
+  - Built-in Skill: `field-frame-observation@1.0.0` (`backend/app/skills/builtins/field_frame_observation.py`): Implemented structured visual intelligence observation skill consuming frame image via Gemini multimodal API. Outputs: `observations`, `detected_signals`, `status` (`analyzed` | `uncertain` | `insufficient_evidence`), `confidence` (bounded [0.0, 1.0]), and `warnings`. Automatic multi-model fallback (`gemini-flash-latest`, `gemini-3.8-flash`) and safe offline handling. Persistence in `frame_analyses` table with aggregated video-level summary and signal deduplication.
+  - REST API Endpoints (`backend/app/routes/media.py`): `POST /api/v1/media/{asset_id}/frames/extract`, `GET /api/v1/media/{asset_id}/frames`, `GET /api/v1/media/{asset_id}/frames/{frame_id}`, `POST /api/v1/media/{asset_id}/frames/analyze`, `GET /api/v1/media/{asset_id}/frame-analysis`.
+  - Setowa Workspace UI Extension (`backend/app/demo/`): Media Library card action: `🎬 Frame Analytics` button for video assets; interactive `#frames-modal` dialog with inline HTML5 video player, sampling strategy selector (interval vs uniform), extraction trigger, batch/single-frame analysis trigger, and aggregated observation summary card; responsive frame timeline rendering thumbnails, timestamps, signal tags, observations, and confidence pills.
+  - Testing & Quality Assurance (`backend/tests/test_video_frames.py`): 19 targeted tests covering all required edge cases. Full test suite: 189 passed, 1 skipped, 1 known pre-existing Windows chmod baseline, 0 regressions.
+  - Live End-to-End Validation: Cloudinary video upload (`setowa/t014_live_walkthrough`, 13.41s, 854x480, PASS), frame derivation and delivery (HTTP 200, 23,702 bytes, image/jpeg, PASS), and live Gemini Vision inference via `SkillRuntime` (HTTP 200 OK, accurate visual observations, honest `insufficient_evidence` status and `0.1` confidence, PASS).
+  - Added ADR D016 in `DECISIONS.md`.
+- **AGY**: Completed T013 (SETOWA Workflow Engine + Builder):
+  - Created `backend/app/workflows/models.py`: declarative schema definitions (`WorkflowDefinition`, `WorkflowNode`, `WorkflowEdge`, `WorkflowInputDefinition`, `WorkflowSummary`, `WorkflowValidationResult`, `WorkflowExecutionRequest`, `WorkflowExecutionResult`, `WorkflowExecutionStatus`, `NodeExecutionStatus`, `NodeExecutionResult`).
+  - Created `backend/app/workflows/dag.py`: `DAGGraph` with Kahn's algorithm and DFS cycle detection for cycle and self-loop rejection, dependency analysis, and deterministic topological ordering.
+  - Created `backend/app/workflows/validation.py`: comprehensive validation for node uniqueness, skill registry resolution, semver matching, edge port compatibility, and reference binding (`$input.key`, `$node.node_id.output_key`).
+  - Created `backend/app/workflows/engine.py`: `WorkflowEngine` orchestrating dynamic state propagation, executing nodes strictly via T012 `SkillRuntime`, skipping downstream nodes on upstream failures, and producing structured execution reports with latency metrics.
+  - Created `backend/app/workflows/store.py`: SQLite persistence for `workflows` and `workflow_executions` tables, including automatic seeding of `wf_evidence_compare` (Before-After Evidence Comparison multi-skill workflow).
+  - Created `backend/app/workflows/__init__.py`: module exports and singleton engine/store accessors.
+  - Created `backend/app/routes/workflows.py`: REST API endpoints for workflow CRUD, draft and stored DAG validation, topological execution, and run history.
+  - Registered `workflows_router` in `backend/app/main.py`.
+  - Added Setowa Workspace Visual Workflow Builder in `backend/app/demo/`:
+    - `#tab-workflows` studio with 3-column layout (Skill Palette, interactive DAG Canvas with SVG connections, Node Inspector for `$input`/`$node` mapping, and Step Execution Panel).
+    - Toolbar with New, Validate, Save, Run, Clear, and Workflow selector.
+    - Full bidirectional wiring to backend `/api/v1/workflows` endpoints.
+  - Added 22 focused tests in `backend/tests/test_workflows.py` covering all 22 required test scenarios.
+  - Full test suite verified: 170 passed, 1 skipped, 1 known Windows chmod baseline, 0 regressions.
+  - Added ADR D015 in `DECISIONS.md`.
+- **AGY**: Completed T012 (SETOWA Skill Runtime):
+
+  - Created `backend/app/skills/models.py`: declarative `SkillManifest`, `SkillInputDefinition`, `SkillOutputDefinition`, `SkillExecutionStatus` (4-state: `success`, `failed`, `invalid_input`, `unavailable`), `SkillExecutionRequest`, and `SkillExecutionResult`.
+  - Created `backend/app/skills/validation.py`: manifest integrity checking (unique inputs/outputs, semver, valid namespace:action permissions), input type validation, and execution context permission enforcement.
+  - Created `backend/app/skills/loader.py`: `BaseSkill` abstract base class defining standard execution interface.
+  - Created `backend/app/skills/registry.py`: `SkillRegistry` with multi-version support, semantic version resolution (latest vs exact), duplicate prevention, and discovery/listing with kind filtering.
+  - Created `backend/app/skills/runtime.py`: `SkillRuntime` enforcing permission validation, input checking, latency measurement, and unhandled exception safety.
+  - Created built-in skills in `backend/app/skills/builtins/`:
+    - `media-metadata@1.0.0`: deterministic inspector extracting Cloudinary delivery URLs, format, dimensions, duration, and DB asset records.
+    - `evidence-comparison@1.0.0`: structured before/after comparison reusing core `image_comparison` service with 4-state output and zero unbenchmarked accuracy claims.
+  - Created `backend/app/routes/skills.py`: REST API endpoints for discovery (`GET /api/v1/skills`), manifest inspection (`GET /api/v1/skills/{name}`), and execution (`POST /api/v1/skills/{name}/execute`).
+  - Integrated `skills_router` into `backend/app/main.py` and exported models in `backend/app/schemas/__init__.py`.
+  - Added Setowa Workspace Skills UI in `backend/app/demo/`: `#tab-skills` section, skills overview cards, tags for permissions/inputs/outputs, and interactive in-page execution tester (`#skill-tester-panel`).
+  - Added 15 comprehensive unit & API tests in `backend/tests/test_skills.py` covering all 14 required test scenarios.
+  - Full test suite verified: 148 passed, 1 skipped, 1 known Windows chmod failure, 0 regressions.
+  - Added ADR D014 in `DECISIONS.md`.
+
 ### 2026-09-26
 - **AGY**: Initialized `.ai/` control plane (T001) with `AGENTS.md`, `PROJECT_STATE.md`, `TASK_BOARD.md`, `DECISIONS.md`, `HANDOFF.md`, and `CHANGELOG.md`.
 - **AGY**: Established verified test baseline (T003): 47 tests collected, 45 passed, 1 pre-existing Windows-specific permission failure (`chmod 0o600`), 2 library deprecation errors.
@@ -119,4 +175,34 @@
     - Documented prerequisites, environment variables (names only), backend/frontend startup instructions, Cloudinary/Gemini setup, exact 8-step demo sequence, failure recovery guide, and judge demo safety guidelines ("AI-generated visual assessment", "Human-verified observation").
   - Added ADR D011 in `DECISIONS.md`.
   - Test baseline post-T009: 129 collected, 127 passed, 1 skipped, 1 failed (Windows chmod), 2 deprecation errors. Zero regressions.
+
+### 2026-09-27
+- **AGY**: Completed T011 (Media Pipeline + Bulk Ingestion):
+  - Database Schema & Helper Extensions (`backend/app/services/evidence_store.py`):
+    - Non-destructively migrated `assets` table schema to include `site_id`, `media_type`, `processing_status`, `original_filename`, `duration`, `preview_url`, `created_at`, `metadata_json`.
+    - Added helper methods: `ensure_ingestion_visit`, `save_asset`, `get_media_item`, `list_media`.
+  - Pydantic Schemas (`backend/app/schemas/api.py`, `backend/app/schemas/__init__.py`):
+    - Added `MediaType`, `ProcessingStatus`, `MediaItemResponse`, `BulkMediaItemResult`, `BulkMediaUploadResponse`.
+  - Cloudinary Media Pipeline (`backend/app/services/media.py`):
+    - Enforced Cloudinary delivery transformations: `f_auto,q_auto`, responsive preview (`w_1200,h_900,c_limit`), square thumbnail (`w_640,h_480`), and video poster frames at offset 0 (`so_0`).
+    - Added `validate_video_header` checking magic bytes for MP4/WebM/MOV and enforcing 50 MiB limit.
+    - Added `ingest_video` for Cloudinary `resource_type="video"` uploads and duration extraction.
+    - Added `ingest_media` unified dispatcher for images and videos.
+  - Media API Endpoints (`backend/app/routes/media.py`):
+    - `POST /api/v1/media/bulk`: Multi-file upload with safe per-file error isolation preventing entire-batch rollback on individual file failure.
+    - `POST /api/v1/media/videos`: Dedicated video upload with poster frame generation.
+    - `GET /api/v1/media`: Filtered media library retrieval (by project, media type, permission status, with pagination).
+    - `GET /api/v1/media/{asset_id}`: Single media asset inspection.
+  - Setowa Workspace Media Library UI (`backend/app/demo/`):
+    - Added Media Library tab (`#tab-media-library`) with media type filter, permission filter, and text search.
+    - Built bulk ingestion accordion form (`#bulk-upload-form`) with real-time feedback and per-file result summaries.
+    - Rendered media cards with poster frames, duration tags, Cloudinary tags, dimensions, quick CDN URL copying, and inline video playback via lightbox modal.
+  - Standalone Ingestion CLI (`backend/scripts/ingest_collection.py`):
+    - Built CLI supporting directory ingestion with `--dir`, `--project`, `--source`, `--date`, `--permission`, `--json`.
+  - Test Suite & Quality Assurance:
+    - Fixed pytest byte serialization hanging in `backend/tests/test_media.py` by adding explicit test IDs.
+    - Added `backend/tests/test_bulk_media.py` (5 tests) verifying video upload, container header validation, mixed image/video bulk upload, partial failure resilience, and media library filtering.
+    - Added ADR D012 in `DECISIONS.md`.
+    - Total test suite: 133 tests passed, 1 skipped, 1 known pre-existing Windows chmod failure, 0 regressions.
+
 
