@@ -7,10 +7,14 @@ from pathlib import Path
 import os
 import sys
 
-# Ensure backend root is on sys.path
+# Ensure backend root and scripts directory are on sys.path, and working directory is backend
 backend_dir = Path(__file__).resolve().parents[1]
+scripts_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+if str(scripts_dir) not in sys.path:
+    sys.path.insert(0, str(scripts_dir))
+os.chdir(backend_dir)
 
 from app.config import settings
 from app.services.env_validator import validate_environment

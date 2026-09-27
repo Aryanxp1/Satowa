@@ -67,10 +67,15 @@ From repository root:
 ./run_local.sh
 ```
 
-### Windows / Cross-Platform Launch (Python)
-From `backend/`:
-```bash
-python scripts/start_demo.py
+### Windows / Cross-Platform Launch (Python / PowerShell)
+From repository root (`LEX`):
+```powershell
+.\backend\venv\Scripts\python.exe backend\scripts\start_demo.py
+```
+Or from `backend/`:
+```powershell
+cd backend
+.\venv\Scripts\python.exe scripts\start_demo.py
 ```
 
 The startup script will:
