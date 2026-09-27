@@ -541,9 +541,49 @@
 
 ---
 
-## [ ] T017 — Sustainability Timeline / Impact Story
-**Owner:** TBD  
+## [x] T017 — Sustainability Timeline + Impact Story
+**Owner:** AGY  
 **Dependencies:** T014 ✅, T015 ✅, T016 ✅  
+**Status:** COMPLETE (2026-09-27)  
+**Goal:** Turn existing persisted project/media/evidence records into a coherent, verifiable, traceable sustainability and impact narrative grounded strictly in real source-backed data without hallucinated carbon or environmental percentages.
+
+**Scope Completed:**
+1. Domain Model & SQLite Persistence (`evidence_store.py`):
+   - Added `impact_stories` table: `id`, `project_id`, `title`, `description`, `status`, `summary_narrative`, `uncertainty_note`, `date_start`, `date_end`, `metrics_json`, `created_at`, `updated_at`.
+   - Added `impact_story_events` table: `id`, `story_id`, `event_type`, `timestamp_date`, `title`, `description`, `site_id`, `site_name`, `primary_media_url`, `thumbnail_url`, `media_type`, `asset_ids_json`, `evidence_ids_json`, `verification_status`, `uncertainty`, `observations_json`, `evidence_json`, `metadata_json`, `sort_order`, `created_at`.
+   - Added indexes `idx_impact_stories_project`, `idx_impact_story_events_story`, `idx_impact_story_events_type`.
+   - Added store methods: `save_impact_story()`, `get_impact_story()`, `get_project_impact_story()`, `update_impact_story()`, `save_impact_story_events()`, `get_impact_story_events()`, `delete_impact_story_events()`.
+2. Pydantic API Schemas (`schemas/api.py`, `schemas/__init__.py`):
+   - Defined `TimelineEventType` (`before`, `activity`, `after`, `verified_finding`, `measurement`, `milestone`), `TimelineEvent`, `BeforeAfterCard`, `ImpactStoryResponse`, `GenerateImpactStoryRequest`, `UpdateImpactStoryRequest`.
+3. Service Layer (`services/impact_story.py`):
+   - Chronological event generation (`build_project_timeline_events()`): integrates site visits, cleanup video action, video frames with timestamp offsets, after photos, recorded measurements, and verified findings with full asset and reviewer provenance.
+   - Comparative proof cards (`build_before_after_cards()`): extracts paired observation cards with Cloudinary URLs, verification status, approved findings, and uncertainty caveats.
+   - Grounded narrative synthesis (`generate_grounded_impact_narrative()`): synthesized from structured evidence and measurements with strict anti-hallucination rules (zero invented carbon/area/percentage claims), explicit uncertainty flagging, and deterministic fallback when Gemini is offline.
+   - Deterministic story lifecycle management: `generate_impact_story()`, `get_impact_story_by_id()`, `get_project_impact_story()`, `update_impact_story_fields()`, `get_story_timeline_events()`.
+4. REST API Endpoints (`routes/impact_stories.py`, `main.py`):
+   - `GET /api/v1/projects/{project_id}/impact-story`: Retrieve persisted project impact story.
+   - `POST /api/v1/projects/{project_id}/impact-story/generate`: Generate/regenerate grounded story from live evidence records.
+   - `GET /api/v1/impact-stories/{story_id}`: Retrieve story by ID.
+   - `PUT /api/v1/impact-stories/{story_id}`: Update story title, description, or status (`draft`, `in_review`, `published`).
+   - `GET /api/v1/impact-stories/{story_id}/timeline`: Retrieve story timeline events in chronological order.
+5. Setowa Workspace UI Extension (`backend/app/demo/`):
+   - Added `Impact Story` tab button and `#tab-impact` workspace panel.
+   - Project Dossier header with evidence date range, total timeline events, linked media assets, approved findings, and recorded physical measurements.
+   - Grounded Synthesis card displaying verified impact summary text, story status controls, and observation/verification caveats callout.
+   - Before/After comparative evidence gallery with Cloudinary responsive imagery, verification status badges, reviewer attribution, and click-to-lightbox inspection.
+   - Chronological spine displaying all milestone events with color-coded type markers, media thumbnails (image/video), frame observations, and traceable provenance.
+6. Testing & Quality Assurance:
+   - 23 targeted tests in `tests/test_impact_story.py` covering timeline event creation, chronological sorting, project/site linkage, media linkage, evidence linkage, verification state propagation, before/after card generation, uncertainty preservation, grounded summary generation, Gemini offline fallback, story persistence & retrieval, API endpoints, empty project handling, uncertain evidence handling, approved evidence handling, provenance completeness, Cloudinary media delivery, and backward compatibility with evidence review, SkillRuntime, and WorkflowEngine.
+   - Full test suite: 253 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 0 functional regressions.
+7. Live Gemini Validation:
+   - Live multimodal narrative synthesis executed with configured credentials (`GEMINI_API_KEY`). Produced 683-character strictly grounded narrative referencing verified observations and exact weigh slip measurement (320.0 kg), with 0 secrets leaked.
+
+---
+
+## [ ] T018 — Public / Shareable Impact Experience
+**Owner:** TBD  
+**Dependencies:** T017 ✅  
 **Status:** NEXT
+
 
 

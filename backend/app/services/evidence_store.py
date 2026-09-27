@@ -113,6 +113,45 @@ CREATE TABLE IF NOT EXISTS media_intelligence (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS impact_stories (
+ id TEXT PRIMARY KEY,
+ project_id TEXT NOT NULL REFERENCES projects(id),
+ title TEXT NOT NULL,
+ description TEXT,
+ status TEXT NOT NULL DEFAULT 'draft',
+ summary_narrative TEXT,
+ uncertainty_note TEXT,
+ metadata_json TEXT,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS impact_story_events (
+ id TEXT PRIMARY KEY,
+ story_id TEXT NOT NULL REFERENCES impact_stories(id),
+ event_order INTEGER NOT NULL DEFAULT 0,
+ timestamp_date TEXT NOT NULL,
+ event_type TEXT NOT NULL,
+ title TEXT NOT NULL,
+ description TEXT,
+ site_id TEXT REFERENCES sites(id),
+ site_name TEXT,
+ asset_ids_json TEXT,
+ primary_media_url TEXT,
+ thumbnail_url TEXT,
+ media_type TEXT,
+ frame_id TEXT,
+ observation_id TEXT REFERENCES observations(id),
+ measurement_id TEXT REFERENCES measurements(id),
+ intelligence_id TEXT REFERENCES media_intelligence(id),
+ verification_status TEXT NOT NULL DEFAULT 'unverified',
+ tags_json TEXT,
+ signals_json TEXT,
+ warnings_json TEXT,
+ uncertainty TEXT,
+ evidence_json TEXT,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
 """
 
 # All indexes are applied post-migration to guarantee columns exist
@@ -129,6 +168,10 @@ _POST_MIGRATION_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_media_intel_asset ON media_intelligence(asset_id)',
     'CREATE INDEX IF NOT EXISTS idx_media_intel_status ON media_intelligence(status)',
     'CREATE INDEX IF NOT EXISTS idx_media_intel_frame ON media_intelligence(frame_id)',
+    # T017 indexes
+    'CREATE INDEX IF NOT EXISTS idx_impact_stories_project ON impact_stories(project_id)',
+    'CREATE INDEX IF NOT EXISTS idx_impact_story_events_story ON impact_story_events(story_id, event_order)',
+    'CREATE INDEX IF NOT EXISTS idx_impact_story_events_type ON impact_story_events(event_type)',
 ]
 
 
@@ -595,4 +638,149 @@ def get_media_intelligence_history(db, asset_id: str, frame_id: str | None = Non
             'SELECT * FROM media_intelligence WHERE asset_id=? AND frame_id IS NULL ORDER BY created_at DESC',
             (asset_id,)
         )
+
+
+def save_impact_story(db, data: dict) -> dict:
+    """Insert or update an impact story record."""
+    now = timestamp()
+    story_id = data.get('id') or f"story_{data['project_id']}"
+    created_at = data.get('created_at') or now
+    updated_at = now
+    db.execute(
+        '''
+        INSERT INTO impact_stories (
+            id, project_id, title, description, status,
+            summary_narrative, uncertainty_note, metadata_json,
+            created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            title=excluded.title,
+            description=excluded.description,
+            status=excluded.status,
+            summary_narrative=excluded.summary_narrative,
+            uncertainty_note=excluded.uncertainty_note,
+            metadata_json=excluded.metadata_json,
+            updated_at=excluded.updated_at
+        ''',
+        (
+            story_id,
+            data['project_id'],
+            data['title'],
+            data.get('description'),
+            data.get('status', 'draft'),
+            data.get('summary_narrative'),
+            data.get('uncertainty_note'),
+            data.get('metadata_json'),
+            created_at,
+            updated_at,
+        )
+    )
+    data['id'] = story_id
+    data['created_at'] = created_at
+    data['updated_at'] = updated_at
+    return data
+
+
+def get_impact_story(db, story_id: str) -> dict | None:
+    """Retrieve impact story by ID."""
+    return one(db, 'SELECT * FROM impact_stories WHERE id=?', (story_id,))
+
+
+def get_project_impact_story(db, project_id: str) -> dict | None:
+    """Retrieve the latest impact story for a project."""
+    return one(db, 'SELECT * FROM impact_stories WHERE project_id=? ORDER BY updated_at DESC LIMIT 1', (project_id,))
+
+
+def update_impact_story(db, story_id: str, updates: dict) -> dict | None:
+    """Update fields on an existing impact story."""
+    existing = get_impact_story(db, story_id)
+    if not existing:
+        return None
+    allowed = {'title', 'description', 'status', 'summary_narrative', 'uncertainty_note', 'metadata_json'}
+    fields = []
+    values = []
+    for k, v in updates.items():
+        if k in allowed:
+            fields.append(f"{k}=?")
+            values.append(v)
+    if not fields:
+        return existing
+    fields.append("updated_at=?")
+    values.append(timestamp())
+    values.append(story_id)
+    sql = f"UPDATE impact_stories SET {', '.join(fields)} WHERE id=?"
+    db.execute(sql, tuple(values))
+    return get_impact_story(db, story_id)
+
+
+def delete_impact_story_events(db, story_id: str):
+    """Delete all timeline events for a story."""
+    db.execute('DELETE FROM impact_story_events WHERE story_id=?', (story_id,))
+
+
+def save_impact_story_events(db, story_id: str, events: list[dict]) -> list[dict]:
+    """Replace all timeline events for a story atomically."""
+    delete_impact_story_events(db, story_id)
+    now = timestamp()
+    saved = []
+    for idx, evt in enumerate(events):
+        evt_id = evt.get('id') or f"evt_{uuid4().hex[:12]}"
+        created_at = evt.get('created_at') or now
+        updated_at = now
+        db.execute(
+            '''
+            INSERT INTO impact_story_events (
+                id, story_id, event_order, timestamp_date, event_type,
+                title, description, site_id, site_name, asset_ids_json,
+                primary_media_url, thumbnail_url, media_type, frame_id,
+                observation_id, measurement_id, intelligence_id,
+                verification_status, tags_json, signals_json, warnings_json,
+                uncertainty, evidence_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                evt_id,
+                story_id,
+                evt.get('event_order', idx),
+                evt['timestamp_date'],
+                evt['event_type'],
+                evt['title'],
+                evt.get('description'),
+                evt.get('site_id'),
+                evt.get('site_name'),
+                evt.get('asset_ids_json'),
+                evt.get('primary_media_url'),
+                evt.get('thumbnail_url'),
+                evt.get('media_type'),
+                evt.get('frame_id'),
+                evt.get('observation_id'),
+                evt.get('measurement_id'),
+                evt.get('intelligence_id'),
+                evt.get('verification_status', 'unverified'),
+                evt.get('tags_json'),
+                evt.get('signals_json'),
+                evt.get('warnings_json'),
+                evt.get('uncertainty'),
+                evt.get('evidence_json'),
+                created_at,
+                updated_at,
+            )
+        )
+        evt['id'] = evt_id
+        evt['story_id'] = story_id
+        evt['event_order'] = evt.get('event_order', idx)
+        evt['created_at'] = created_at
+        evt['updated_at'] = updated_at
+        saved.append(evt)
+    return saved
+
+
+def get_impact_story_events(db, story_id: str) -> list[dict]:
+    """Retrieve chronological events for an impact story."""
+    return rows(
+        db,
+        'SELECT * FROM impact_story_events WHERE story_id=? ORDER BY event_order ASC, timestamp_date ASC',
+        (story_id,)
+    )
+
 

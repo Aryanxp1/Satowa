@@ -349,3 +349,106 @@ class BatchMediaAnalysisResponse(BaseModel):
     failed: int
     results: List[BatchMediaAnalysisItemResult]
 
+
+class TimelineEventType(str, Enum):
+    """Categorization of events in a project impact timeline."""
+    BEFORE = "before"
+    ACTIVITY = "activity"
+    AFTER = "after"
+    VERIFIED_FINDING = "verified_finding"
+    MEASUREMENT = "measurement"
+    MILESTONE = "milestone"
+
+
+class VerificationStatus(str, Enum):
+    """Human verification status for impact findings and events."""
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    UNVERIFIED = "unverified"
+    UNCERTAIN = "uncertain"
+
+
+class TimelineEvent(BaseModel):
+    """An event on the sustainability and impact timeline."""
+    id: str
+    story_id: str
+    event_order: int = 0
+    timestamp_date: str
+    event_type: str
+    title: str
+    description: Optional[str] = None
+    site_id: Optional[str] = None
+    site_name: Optional[str] = None
+    asset_ids: List[str] = Field(default_factory=list)
+    primary_media_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    media_type: Optional[str] = None
+    frame_id: Optional[str] = None
+    observation_id: Optional[str] = None
+    measurement_id: Optional[str] = None
+    intelligence_id: Optional[str] = None
+    verification_status: str = "unverified"
+    tags: List[str] = Field(default_factory=list)
+    signals: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    uncertainty: Optional[str] = None
+    evidence: Optional[Dict[str, Any]] = None
+    created_at: str
+
+
+class BeforeAfterCard(BaseModel):
+    """Grounded before/after comparison evidence card."""
+    observation_id: str
+    site_id: str
+    site_name: Optional[str] = None
+    before_asset_id: str
+    before_media_url: str
+    before_date: Optional[str] = None
+    after_asset_id: str
+    after_media_url: str
+    after_date: Optional[str] = None
+    comparison_summary: Optional[str] = None
+    verification_status: str = "pending"
+    approved_text: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    uncertainty: Optional[str] = None
+    reliability_reason: Optional[str] = None
+    detected_changes: List[str] = Field(default_factory=list)
+
+
+class ImpactStoryResponse(BaseModel):
+    """Complete sustainability impact story representation."""
+    id: str
+    project_id: str
+    project_name: str
+    title: str
+    description: Optional[str] = None
+    status: str
+    summary_narrative: Optional[str] = None
+    uncertainty_note: Optional[str] = None
+    date_range: Dict[str, Optional[str]] = Field(default_factory=dict)
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+    events: List[TimelineEvent] = Field(default_factory=list)
+    before_after_cards: List[BeforeAfterCard] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class GenerateImpactStoryRequest(BaseModel):
+    """Parameters for generating or re-generating an impact story."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    force_regenerate: bool = False
+    include_ai_summary: bool = True
+
+
+class UpdateImpactStoryRequest(BaseModel):
+    """Editable fields for an existing impact story."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    summary_narrative: Optional[str] = None
+
+

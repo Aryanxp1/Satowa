@@ -15,6 +15,7 @@ from app.routes.local_setup import router as local_setup_router
 from app.routes.skills import router as skills_router
 from app.routes.workflows import router as workflows_router
 from app.routes.projects import router as projects_router
+from app.routes.impact_stories import router as impact_stories_router
 
 # Configure logging
 logging.basicConfig(
@@ -47,6 +48,7 @@ app.add_middleware(
 # Register route modules
 app.include_router(media_router)
 app.include_router(projects_router)
+app.include_router(impact_stories_router)
 app.include_router(evidence_router)
 app.include_router(health_router)
 app.include_router(analyze_router)

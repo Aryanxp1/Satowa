@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-27 by AGY
 
-## Current Status: T016 AI MEDIA INTELLIGENCE + DISCOVERY FOUNDATION COMPLETE
+## Current Status: T017 SUSTAINABILITY TIMELINE + IMPACT STORY COMPLETE
 
 ## Repository State
 
@@ -10,14 +10,14 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T016 (2026-09-27)
+## Verified Test Baseline Post-T017 (2026-09-27)
 
 ```
 Command: .\venv\Scripts\python.exe -m pytest tests/ -q
-Runtime: ~26 seconds
-Collected: 232 items
+Runtime: ~48 seconds
+Collected: 255 items
 
-PASSED: 230 (+20 new T016 AI Media Intelligence tests, 0 regressions)
+PASSED: 253 (+23 new T017 Sustainability Timeline & Impact Story tests, 0 regressions)
 SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
 FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
@@ -145,12 +145,20 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Structured Discovery Filtering (`/media/query`, `/media` by `tag`, `signal`, `ai_status`) | ✅ Fully tested and passing |
 | Media Library UI Intelligence Badges, Tag Filters, Action Triggers, and Modal | ✅ Verified in demo client |
 | Live Gemini Multimodal Inference (`gemini-flash-latest`) against Cloudinary media | ✅ Verified live (2026-09-27) |
+| Impact Story & Timeline Schema (`impact_stories`, `impact_story_events`) | ✅ Fully tested and passing |
+| Chronological Event Generation with multi-site, asset, and review provenance | ✅ Fully tested and passing |
+| Before / After Evidence Cards with verification status, reviewer attribution & Cloudinary delivery | ✅ Fully tested and passing |
+| Grounded Narrative Synthesis via Gemini with anti-hallucination rules | ✅ Fully tested and passing |
+| Deterministic Narrative Offline Fallback when Gemini is unavailable | ✅ Fully tested and passing |
+| Impact Story REST APIs (`/api/v1/projects/{project_id}/impact-story`, `/api/v1/impact-stories/{story_id}`) | ✅ Fully tested and passing |
+| Setowa Workspace Impact Story Tab, Timeline Spine, and Comparison Gallery | ✅ Verified in demo client |
+| Live Gemini Narrative Generation with real configured credentials | ✅ Verified live (2026-09-27) |
 
 ## Current Active Milestone
 
-**T016 — AI MEDIA INTELLIGENCE + DISCOVERY FOUNDATION** — COMPLETE
+**T017 — SUSTAINABILITY TIMELINE + IMPACT STORY** — COMPLETE
 
 ## Next Milestone
 
-**T017 — Sustainability Timeline / Impact Story**
+**T018 — Public / Shareable Impact Experience**
 

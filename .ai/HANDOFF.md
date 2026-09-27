@@ -268,29 +268,41 @@
 - Testing: 20 targeted tests passed; 230 total tests passed, 0 regressions.
 - Live Gemini Validation: Real multimodal inference verified with `gemini-flash-latest`.
 
-## Test Summary Post-T016
+**T017 (Sustainability Timeline + Impact Story):**
+- Domain Model & SQLite Schema: Added `impact_stories` and `impact_story_events` tables with indexes on `project_id`, `story_id`, and `event_type`.
+- Chronological Spine: Generated chronological events across site visits, cleanup video action, sampled video frames with timestamp offsets, after photos, recorded measurements, and verified findings.
+- Before / After Proof Cards: Comparative proof cards linking before/after Cloudinary URLs, verification status (`approved`, `pending`, `rejected`), reviewer provenance, and uncertainty caveats.
+- Grounded Narrative Synthesis: Grounded summary generation via Gemini with strict anti-hallucination rules (zero invented carbon/area/percentage claims), explicit uncertainty flagging, and deterministic offline fallback.
+- REST API Endpoints: Added `/api/v1/projects/{project_id}/impact-story`, `/generate`, `/api/v1/impact-stories/{story_id}`, and `/timeline`.
+- Setowa Workspace UI: Added `Impact Story` tab button and `#tab-impact` workspace view in `index.html` with Project Dossier header, dynamic metrics, Grounded Synthesis card with status controls, Before/After Cards grid, and interactive Chronological Spine.
+- Testing: 23 targeted tests in `tests/test_impact_story.py` passed; 253 total tests passed (+23 new tests, zero regressions).
+- Live Gemini Validation: Real multimodal narrative synthesis verified with `GEMINI_API_KEY` (683 characters, strictly grounded, zero secrets leaked).
+- Added ADR D019 in `DECISIONS.md`.
+
+## Test Summary Post-T017
 
 | Metric | Value |
 |:---|:---|
 | **Command** | `.\venv\Scripts\python.exe -m pytest tests/ -q` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 232 |
-| **Passed** | 230 (+20 new T016 tests, 0 regressions) |
+| **Total Collected** | 255 |
+| **Passed** | 253 (+23 new T017 tests, 0 regressions) |
 | **Skipped** | 1 (live integration test gated by RUN_LIVE_INTEGRATION=1) |
 | **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py`) |
 | **Warnings** | 2 (httpx/starlette deprecation, non-blocking) |
-| **Runtime** | ~26s |
+| **Runtime** | ~48s |
 
 ## What Is Ready Next
 
-- T016 is **COMPLETE**.
-- Next assigned milestone: **T017 — Sustainability Timeline / Impact Story**.
-  - Goal: Build chronological project impact narrative combining before/after pairs, frame analytics, structured media intelligence, and measurements into a verifiable timeline.
+- T017 is **COMPLETE**.
+- Next assigned milestone: **T018 — Public / Shareable Impact Experience**.
+  - Goal: Create clean share-ready presentation or export view without compromising provenance or trust model integrity.
 
 ## Open Questions for User
 
-None. T016 is fully implemented, tested, verified live, and ready for review.
+None. T017 is fully implemented, tested, verified live with real Gemini credentials, and ready for review.
+
 
 
 

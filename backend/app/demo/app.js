@@ -23,8 +23,9 @@
     currentWorkflow: null,
     selectedNodeId: null,
     workflowExecution: null,
+    impactStory: null,
   };
-  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report']);
+  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact']);
 
   function element(tag, className = '', text = '') {
     const item = document.createElement(tag);
@@ -210,6 +211,8 @@
       loadSkills();
     } else if (active === 'workflows') {
       loadWorkflowsStudio();
+    } else if (active === 'impact') {
+      loadImpactStoryTab();
     }
   }
 
@@ -2672,6 +2675,310 @@
   if (reanalyzeBtn) {
     reanalyzeBtn.addEventListener('click', () => {
       if (activeIntelAsset) triggerAnalyzeMedia(activeIntelAsset.asset_id, true);
+    });
+  }
+
+  // ==========================================================================
+  // Milestone T017: Sustainability Timeline & Impact Story
+  // ==========================================================================
+
+  async function loadImpactStoryTab() {
+    if (!state.site) return;
+    const projectId = state.site;
+
+    if ($('impact-project-name')) {
+      $('impact-project-name').textContent = (state.siteRecord && state.siteRecord.name) || state.site;
+    }
+
+    notice('Loading impact story and sustainability timeline...');
+
+    try {
+      const story = await request(`/projects/${encodeURIComponent(projectId)}/impact-story`);
+      state.impactStory = story;
+      renderImpactStory(story);
+      notice('');
+    } catch (err) {
+      if (err.message && err.message.includes('404')) {
+        state.impactStory = null;
+        renderEmptyImpactStory(projectId);
+        notice('');
+      } else {
+        console.error('Failed to load impact story:', err);
+        notice(`Failed to load impact story: ${sanitizeErrorMessage(err)}`, true);
+      }
+    }
+  }
+
+  function renderEmptyImpactStory(projectId) {
+    if ($('impact-metric-events')) $('impact-metric-events').textContent = '0';
+    if ($('impact-metric-media')) $('impact-metric-media').textContent = '0';
+    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = '0';
+    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = '0';
+    if ($('impact-date-range')) $('impact-date-range').textContent = 'Date range: Not generated yet';
+
+    if ($('impact-narrative-text')) {
+      $('impact-narrative-text').innerHTML = `
+        <p class="muted">No impact story generated for this project yet. Click <strong>Generate Story</strong> above to synthesize your persisted field media, before/after evidence comparisons, and human-verified outcomes.</p>
+      `;
+    }
+    if ($('impact-uncertainty-callout')) $('impact-uncertainty-callout').hidden = true;
+
+    const cardsContainer = $('impact-cards-container');
+    if (cardsContainer) {
+      cardsContainer.className = 'impact-cards-grid empty';
+      cardsContainer.textContent = 'No before/after cards generated yet. Click Generate Story above.';
+    }
+
+    const timelineContainer = $('impact-timeline-container');
+    if (timelineContainer) {
+      timelineContainer.innerHTML = '<div class="empty-state">No timeline events generated yet. Click Generate Story above.</div>';
+    }
+  }
+
+  function renderImpactStory(story) {
+    if (!story) return;
+
+    if ($('impact-project-name')) $('impact-project-name').textContent = story.title || (state.siteRecord && state.siteRecord.name) || state.site;
+    const dateRange = story.date_range && (story.date_range.start || story.date_range.end)
+      ? `${story.date_range.start || 'Unknown'} → ${story.date_range.end || 'Present'}`
+      : 'Date range: Single visit / ongoing';
+    if ($('impact-date-range')) $('impact-date-range').textContent = `Evidence Period: ${dateRange}`;
+
+    const metrics = story.metrics || {};
+    if ($('impact-metric-events')) $('impact-metric-events').textContent = metrics.event_count || (story.events ? story.events.length : 0);
+    if ($('impact-metric-media')) $('impact-metric-media').textContent = metrics.media_count || 0;
+    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = metrics.approved_findings_count || 0;
+    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = metrics.measurement_count || 0;
+
+    if ($('impact-status-pill')) {
+      $('impact-status-pill').textContent = (story.status || 'draft').toUpperCase();
+      $('impact-status-pill').className = `badge ${story.status === 'published' ? 'approved' : 'pending'}`;
+    }
+    if ($('impact-status-select')) {
+      $('impact-status-select').value = story.status || 'draft';
+    }
+
+    if ($('impact-narrative-text')) {
+      if (story.summary_narrative) {
+        const paras = story.summary_narrative.split('\n\n').filter(p => p.trim());
+        $('impact-narrative-text').replaceChildren();
+        for (const p of paras) {
+          $('impact-narrative-text').appendChild(element('p', '', p.trim()));
+        }
+      } else {
+        $('impact-narrative-text').innerHTML = '<p class="muted">No narrative text generated.</p>';
+      }
+    }
+
+    if ($('impact-uncertainty-callout') && $('impact-uncertainty-text')) {
+      if (story.uncertainty_note && story.uncertainty_note.trim()) {
+        $('impact-uncertainty-text').textContent = story.uncertainty_note;
+        $('impact-uncertainty-callout').hidden = false;
+      } else {
+        $('impact-uncertainty-callout').hidden = true;
+      }
+    }
+
+    renderBeforeAfterCards(story.before_after_cards || []);
+    renderTimelineEvents(story.events || []);
+  }
+
+  function renderBeforeAfterCards(cards) {
+    const container = $('impact-cards-container');
+    if (!container) return;
+    container.replaceChildren();
+
+    if (!cards || !cards.length) {
+      container.className = 'impact-cards-grid empty';
+      container.textContent = 'No before/after comparison records available for this project.';
+      return;
+    }
+
+    container.className = 'impact-cards-grid';
+
+    for (const card of cards) {
+      const cardEl = element('article', 'impact-card');
+
+      const header = element('div', 'impact-card-header');
+      const titleSpan = element('strong', '', card.site_name || card.site_id || 'Restoration Site');
+      const badge = element('span', `badge ${card.verification_status === 'approved' ? 'approved' : card.verification_status === 'rejected' ? 'rejected' : 'pending'}`);
+      badge.textContent = card.verification_status === 'approved' ? 'Approved Finding' : card.verification_status === 'rejected' ? 'Rejected' : 'Pending Review';
+      header.append(titleSpan, badge);
+
+      const mediaRow = element('div', 'impact-card-media-row');
+
+      const beforePhoto = element('div', 'impact-card-photo');
+      const beforeImg = element('img');
+      beforeImg.src = card.before_thumbnail_url || card.before_media_url;
+      beforeImg.alt = 'Before restoration state';
+      beforeImg.loading = 'lazy';
+      beforePhoto.append(beforeImg, element('span', '', 'BEFORE'));
+      beforePhoto.addEventListener('click', () => {
+        openLightbox(card.before_media_url, `Before: ${card.site_name || card.site_id}`, 'Baseline field evidence');
+      });
+
+      const afterPhoto = element('div', 'impact-card-photo');
+      const afterImg = element('img');
+      afterImg.src = card.after_thumbnail_url || card.after_media_url;
+      afterImg.alt = 'After restoration state';
+      afterImg.loading = 'lazy';
+      afterPhoto.append(afterImg, element('span', '', 'AFTER'));
+      afterPhoto.addEventListener('click', () => {
+        openLightbox(card.after_media_url, `After: ${card.site_name || card.site_id}`, 'Subsequent field evidence');
+      });
+
+      mediaRow.append(beforePhoto, afterPhoto);
+
+      const details = element('div', 'impact-card-details');
+      const textP = element('p', 'impact-card-text', card.approved_text || card.working_text || card.ai_draft || 'Comparison recorded.');
+      details.append(textP);
+
+      if (card.uncertainty) {
+        const uBox = element('div', 'warning-callout', `⚠️ Caveat: ${card.uncertainty}`);
+        details.append(uBox);
+      }
+
+      const footer = element('div', 'impact-card-footer');
+      const reviewer = card.reviewed_by ? `Verified by ${card.reviewed_by}` : 'AI Proposal (Unverified)';
+      const dateStr = (card.reviewed_at || card.updated_at || '').slice(0, 10);
+      footer.append(element('span', '', reviewer), element('span', '', dateStr));
+
+      cardEl.append(header, mediaRow, details, footer);
+      container.append(cardEl);
+    }
+  }
+
+  function renderTimelineEvents(events) {
+    const container = $('impact-timeline-container');
+    if (!container) return;
+    container.replaceChildren();
+
+    if (!events || !events.length) {
+      container.innerHTML = '<div class="empty-state">No timeline events recorded yet.</div>';
+      return;
+    }
+
+    for (const ev of events) {
+      const item = element('div', 'timeline-event-item');
+
+      const marker = element('div', `timeline-event-marker ${ev.event_type || 'milestone'}`);
+      item.append(marker);
+
+      const top = element('div', 'timeline-event-top');
+      const titleRow = element('div', 'timeline-event-title-row');
+      const typeBadge = element('span', `event-type-badge ${ev.event_type || 'milestone'}`, (ev.event_type || 'event').replace('_', ' '));
+      const h4 = element('h4', '', ev.title || 'Timeline Event');
+      titleRow.append(typeBadge, h4);
+
+      const dateMeta = element('span', 'meta', ev.timestamp_date || 'Undated');
+      top.append(titleRow, dateMeta);
+      item.append(top);
+
+      const body = element('div', 'timeline-event-body');
+
+      if (ev.primary_media_url) {
+        const thumbWrap = element('div', 'timeline-media-thumb');
+        const img = element('img');
+        img.src = ev.thumbnail_url || ev.primary_media_url;
+        img.alt = ev.title || 'Timeline evidence photo';
+        img.loading = 'lazy';
+        thumbWrap.append(img);
+
+        const isVideo = ev.media_type === 'video' || (ev.primary_media_url && ev.primary_media_url.endsWith('.mp4'));
+        if (isVideo) {
+          const icon = element('div', 'vid-icon', '▶');
+          thumbWrap.append(icon);
+          thumbWrap.addEventListener('click', () => {
+            openLightbox(ev.thumbnail_url, ev.title, ev.description, 'Granted', 'granted', 'video', ev.primary_media_url);
+          });
+        } else {
+          thumbWrap.addEventListener('click', () => {
+            openLightbox(ev.primary_media_url, ev.title, ev.description, 'Granted', 'granted', 'image');
+          });
+        }
+        body.append(thumbWrap);
+      }
+
+      const descCol = element('div', 'timeline-event-desc');
+      if (ev.description) {
+        descCol.append(element('p', '', ev.description));
+      }
+
+      if (ev.observations && ev.observations.length) {
+        const obsList = element('ul', 'timeline-event-observations');
+        for (const obs of ev.observations) {
+          const cleanObs = obs.replace(/^OBSERVED:\s*/i, '');
+          obsList.append(element('li', '', `• ${cleanObs}`));
+        }
+        descCol.append(obsList);
+      }
+
+      body.append(descCol);
+      item.append(body);
+
+      const footer = element('div', 'timeline-event-footer');
+      const siteText = ev.site_name || ev.site_id ? `Site: ${ev.site_name || ev.site_id}` : 'Project Scope';
+      const verifStatus = ev.verification_status ? `Status: ${ev.verification_status}` : '';
+      footer.append(element('span', '', siteText), element('span', '', verifStatus));
+
+      item.append(footer);
+      container.append(item);
+    }
+  }
+
+  async function generateImpactStoryAction() {
+    if (!state.site) return;
+    const btn = $('btn-generate-impact');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+    }
+    notice('Synthesizing project timeline, media intelligence, and verified evidence...');
+
+    try {
+      const story = await request(`/projects/${encodeURIComponent(state.site)}/impact-story/generate`, {
+        method: 'POST',
+        json: { force_regenerate: true },
+      });
+      state.impactStory = story;
+      renderImpactStory(story);
+      notice('Impact story generated and verified successfully!');
+    } catch (err) {
+      console.error('Failed to generate impact story:', err);
+      notice(`Story generation failed: ${sanitizeErrorMessage(err)}`, true);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Generate Story →';
+      }
+    }
+  }
+
+  async function updateStoryStatusAction(newStatus) {
+    if (!state.impactStory || !state.impactStory.id) return;
+    try {
+      const updated = await request(`/impact-stories/${encodeURIComponent(state.impactStory.id)}`, {
+        method: 'PUT',
+        json: { status: newStatus },
+      });
+      state.impactStory = updated;
+      renderImpactStory(updated);
+      notice(`Story status updated to ${newStatus}`);
+    } catch (err) {
+      console.error('Failed to update story status:', err);
+      notice(`Failed to update status: ${sanitizeErrorMessage(err)}`, true);
+    }
+  }
+
+  // T017 Impact Story Event Listeners
+  const generateImpactBtn = $('btn-generate-impact');
+  if (generateImpactBtn) generateImpactBtn.addEventListener('click', generateImpactStoryAction);
+  const refreshImpactBtn = $('btn-refresh-impact');
+  if (refreshImpactBtn) refreshImpactBtn.addEventListener('click', loadImpactStoryTab);
+  const statusSelect = $('impact-status-select');
+  if (statusSelect) {
+    statusSelect.addEventListener('change', (e) => {
+      updateStoryStatusAction(e.target.value);
     });
   }
 

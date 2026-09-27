@@ -4,6 +4,24 @@
 ## [Unreleased]
 
 ### 2026-09-27
+- **AGY**: Completed T017 (Sustainability Timeline + Impact Story):
+  - Domain Model & SQLite Schema (`evidence_store.py`): Created `impact_stories` and `impact_story_events` tables with indexes on `project_id`, `story_id`, and `event_type`. Added persistence and retrieval helper methods (`save_impact_story`, `get_impact_story`, `get_project_impact_story`, `update_impact_story`, `save_impact_story_events`, `get_impact_story_events`, `delete_impact_story_events`).
+  - Schemas (`schemas/api.py`, `schemas/__init__.py`): Defined `TimelineEventType` (`before`, `activity`, `after`, `verified_finding`, `measurement`, `milestone`), `TimelineEvent`, `BeforeAfterCard`, `ImpactStoryResponse`, `GenerateImpactStoryRequest`, `UpdateImpactStoryRequest`.
+  - Service Layer (`services/impact_story.py`):
+    - `build_project_timeline_events`: Gathers and chronologically orders events across visits, cleanup action videos, timestamped video frames, post-cleanup imagery, physical measurements, and verified findings.
+    - `build_before_after_cards`: Generates comparative proof cards with Cloudinary delivery URLs, verification status (`approved`, `pending`, `rejected`), reviewer provenance, and uncertainty caveats.
+    - `generate_grounded_impact_narrative`: Grounded narrative synthesis utilizing Gemini multimodal/text API with strict anti-hallucination rules (zero invented carbon/area/percentage metrics), explicit uncertainty flagging, and deterministic offline fallback.
+    - Deterministic lifecycle management (`generate_impact_story`, `get_impact_story_by_id`, `get_project_impact_story`, `update_impact_story_fields`, `get_story_timeline_events`).
+  - REST API Endpoints (`routes/impact_stories.py`, `main.py`): Added `GET /api/v1/projects/{project_id}/impact-story`, `POST /api/v1/projects/{project_id}/impact-story/generate`, `GET /api/v1/impact-stories/{story_id}`, `PUT /api/v1/impact-stories/{story_id}`, `GET /api/v1/impact-stories/{story_id}/timeline`.
+  - Setowa Workspace UI Extension (`backend/app/demo/`):
+    - Added `Impact Story` tab button and `#tab-impact` workspace view in `index.html`.
+    - Added Project Dossier header with dynamic metrics (events, assets, approved findings, measurements).
+    - Added Grounded Synthesis card with status controls and observation/verification caveats callout.
+    - Added Before/After Evidence Cards grid with Cloudinary responsive delivery and click-to-lightbox inspection.
+    - Added Chronological Spine with color-coded type markers, media thumbnails (image/video), frame observations, and traceable provenance.
+  - Testing & Quality Assurance (`tests/test_impact_story.py`): Added 23 comprehensive tests covering all 23 required scenarios. Verified full test suite: 253 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 0 functional regressions (+23 passed).
+  - Live Gemini Validation: Live multimodal narrative synthesis executed with configured credentials (`GEMINI_API_KEY`). Produced 683-character strictly grounded narrative referencing verified observations and exact weigh slip measurement (320.0 kg), with 0 secrets leaked.
+  - Added ADR D019 in `DECISIONS.md`.
 - **AGY**: Completed T016 (AI Media Intelligence + Discovery Foundation):
   - Roadmap Reconciliation: Aligned roadmap numbering across `SETOWA_MASTER_PLAN.md` and `.ai/DECISIONS.md` (ADR D017, D018). Preserved T014 (Field Video Ingestion + Frame Analytics) and T015 (Spatial-Temporal Grouping). Established T016 as AI Media Intelligence, T017 as Sustainability Timeline.
   - Schema & Persistence (`evidence_store.py`): Created `media_intelligence` table with indexed `asset_id`, `status`, and `frame_id`. Added `save_media_intelligence()`, `get_media_intelligence()`, and `get_media_intelligence_history()`. Updated `list_media()` with deterministic filtering by `tag`, `signal`, and `ai_status`.

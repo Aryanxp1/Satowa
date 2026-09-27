@@ -65,7 +65,7 @@
     <section id="project-page" class="page project-page" aria-labelledby="project-title" hidden>
       <div class="project-heading"><a href="#projects" class="back-link">← All projects</a><div class="project-heading-row"><div><p id="project-kicker" class="kicker">03 / PROJECT WORKSPACE</p><h1 id="project-title">Loading project…</h1><p id="project-subtitle"></p></div><span id="project-badge" class="project-badge">EVIDENCE RECORD</span></div></div>
       <div class="project-layout">
-        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="media-library" class="tab-button">Media library</button><button data-tab="skills" class="tab-button">Skills</button><button data-tab="workflows" class="tab-button">Workflows</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><div id="integration-status" class="sidebar-status"></div></aside>
+        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="media-library" class="tab-button">Media library</button><button data-tab="skills" class="tab-button">Skills</button><button data-tab="workflows" class="tab-button">Workflows</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><button data-tab="impact" class="tab-button">Impact Story</button><div id="integration-status" class="sidebar-status"></div></aside>
         <div class="project-content">
           <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
 
@@ -325,6 +325,84 @@
             <pre id="report-json-view" class="report-json-view" hidden></pre>
             <div class="content-title smaller"><h3>Record a measured outcome</h3><p>Optional. Photos cannot establish weight or other quantities on their own.</p></div>
             <form id="measurement-form" class="paper-card measurement-form"><div class="form-grid"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="full-width">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label></div><button class="button secondary" type="submit">Save measurement</button></form><div id="measurements" class="measurement-list"></div>
+          </section>
+
+          <section id="tab-impact" class="tab-panel" hidden aria-labelledby="impact-title">
+            <div class="content-title">
+              <p class="kicker">05 / SUSTAINABILITY TIMELINE</p>
+              <h2 id="impact-title">Impact Story & Timeline.</h2>
+              <p>Synthesize persisted project media, video frame evidence, and human-verified findings into a traceable impact narrative.</p>
+            </div>
+
+            <!-- Project Impact Header / Metrics -->
+            <div class="paper-card impact-header-card">
+              <div class="impact-header-top">
+                <div>
+                  <p class="kicker">PROJECT DOSSIER</p>
+                  <h3 id="impact-project-name">Impact Dossier</h3>
+                  <p id="impact-date-range" class="meta">Date range: Calculating...</p>
+                </div>
+                <div class="impact-actions">
+                  <button id="btn-generate-impact" class="button primary" type="button">Generate Story →</button>
+                  <button id="btn-refresh-impact" class="button secondary" type="button">Refresh</button>
+                </div>
+              </div>
+              <div class="summary-grid impact-metrics-grid" aria-label="Impact story metrics">
+                <div><strong id="impact-metric-events">0</strong><span>Timeline Events</span></div>
+                <div><strong id="impact-metric-media">0</strong><span>Assets Linked</span></div>
+                <div><strong id="impact-metric-verified">0</strong><span>Approved Findings</span></div>
+                <div><strong id="impact-metric-measurements">0</strong><span>Measurements</span></div>
+              </div>
+            </div>
+
+            <!-- Grounded Narrative Card -->
+            <div id="impact-narrative-panel" class="paper-card impact-narrative-card">
+              <div class="impact-section-header">
+                <div>
+                  <p class="kicker">GROUNDED SYNTHESIS</p>
+                  <h3>Verified Impact Summary</h3>
+                </div>
+                <div class="impact-status-controls">
+                  <span id="impact-status-pill" class="badge approved">Draft</span>
+                  <select id="impact-status-select" class="impact-status-dropdown" title="Change Story Status">
+                    <option value="draft">Status: Draft</option>
+                    <option value="in_review">Status: In Review</option>
+                    <option value="published">Status: Published</option>
+                  </select>
+                </div>
+              </div>
+              <div id="impact-narrative-text" class="impact-narrative-content">
+                <p class="muted">No impact story generated yet. Click <strong>Generate Story</strong> above to synthesize your timeline and evidence records.</p>
+              </div>
+              <div id="impact-uncertainty-callout" class="uncertainty-callout warning" hidden>
+                <strong>Observation & Verification Caveats</strong>
+                <p id="impact-uncertainty-text"></p>
+              </div>
+            </div>
+
+            <!-- Before / After Evidence Cards Section -->
+            <div class="impact-section-heading">
+              <div>
+                <p class="kicker">COMPARATIVE PROOF</p>
+                <h3>Before / After Evidence Cards</h3>
+                <p>Side-by-side photographic pairs backed by Cloudinary delivery, human verification status, and reviewer provenance.</p>
+              </div>
+            </div>
+            <div id="impact-cards-container" class="impact-cards-grid empty">
+              No comparison records found for this project.
+            </div>
+
+            <!-- Chronological Timeline Section -->
+            <div class="impact-section-heading">
+              <div>
+                <p class="kicker">CHRONOLOGICAL SPINE</p>
+                <h3>Project Activity & Milestone Timeline</h3>
+                <p>Every recorded field visit, cleanup drone video, frame observation, and verified outcome in chronological order.</p>
+              </div>
+            </div>
+            <div id="impact-timeline-container" class="impact-timeline-spine">
+              <div class="empty-state">No timeline events recorded yet.</div>
+            </div>
           </section>
         </div>
       </div>
