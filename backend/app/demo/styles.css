@@ -373,5 +373,229 @@ h1,h2{font-weight:650}
   .impact-share-bar .share-actions-group{width:100%;flex-wrap:wrap}
 }
 
+/* SETOWA 5-Stage Primary Workspace Navigation */
+.workspace-main-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
 
+.workspace-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
 
+.workspace-nav-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.workspace-nav-btn.active {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(69, 95, 73, 0.12);
+}
+
+:root[data-theme=dark] .workspace-nav-btn.active {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.workspace-nav-btn .nav-step {
+  font: 700 0.82rem ui-monospace, Menlo, monospace;
+  color: var(--green);
+  background: rgba(69, 95, 73, 0.12);
+  padding: 4px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+:root[data-theme=dark] .workspace-nav-btn .nav-step {
+  color: var(--accent);
+  background: rgba(169, 188, 140, 0.18);
+}
+
+.workspace-nav-btn .nav-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.workspace-nav-btn .nav-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-nav-btn .nav-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Full Width Workspace Layout */
+.full-width-layout {
+  display: block !important;
+}
+
+.full-width-content {
+  max-width: 100% !important;
+  padding: 24px 0 60px !important;
+}
+
+/* Review & Evidence Subnavigation */
+.evidence-subnav {
+  display: flex;
+  gap: 10px;
+  background: var(--surface-2);
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.evidence-subnav-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 9px 14px;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.evidence-subnav-btn:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.evidence-subnav-btn.active {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--green);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme=dark] .evidence-subnav-btn.active {
+  color: var(--accent);
+}
+
+/* Showcase project card highlighting in project list */
+.project-card.showcase-card {
+  border-color: var(--green);
+  box-shadow: 0 4px 14px rgba(69, 95, 73, 0.1);
+}
+
+.project-card.showcase-card .kicker {
+  color: var(--green);
+  font-weight: 800;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+  .workspace-main-nav {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-main-nav {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    gap: 8px;
+    scrollbar-width: thin;
+  }
+  .workspace-nav-btn {
+    flex: 0 0 190px;
+  }
+  .evidence-subnav {
+    flex-direction: column;
+  }
+}
+
+/* SETOWA Notification Banner Semantics (Phase 12) */
+.notice-banner,
+.notice {
+  position: sticky;
+  top: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px auto;
+  max-width: 900px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.notice-banner.info,
+.notice:not(.error):not(.success):not(.warn) {
+  background: var(--surface, #1e2621);
+  color: var(--text, #e2e8e0);
+  border: 1px solid var(--line, #38453c);
+}
+
+.notice-banner.success {
+  background: #143823;
+  color: #a3f7bf;
+  border: 1px solid #23683f;
+}
+
+.notice-banner.error,
+.notice.error {
+  background: #421818;
+  color: #ffb8b8;
+  border: 1px solid #7d2626;
+}
+
+.notice-banner.warn {
+  background: #3b2f11;
+  color: #ffe082;
+  border: 1px solid #70581e;
+}
+
+.notice-close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0 6px;
+  margin-left: 14px;
+  opacity: 0.75;
+  line-height: 1;
+}
+
+.notice-close-btn:hover {
+  opacity: 1;
+}

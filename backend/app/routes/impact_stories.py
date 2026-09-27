@@ -33,6 +33,10 @@ def get_project_impact_story_endpoint(project_id: str):
     """Retrieve the current impact story for a project."""
     with store.connection() as db:
         if not store.get_project(db, project_id):
+            site = store.get_site(db, project_id)
+            if site and site.get("project_id"):
+                project_id = site["project_id"]
+        if not store.get_project(db, project_id):
             raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
         story = get_project_impact_story(db, project_id)
         if not story:
@@ -50,6 +54,10 @@ async def generate_project_impact_story_endpoint(
 ):
     """Generate or regenerate an impact story and chronological timeline from persisted project evidence."""
     with store.connection() as db:
+        if not store.get_project(db, project_id):
+            site = store.get_site(db, project_id)
+            if site and site.get("project_id"):
+                project_id = site["project_id"]
         if not store.get_project(db, project_id):
             raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
         try:

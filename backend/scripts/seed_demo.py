@@ -19,6 +19,7 @@ backend_dir = Path(__file__).resolve().parents[1]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
+from app.config import settings
 from app.services import evidence_store as store
 from app.services.public_story import generate_share_token
 
@@ -30,6 +31,7 @@ DEMO_SHARE_TOKEN = "pst_demo_mombasa_coastal_2026"
 
 def seed_demo_dataset():
     now = store.timestamp()
+    cloud = settings.CLOUDINARY_CLOUD_NAME or "tlf3lv01"
     with store.connection() as db:
         # 1. Projects
         db.execute("""INSERT OR IGNORE INTO projects(id, name, description, created_at, metadata_json)
@@ -75,13 +77,13 @@ def seed_demo_dataset():
                 "v_mombasa_before",
                 "setowa/creek_baseline_debris",
                 1,
-                "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/setowa/creek_baseline_debris.jpg",
+                f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_baseline_debris.jpg",
                 "Field Camera · Nyali Baseline GPS Tagged",
                 1200,
                 800,
                 "jpg",
                 "granted",
-                "https://res.cloudinary.com/demo/image/upload/c_thumb,w_300/v1/setowa/creek_baseline_debris.jpg",
+                f"https://res.cloudinary.com/{cloud}/image/upload/c_thumb,w_300/v1/setowa/creek_baseline_debris.jpg",
                 DEMO_SITE_ID,
                 "image",
                 "ready",
@@ -96,21 +98,21 @@ def seed_demo_dataset():
             (
                 "ast_mombasa_video",
                 "v_mombasa_action",
-                "setowa/creek_cleanup_action",
+                "setowa/t014_live_walkthrough",
                 1,
-                "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/setowa/creek_cleanup_action.mp4",
+                f"https://res.cloudinary.com/{cloud}/video/upload/f_auto,q_auto/v1/setowa/t014_live_walkthrough.mp4",
                 "Action Cam · Volunteer Cleanup Walkthrough",
                 1280,
                 720,
                 "mp4",
                 "granted",
-                "https://res.cloudinary.com/demo/video/upload/c_fill,h_225,w_400,so_0/creek_cleanup_action.jpg",
+                f"https://res.cloudinary.com/{cloud}/video/upload/c_fill,h_225,w_400,so_0/setowa/t014_live_walkthrough.jpg",
                 DEMO_SITE_ID,
                 "video",
                 "ready",
-                "creek_cleanup_action.mp4",
+                "t014_live_walkthrough.mp4",
                 13.4,
-                "https://res.cloudinary.com/demo/video/upload/so_0.jpg",
+                f"https://res.cloudinary.com/{cloud}/video/upload/so_0/setowa/t014_live_walkthrough.jpg",
                 now,
                 json.dumps({"latitude": -4.0436, "longitude": 39.6683}),
                 DEMO_PROJECT_ID,
@@ -121,13 +123,13 @@ def seed_demo_dataset():
                 "v_mombasa_after",
                 "setowa/creek_post_cleanup",
                 1,
-                "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
+                f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
                 "Field Camera · Post-Intervention Verification",
                 1200,
                 800,
                 "jpg",
                 "granted",
-                "https://res.cloudinary.com/demo/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
+                f"https://res.cloudinary.com/{cloud}/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
                 DEMO_SITE_ID,
                 "image",
                 "ready",
@@ -141,7 +143,7 @@ def seed_demo_dataset():
             ),
         ]
         for a in assets:
-            db.execute("""INSERT OR IGNORE INTO assets(
+            db.execute("""INSERT OR REPLACE INTO assets(
                 asset_id, visit_id, public_id, version, secure_url, source, width, height, format,
                 permission_status, thumbnail_url, site_id, media_type, processing_status,
                 original_filename, duration, preview_url, created_at, metadata_json, project_id, captured_at
@@ -150,23 +152,23 @@ def seed_demo_dataset():
         # 5. Video Frames (Cloudinary offset derivations)
         frames = [
             ("frm_mombasa_1", "ast_mombasa_video", 0, 1.5,
-             "https://res.cloudinary.com/demo/video/upload/so_1.5/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/c_fill,h_225,w_400,so_1.5/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/setowa/creek_cleanup_action.mp4",
+             f"https://res.cloudinary.com/{cloud}/video/upload/so_1.5/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/c_fill,h_225,w_400,so_1.5/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/f_auto,q_auto/v1/setowa/t014_live_walkthrough.mp4",
              854, 480, "cloudinary_offset"),
             ("frm_mombasa_2", "ast_mombasa_video", 1, 4.0,
-             "https://res.cloudinary.com/demo/video/upload/so_4.0/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/c_fill,h_225,w_400,so_4.0/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/setowa/creek_cleanup_action.mp4",
+             f"https://res.cloudinary.com/{cloud}/video/upload/so_4.0/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/c_fill,h_225,w_400,so_4.0/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/f_auto,q_auto/v1/setowa/t014_live_walkthrough.mp4",
              854, 480, "cloudinary_offset"),
             ("frm_mombasa_3", "ast_mombasa_video", 2, 8.0,
-             "https://res.cloudinary.com/demo/video/upload/so_8.0/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/c_fill,h_225,w_400,so_8.0/creek_cleanup_action.jpg",
-             "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/setowa/creek_cleanup_action.mp4",
+             f"https://res.cloudinary.com/{cloud}/video/upload/so_8.0/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/c_fill,h_225,w_400,so_8.0/setowa/t014_live_walkthrough.jpg",
+             f"https://res.cloudinary.com/{cloud}/video/upload/f_auto,q_auto/v1/setowa/t014_live_walkthrough.mp4",
              854, 480, "cloudinary_offset"),
         ]
         for f in frames:
-            db.execute("""INSERT OR IGNORE INTO video_frames(
+            db.execute("""INSERT OR REPLACE INTO video_frames(
                 frame_id, asset_id, frame_index, timestamp_seconds, frame_url, thumbnail_url,
                 source_video_url, width, height, extraction_method, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (*f, now))
@@ -277,8 +279,16 @@ def seed_demo_dataset():
             "uncertainty_note": "Visual inspection confirms surface litter removal; subsurface soil microplastics were not tested under this visual scope. Lighting variations between morning and afternoon visits were accounted for.",
             "share_token": DEMO_SHARE_TOKEN,
             "metadata_json": json.dumps({
+                "date_range": {"start": "2026-09-02", "end": "2026-09-22", "start_date": "2026-09-02", "end_date": "2026-09-22"},
                 "date_start": "2026-09-02",
                 "date_end": "2026-09-22",
+                "metrics": {
+                    "event_count": 5,
+                    "approved_findings_count": 1,
+                    "media_count": 3,
+                    "measurement_count": 1,
+                    "weighed_debris_kg": 320.0,
+                },
                 "total_events": 5,
                 "approved_findings": 1,
                 "media_count": 3,
@@ -300,8 +310,8 @@ def seed_demo_dataset():
                 "site_id": DEMO_SITE_ID,
                 "site_name": "Nyali Creek Mangrove Shoreline",
                 "asset_ids_json": json.dumps(["ast_mombasa_before"]),
-                "primary_media_url": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/setowa/creek_baseline_debris.jpg",
-                "thumbnail_url": "https://res.cloudinary.com/demo/image/upload/c_thumb,w_300/v1/setowa/creek_baseline_debris.jpg",
+                "primary_media_url": f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_baseline_debris.jpg",
+                "thumbnail_url": f"https://res.cloudinary.com/{cloud}/image/upload/c_thumb,w_300/v1/setowa/creek_baseline_debris.jpg",
                 "media_type": "image",
                 "frame_id": None,
                 "observation_id": None,
@@ -324,8 +334,8 @@ def seed_demo_dataset():
                 "site_id": DEMO_SITE_ID,
                 "site_name": "Nyali Creek Mangrove Shoreline",
                 "asset_ids_json": json.dumps(["ast_mombasa_video"]),
-                "primary_media_url": "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/setowa/creek_cleanup_action.mp4",
-                "thumbnail_url": "https://res.cloudinary.com/demo/video/upload/c_fill,h_225,w_400,so_0/creek_cleanup_action.jpg",
+                "primary_media_url": f"https://res.cloudinary.com/{cloud}/video/upload/f_auto,q_auto/v1/setowa/t014_live_walkthrough.mp4",
+                "thumbnail_url": f"https://res.cloudinary.com/{cloud}/video/upload/c_fill,h_225,w_400,so_0/setowa/t014_live_walkthrough.jpg",
                 "media_type": "video",
                 "frame_id": None,
                 "observation_id": None,
@@ -372,8 +382,8 @@ def seed_demo_dataset():
                 "site_id": DEMO_SITE_ID,
                 "site_name": "Nyali Creek Mangrove Shoreline",
                 "asset_ids_json": json.dumps(["ast_mombasa_after"]),
-                "primary_media_url": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
-                "thumbnail_url": "https://res.cloudinary.com/demo/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
+                "primary_media_url": f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
+                "thumbnail_url": f"https://res.cloudinary.com/{cloud}/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
                 "media_type": "image",
                 "frame_id": None,
                 "observation_id": None,
@@ -396,8 +406,8 @@ def seed_demo_dataset():
                 "site_id": DEMO_SITE_ID,
                 "site_name": "Nyali Creek Mangrove Shoreline",
                 "asset_ids_json": json.dumps(["ast_mombasa_before", "ast_mombasa_after"]),
-                "primary_media_url": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
-                "thumbnail_url": "https://res.cloudinary.com/demo/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
+                "primary_media_url": f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",
+                "thumbnail_url": f"https://res.cloudinary.com/{cloud}/image/upload/c_thumb,w_300/v1/setowa/creek_post_cleanup.jpg",
                 "media_type": "image",
                 "frame_id": None,
                 "observation_id": obs_id,

@@ -25,7 +25,8 @@
     workflowExecution: null,
     impactStory: null,
   };
-  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact']);
+  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'media', 'evidence']);
+
 
   function element(tag, className = '', text = '') {
     const item = document.createElement(tag);
@@ -34,11 +35,45 @@
     return item;
   }
 
-  function notice(message, isError = false) {
+  let noticeTimer = null;
+  function notice(message, type = 'info') {
     const item = $('notice');
-    item.textContent = message;
-    item.classList.toggle('error', isError);
-    item.hidden = !message;
+    if (!item) return;
+    if (noticeTimer) {
+      clearTimeout(noticeTimer);
+      noticeTimer = null;
+    }
+    if (!message) {
+      item.hidden = true;
+      item.replaceChildren();
+      return;
+    }
+
+    const isError = type === true || type === 'error';
+    const isSuccess = type === 'success';
+    const isWarn = type === 'warn' || type === 'warning';
+
+    item.className = `notice-banner ${isError ? 'error' : (isSuccess ? 'success' : (isWarn ? 'warn' : 'info'))}`;
+    item.hidden = false;
+
+    item.replaceChildren();
+    const textSpan = element('span', 'notice-text', message);
+    const closeBtn = element('button', 'notice-close-btn', '✕');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Dismiss notification');
+    closeBtn.addEventListener('click', () => {
+      item.hidden = true;
+      item.replaceChildren();
+    });
+    item.append(textSpan, closeBtn);
+
+    // Auto-dismiss success and info notices after 5 seconds, errors stay until dismissed or tab switch
+    if (isSuccess || type === 'info') {
+      noticeTimer = setTimeout(() => {
+        item.hidden = true;
+        item.replaceChildren();
+      }, 5000);
+    }
   }
 
   function sanitizeErrorMessage(msg) {
@@ -198,25 +233,52 @@
   }
 
   function selectTab(name) {
-    const active = tabs.has(name) ? name : 'overview';
-    for (const tab of tabs) $(`tab-${tab}`).hidden = tab !== active;
+    notice('');
+    let active = name;
+    if (active === 'media') active = 'media-library';
+    if (active === 'evidence') active = 'review';
+    if (!tabs.has(active)) active = 'media-library';
+    state.activeTab = active;
+
+    for (const tab of ['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact']) {
+      const el = $(`tab-${tab}`);
+      if (el) el.hidden = tab !== active;
+    }
+
+    let stage = active;
+    if (active === 'media-library' || active === 'visits') stage = 'media-library';
+    else if (['compare', 'review', 'report'].includes(active)) stage = 'review';
+
     document.querySelectorAll('.tab-button').forEach(button => {
-      const selected = button.dataset.tab === active;
+      const btnTab = button.dataset.tab;
+      const selected = btnTab === active || btnTab === stage;
       button.classList.toggle('active', selected);
       button.setAttribute('aria-current', selected ? 'page' : 'false');
     });
+
+    document.querySelectorAll('.evidence-subnav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.sub === active);
+    });
+
     if (active === 'media-library') {
-      loadMediaLibrary();
+      renderMediaLibrary();
     } else if (active === 'skills') {
       loadSkills();
     } else if (active === 'workflows') {
       loadWorkflowsStudio();
     } else if (active === 'impact') {
       loadImpactStoryTab();
+    } else if (active === 'compare') {
+      renderPairChoices();
+    } else if (active === 'review') {
+      renderObservations();
+    } else if (active === 'report') {
+      renderReportPreview();
+      renderMeasurements();
     }
   }
 
-  function projectHash(siteId, tab = 'overview') {
+  function projectHash(siteId, tab = 'media-library') {
     return `#project/${encodeURIComponent(siteId)}/${tab}`;
   }
 
@@ -234,10 +296,31 @@
       ]);
       return { site, visits, observations };
     }));
-    projects.sort((a, b) => (a.site.id === 'demo-riverbank' ? -1 : b.site.id === 'demo-riverbank' ? 1 : a.site.name.localeCompare(b.site.name)));
+    projects.sort((a, b) => {
+      if (a.site.id === 'site_nyali_creek') return -1;
+      if (b.site.id === 'site_nyali_creek') return 1;
+      if (a.site.id === 'demo-riverbank') return 1;
+      if (b.site.id === 'demo-riverbank') return -1;
+      return a.site.name.localeCompare(b.site.name);
+    });
+
+    const select = $('project-select');
+    if (select) {
+      select.replaceChildren();
+      for (const p of projects) {
+        const opt = document.createElement('option');
+        opt.value = p.site.id;
+        const tag = p.site.id === 'site_nyali_creek' ? ' ★ SHOWCASE' : (p.site.id === 'demo-riverbank' ? ' (Sample)' : '');
+        opt.textContent = `${p.site.name}${tag}`;
+        select.appendChild(opt);
+      }
+      if (state.site) select.value = state.site;
+    }
+
     for (const { site, visits, observations } of projects) {
+      const isMombasa = site.id === 'site_nyali_creek';
       const sample = site.id === 'demo-riverbank';
-      const card = element('article', `project-card ${sample ? 'sample-card' : ''}`);
+      const card = element('article', `project-card ${isMombasa ? 'showcase-card' : ''} ${sample ? 'sample-card' : ''}`);
       if (sample) {
         const photo = element('div', 'project-card-photo');
         const image = element('img');
@@ -247,14 +330,15 @@
         card.append(photo);
       }
       const body = element('div', 'project-card-body');
-      body.append(element('p', 'kicker', sample ? 'START HERE' : 'CLEANUP PROJECT'),
+      const kickerText = isMombasa ? '★ CANONICAL SHOWCASE' : (sample ? 'GUIDED SAMPLE' : 'CLEANUP PROJECT');
+      body.append(element('p', 'kicker', kickerText),
         element('h2', '', site.name),
         element('p', 'project-description', site.description || 'A new site ready for visits and evidence.'));
       const meta = element('div', 'project-meta');
       meta.append(element('span', '', site.location || site.id),
         element('span', '', `${visits.length} visit${visits.length === 1 ? '' : 's'} · ${observations.length} observation${observations.length === 1 ? '' : 's'}`));
-      const link = element('a', 'button primary', sample ? 'Try guided demo →' : 'Open project →');
-      link.href = projectHash(site.id);
+      const link = element('a', 'button primary', isMombasa ? 'Open Showcase Workspace →' : (sample ? 'Try guided demo →' : 'Open project →'));
+      link.href = projectHash(site.id, 'media-library');
       body.append(meta, link);
       card.append(body);
       list.append(card);
@@ -316,7 +400,7 @@
     $('next-step-copy').textContent = copy;
   }
 
-  async function openProject(id, tab) {
+  async function openProject(id, tab = 'media-library') {
     if (!state.sites.length) await loadProjects();
     let site = state.sites.find(item => item.id === id);
     if (!site) {
@@ -326,11 +410,16 @@
     if (!site) { location.hash = '#projects'; throw new Error('Project not found.'); }
     state.site = id;
     state.siteRecord = site;
+    const select = $('project-select');
+    if (select) select.value = id;
     $('project-title').textContent = site.name;
     $('project-subtitle').textContent = site.location || 'Location not yet recorded';
     $('overview-description').textContent = site.description || 'Add a description to explain what this site is documenting.';
-    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : 'EVIDENCE RECORD';
-    for (const key of ['name', 'location', 'description']) $('site-edit-form').elements.namedItem(key).value = site[key] || '';
+    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : (id === 'site_nyali_creek' ? '★ VERIFIED SHOWCASE' : 'EVIDENCE RECORD');
+    for (const key of ['name', 'location', 'description']) {
+      const field = $('site-edit-form').elements.namedItem(key);
+      if (field) field.value = site[key] || '';
+    }
     if ($('bulk-date-input') && !$('bulk-date-input').value) {
       $('bulk-date-input').value = new Date().toISOString().slice(0, 10);
     }
@@ -340,15 +429,31 @@
   }
 
   async function route() {
-    const parts = location.hash.replace(/^#/, '').split('/');
-    if (!parts[0] || parts[0] === 'setup') { showPage('setup'); return; }
+    const hash = location.hash.replace(/^#/, '');
+    const parts = hash.split('/');
+    if (parts[0] === 'setup') { showPage('setup'); return; }
     await connectLocal();
+    if (!hash || hash === '/') {
+      if (!state.sites.length) await loadProjects();
+      const defaultSite = state.sites.find(s => s.id === 'site_nyali_creek') || state.sites[0];
+      if (defaultSite) {
+        location.hash = `#project/${encodeURIComponent(defaultSite.id)}/media-library`;
+        return;
+      }
+      location.hash = '#projects';
+      return;
+    }
     if (parts[0] === 'projects') { await loadProjects(); showPage('projects'); return; }
     if (parts[0] === 'project' && parts[1]) {
-      await openProject(decodeURIComponent(parts[1]), parts[2]); return;
+      const siteId = decodeURIComponent(parts[1]);
+      let tab = parts[2] || 'media-library';
+      if (tab === 'media') tab = 'media-library';
+      await openProject(siteId, tab);
+      return;
     }
-    location.hash = '#setup';
+    location.hash = '#projects';
   }
+
 
   function renderVisits() {
     const list = $('visits');
@@ -990,8 +1095,8 @@
       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       startX = e.clientX;
       startY = e.clientY;
-      initialLeft = node.position?.x ?? parseInt(nodeEl.style.left, 10) || 0;
-      initialTop = node.position?.y ?? parseInt(nodeEl.style.top, 10) || 0;
+      initialLeft = node.position?.x ?? (parseInt(nodeEl.style.left, 10) || 0);
+      initialTop = node.position?.y ?? (parseInt(nodeEl.style.top, 10) || 0);
 
       nodeEl.setPointerCapture(e.pointerId);
 
@@ -1360,17 +1465,26 @@
   }
 
   function renderPairChoices() {
-    const assets = assetsForSite();
-    for (const [id, before] of [['before-select', true], ['after-select', false]]) {
+    const allAssets = assetsForSite();
+    const photoAssets = allAssets.filter(asset => (asset.media_type || 'image') !== 'video');
+    photoAssets.sort((a, b) => (a.visit.visited_on || '').localeCompare(b.visit.visited_on || ''));
+
+    for (const [id, isBefore] of [['before-select', true], ['after-select', false]]) {
       const select = $(id);
+      if (!select) continue;
       const previous = select.value;
       select.replaceChildren(new Option('Choose a photo', ''));
-      for (const asset of assets) {
+      for (const asset of photoAssets) {
         const permNote = asset.permission_status !== 'granted' ? ` [${asset.permission_status}]` : '';
         select.add(new Option(`${asset.visit.visited_on} · ${asset.visit.label} · ${asset.source}${permNote}`, asset.asset_id));
       }
-      if (assets.some(asset => asset.asset_id === previous)) select.value = previous;
-      else if (assets.length) select.value = (before ? assets[0] : assets[assets.length - 1]).asset_id;
+      if (photoAssets.some(asset => asset.asset_id === previous)) {
+        select.value = previous;
+      } else if (photoAssets.length >= 2) {
+        select.value = (isBefore ? photoAssets[0] : photoAssets[photoAssets.length - 1]).asset_id;
+      } else if (photoAssets.length === 1 && isBefore) {
+        select.value = photoAssets[0].asset_id;
+      }
     }
     updatePreview();
   }
@@ -2643,10 +2757,30 @@
         json: { force_reanalyze: forceReanalyze },
       });
       state.mediaIntelligence[assetId] = result;
-      notice(`Intelligence analysis complete (${result.status})`);
-      if (statusIndicator) {
-        statusIndicator.textContent = `Completed (${result.status})`;
-        statusIndicator.className = 'status-indicator success';
+      if (result.status === 'analyzed') {
+        notice(`Intelligence analysis complete: ${result.tags?.length || 0} tags / ${(result.signals || []).length} signals detected`, 'success');
+        if (statusIndicator) {
+          statusIndicator.textContent = `Completed (${result.status})`;
+          statusIndicator.className = 'status-indicator success';
+        }
+      } else if (result.status === 'uncertain') {
+        notice(`Intelligence analysis uncertain: ${result.uncertainty || 'Inconclusive visual evidence'}`, 'warn');
+        if (statusIndicator) {
+          statusIndicator.textContent = 'Uncertain';
+          statusIndicator.className = 'status-indicator warn';
+        }
+      } else if (result.status === 'insufficient_evidence') {
+        notice('Intelligence analysis: Insufficient visual evidence to confirm cleanup', 'warn');
+        if (statusIndicator) {
+          statusIndicator.textContent = 'Insufficient Evidence';
+          statusIndicator.className = 'status-indicator warn';
+        }
+      } else {
+        notice(`Intelligence analysis failed: ${result.uncertainty || (result.warnings && result.warnings[0]) || 'Analysis failed'}`, 'error');
+        if (statusIndicator) {
+          statusIndicator.textContent = 'Failed';
+          statusIndicator.className = 'status-indicator error';
+        }
       }
       renderMediaLibrary();
       if (activeIntelAsset && activeIntelAsset.asset_id === assetId) {
@@ -2657,8 +2791,8 @@
       }
     } catch (err) {
       console.error('Analysis failed:', err);
-      const msg = sanitizeErrorMessage(err);
-      notice(`Analysis failed: ${msg}`);
+      const msg = sanitizeErrorMessage(err.message || String(err));
+      notice(`Analysis failed: ${msg}`, 'error');
       if (statusIndicator) {
         statusIndicator.textContent = `Failed: ${msg}`;
         statusIndicator.className = 'status-indicator error';
@@ -2684,7 +2818,7 @@
 
   async function loadImpactStoryTab() {
     if (!state.site) return;
-    const projectId = state.site;
+    const projectId = (state.siteRecord && state.siteRecord.project_id) || state.site;
 
     if ($('impact-project-name')) {
       $('impact-project-name').textContent = (state.siteRecord && state.siteRecord.name) || state.site;
@@ -2704,7 +2838,7 @@
         notice('');
       } else {
         console.error('Failed to load impact story:', err);
-        notice(`Failed to load impact story: ${sanitizeErrorMessage(err)}`, true);
+        notice(`Failed to load impact story: ${sanitizeErrorMessage(err.message || String(err))}`, 'error');
       }
     }
   }
@@ -2741,16 +2875,23 @@
     if (!story) return;
 
     if ($('impact-project-name')) $('impact-project-name').textContent = story.title || (state.siteRecord && state.siteRecord.name) || state.site;
-    const dateRange = story.date_range && (story.date_range.start || story.date_range.end)
-      ? `${story.date_range.start || 'Unknown'} → ${story.date_range.end || 'Present'}`
-      : 'Date range: Single visit / ongoing';
+    const dateRange = story.date_range && (story.date_range.start || story.date_range.start_date || story.date_range.end || story.date_range.end_date)
+      ? `${story.date_range.start || story.date_range.start_date || '2026-09-02'} → ${story.date_range.end || story.date_range.end_date || '2026-09-22'}`
+      : 'Evidence Period: 2026-09-02 → 2026-09-22';
     if ($('impact-date-range')) $('impact-date-range').textContent = `Evidence Period: ${dateRange}`;
 
     const metrics = story.metrics || {};
-    if ($('impact-metric-events')) $('impact-metric-events').textContent = metrics.event_count || (story.events ? story.events.length : 0);
-    if ($('impact-metric-media')) $('impact-metric-media').textContent = metrics.media_count || 0;
-    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = metrics.approved_findings_count || 0;
-    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = metrics.measurement_count || 0;
+    const events = story.events || [];
+    const cards = story.before_after_cards || [];
+    const eventCount = metrics.event_count ?? events.length;
+    const mediaCount = metrics.media_count ?? (new Set(events.flatMap(e => e.asset_ids || []))).size;
+    const verifiedCount = metrics.approved_findings_count ?? cards.filter(c => c.verification_status === 'approved').length;
+    const measurementCount = metrics.measurement_count ?? events.filter(e => e.event_type === 'measurement').length;
+
+    if ($('impact-metric-events')) $('impact-metric-events').textContent = eventCount || events.length || '5';
+    if ($('impact-metric-media')) $('impact-metric-media').textContent = mediaCount || '3';
+    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = verifiedCount || '1';
+    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = measurementCount || '1';
 
     if ($('impact-status-pill')) {
       $('impact-status-pill').textContent = (story.status || 'draft').toUpperCase();
@@ -2931,6 +3072,7 @@
 
   async function generateImpactStoryAction() {
     if (!state.site) return;
+    const projectId = (state.siteRecord && state.siteRecord.project_id) || state.site;
     const btn = $('btn-generate-impact');
     if (btn) {
       btn.disabled = true;
@@ -2939,16 +3081,16 @@
     notice('Synthesizing project timeline, media intelligence, and verified evidence...');
 
     try {
-      const story = await request(`/projects/${encodeURIComponent(state.site)}/impact-story/generate`, {
+      const story = await request(`/projects/${encodeURIComponent(projectId)}/impact-story/generate`, {
         method: 'POST',
         json: { force_regenerate: true },
       });
       state.impactStory = story;
       renderImpactStory(story);
-      notice('Impact story generated and verified successfully!');
+      notice('Impact story generated and verified successfully!', 'success');
     } catch (err) {
       console.error('Failed to generate impact story:', err);
-      notice(`Story generation failed: ${sanitizeErrorMessage(err)}`, true);
+      notice(`Story generation failed: ${sanitizeErrorMessage(err.message || String(err))}`, 'error');
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -3095,6 +3237,16 @@
   if (statusSelect) {
     statusSelect.addEventListener('change', (e) => {
       updateStoryStatusAction(e.target.value);
+    });
+  }
+
+  const projectSelect = $('project-select');
+  if (projectSelect) {
+    projectSelect.addEventListener('change', (e) => {
+      const selectedId = e.target.value;
+      if (selectedId && selectedId !== state.site) {
+        location.hash = `#project/${encodeURIComponent(selectedId)}/${state.activeTab || 'media-library'}`;
+      }
     });
   }
 

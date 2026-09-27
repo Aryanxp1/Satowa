@@ -189,7 +189,12 @@ def new_id():
 
 @contextmanager
 def connection():
-    path = Path(settings.LEX_DB_PATH).expanduser()
+    raw_path = Path(settings.LEX_DB_PATH).expanduser()
+    if not raw_path.is_absolute():
+        backend_dir = Path(__file__).resolve().parents[2]
+        path = (backend_dir / raw_path).resolve()
+    else:
+        path = raw_path
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path, timeout=10)
     db.row_factory = sqlite3.Row

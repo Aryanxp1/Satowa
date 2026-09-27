@@ -6,14 +6,22 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Setowa helps teams turn cleanup media into reviewed, evidence-linked reports.">
   <title>Setowa — Evidence workspace</title>
-  <link rel="stylesheet" href="/demo/styles.css?v=3">
-  <script src="/demo/app.js?v=3" defer></script>
+  <link rel="stylesheet" href="/demo/styles.css?v=4">
+  <script src="/demo/app.js?v=4" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#setup" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>Setowa <small>BY TEAM LEX</small></span></a>
+    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+      <a class="brand" href="/showcase/" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>SETOWA</span></a>
+      <div id="topbar-project-container" style="display:flex; align-items:center; gap:8px;">
+        <label for="project-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
+        <select id="project-select" aria-label="Select active project" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
+      </div>
+    </div>
     <nav class="top-actions" aria-label="Primary navigation">
-      <a id="nav-projects" href="#projects" hidden>Projects</a>
+      <a id="nav-projects" href="#projects" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">All Sites</a>
+      <a href="/showcase/" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">Showcase</a>
+      <a id="nav-public-story-link" href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" style="text-decoration:none; font-size:0.83rem; font-weight:700; color:var(--green,#455f49);">Public Story ↗</a>
       <span id="session-label" class="session-label">Local workspace</span>
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button>
     </nav>
@@ -63,11 +71,72 @@
     </section>
 
     <section id="project-page" class="page project-page" aria-labelledby="project-title" hidden>
-      <div class="project-heading"><a href="#projects" class="back-link">← All projects</a><div class="project-heading-row"><div><p id="project-kicker" class="kicker">03 / PROJECT WORKSPACE</p><h1 id="project-title">Loading project…</h1><p id="project-subtitle"></p></div><span id="project-badge" class="project-badge">EVIDENCE RECORD</span></div></div>
-      <div class="project-layout">
-        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="media-library" class="tab-button">Media library</button><button data-tab="skills" class="tab-button">Skills</button><button data-tab="workflows" class="tab-button">Workflows</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><button data-tab="impact" class="tab-button">Impact Story</button><div id="integration-status" class="sidebar-status"></div></aside>
-        <div class="project-content">
+      <div class="project-heading">
+        <div class="project-heading-row">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+              <a href="#projects" class="back-link" style="margin:0;">← All sites</a>
+              <span style="color:var(--line,#445047); font-size:12px;">|</span>
+              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA PLATFORM WORKSPACE</p>
+              <span style="color:var(--line,#445047); font-size:12px;">|</span>
+              <label for="project-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
+                <span class="meta" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Site:</span>
+                <select id="project-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
+              </label>
+            </div>
+            <h1 id="project-title">Loading project…</h1>
+            <p id="project-subtitle"></p>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+            <span id="project-badge" class="project-badge">EVIDENCE RECORD</span>
+            <div id="integration-status" class="sidebar-status" style="font-size:11px; text-align:right; margin:0; padding:0; border:0;"></div>
+          </div>
+        </div>
+
+        <!-- SETOWA 5-Stage Primary Workspace Navigation -->
+        <nav class="workspace-main-nav" aria-label="SETOWA Platform Stages">
+          <button data-tab="media-library" class="tab-button workspace-nav-btn active" id="nav-btn-media" type="button">
+            <span class="nav-step">01</span>
+            <div class="nav-text">
+              <strong>Media</strong>
+              <small>Pipeline &amp; Frame Analytics</small>
+            </div>
+          </button>
+          <button data-tab="skills" class="tab-button workspace-nav-btn" id="nav-btn-skills" type="button">
+            <span class="nav-step">02</span>
+            <div class="nav-text">
+              <strong>Skills</strong>
+              <small>Runtime Registry &amp; Tester</small>
+            </div>
+          </button>
+          <button data-tab="workflows" class="tab-button workspace-nav-btn" id="nav-btn-workflows" type="button">
+            <span class="nav-step">03</span>
+            <div class="nav-text">
+              <strong>Workflows</strong>
+              <small>Visual Studio DAG</small>
+            </div>
+          </button>
+          <button data-tab="review" class="tab-button workspace-nav-btn" id="nav-btn-review" type="button">
+            <span class="nav-step">04</span>
+            <div class="nav-text">
+              <strong>Review &amp; Evidence</strong>
+              <small>Verification &amp; Trust Layer</small>
+            </div>
+          </button>
+          <button data-tab="impact" class="tab-button workspace-nav-btn" id="nav-btn-impact" type="button">
+            <span class="nav-step">05</span>
+            <div class="nav-text">
+              <strong>Impact Story</strong>
+              <small>Timeline &amp; Public Share</small>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <div class="project-layout full-width-layout">
+        <div class="project-content full-width-content">
           <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
+
 
           <section id="tab-overview" class="tab-panel" aria-labelledby="overview-title">
             <div class="content-title"><p class="kicker">PROJECT OVERVIEW</p><h2 id="overview-title">A record of what changed.</h2><p id="overview-description"></p></div>
@@ -294,7 +363,13 @@
             </div>
           </section>
 
-          <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title"><div class="content-title"><p class="kicker">02 / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
+          <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn active" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04A / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
             <div class="pair-grid">
               <label>Before photo
                 <select id="before-select"></select>
@@ -317,9 +392,23 @@
             <div class="compare-actions"><button id="compare" class="button primary" type="button">Compare and draft observation</button><p id="compare-hint">A valid pair needs two dated photos.</p></div>
           </section>
 
-          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title"><div class="content-title"><p class="kicker">03 / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div><div id="observations" class="observation-list empty">No observations yet.</div></section>
+          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04B / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div>
+            <div id="observations" class="observation-list empty">No observations yet.</div>
+          </section>
 
-          <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title"><div class="content-title"><p class="kicker">04 / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
+          <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04C / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
             <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><p class="report-rule-note">ℹ Trust Rule: Unapproved AI observations are strictly excluded from all report outputs.</p><div class="report-button-row"><button id="export" class="button primary" type="button">Download Markdown report (.md)</button><button id="toggle-json-report" class="button secondary" type="button">View Raw JSON</button></div></div>
             <div id="report-live-preview" class="report-live-preview"></div>
             <pre id="report-json-view" class="report-json-view" hidden></pre>
@@ -587,7 +676,8 @@
       </div>
     </div>
   </dialog>
-  <footer><span>SETOWA · BY TEAM LEX</span><span>AI proposes. Evidence supports. People verify.</span></footer>
+  <footer><span>SETOWA</span><span>Built by Team LEX for Code Cubicle · AI proposes. Evidence supports. People verify.</span></footer>
+
 </body>
 </html>
 

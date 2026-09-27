@@ -79,3 +79,11 @@ async def root(request: Request):
         'readiness': '/api/v1/ready',
         'public_demo_story': '/share/pst_demo_mombasa_coastal_2026',
     }
+
+
+@app.get("/workspace", include_in_schema=False)
+@app.get("/workspace/", include_in_schema=False)
+async def workspace_redirect():
+    """Redirect canonical workspace alias to /demo/."""
+    return RedirectResponse('/demo/', status_code=307)
+

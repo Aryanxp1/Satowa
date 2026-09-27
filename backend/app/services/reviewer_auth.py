@@ -22,8 +22,23 @@ def local_request(request: Request) -> bool:
 
 
 def same_origin(request: Request) -> bool:
+    """Check same-origin, treating localhost and 127.0.0.1 as equivalent.
+
+    The local demo server binds to 127.0.0.1, but users open the browser via
+    http://localhost:... — these must be considered the same loopback origin.
+    """
     origin = request.headers.get('origin')
-    return bool(origin and origin.rstrip('/') == str(request.base_url).rstrip('/'))
+    if not origin:
+        return False
+    _LOOPBACK = {'localhost', '127.0.0.1', '::1'}
+
+    def _normalize(url: str) -> str:
+        """Replace loopback hostnames so they compare equal."""
+        for alias in _LOOPBACK:
+            url = url.replace(f'://{alias}:', '://localhost:').replace(f'://{alias}/', '://localhost/')
+        return url.rstrip('/')
+
+    return _normalize(origin) == _normalize(str(request.base_url))
 
 
 def authorization_or_local_cookie(authorization: str | None, request: Request) -> str | None:

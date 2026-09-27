@@ -365,10 +365,10 @@ class MediaIntelligenceSkill(BaseSkill):
                     "generationConfig": {"responseMimeType": "application/json"},
                 }
 
-                models_to_try = ["gemini-flash-latest", settings.GEMINI_VISION_MODEL, "gemini-3.8-flash"]
+                models_to_try = [settings.GEMINI_VISION_MODEL or "gemini-3.8-flash", "gemini-3.8-flash", "gemini-flash-latest"]
                 seen_models = set()
                 gemini_resp = None
-                used_model = settings.GEMINI_VISION_MODEL
+                used_model = settings.GEMINI_VISION_MODEL or "gemini-3.8-flash"
 
                 for model in models_to_try:
                     if not model or model in seen_models:
@@ -381,12 +381,10 @@ class MediaIntelligenceSkill(BaseSkill):
                             gemini_resp = r
                             used_model = model
                             break
-                        elif r.status_code == 404:
-                            logger.info(f"Gemini model {model} returned 404; trying fallback.")
-                            continue
                         else:
+                            logger.info(f"Gemini model {model} returned HTTP {r.status_code}; trying next model.")
                             gemini_resp = r
-                            break
+                            continue
                     except Exception as net_err:
                         logger.warning(f"Error calling Gemini model {model}: {net_err}")
                         continue
