@@ -6,14 +6,22 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Setowa helps teams turn cleanup media into reviewed, evidence-linked reports.">
   <title>Setowa — Evidence workspace</title>
-  <link rel="stylesheet" href="/demo/styles.css?v=3">
-  <script src="/demo/app.js?v=3" defer></script>
+  <link rel="stylesheet" href="/demo/styles.css?v=4">
+  <script src="/demo/app.js?v=4" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#setup" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>Setowa <small>BY TEAM LEX</small></span></a>
+    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+      <a class="brand" href="/showcase/" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>SETOWA</span></a>
+      <div id="topbar-project-container" style="display:flex; align-items:center; gap:8px;">
+        <label for="project-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
+        <select id="project-select" aria-label="Select active project" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
+      </div>
+    </div>
     <nav class="top-actions" aria-label="Primary navigation">
-      <a id="nav-projects" href="#projects" hidden>Projects</a>
+      <a id="nav-projects" href="#projects" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">All Sites</a>
+      <a href="/showcase/" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">Showcase</a>
+      <a id="nav-public-story-link" href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" style="text-decoration:none; font-size:0.83rem; font-weight:700; color:var(--green,#455f49);">Public Story ↗</a>
       <span id="session-label" class="session-label">Local workspace</span>
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button>
     </nav>
@@ -38,14 +46,14 @@
       </div>
 
       <div class="setup-lower">
-        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this Mac. This page shows readiness only; it never displays stored keys.</p></div>
+        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
         <div class="setup-panel">
           <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
           <details class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
             <form id="credential-form" autocomplete="off">
               <p>Leave a field blank to keep its saved value. Provider keys are never sent back to this page.</p>
               <div class="form-grid"><label>Cloud name<input name="cloud_name" autocomplete="off" placeholder="Your Cloudinary cloud name"></label><label>Cloudinary API key<input name="cloudinary_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label><label>Cloudinary API secret<input name="cloudinary_api_secret" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved secret"></label><label>Gemini API key <span class="optional">optional</span><input name="gemini_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label></div>
-              <button class="button secondary" type="submit">Save to this Mac</button>
+              <button class="button secondary" type="submit">Save credentials locally</button>
             </form>
           </details>
           <p class="setup-help">Ready to explore? The sample uses synthetic photos, so you can try the review flow without uploading anything.</p>
@@ -63,11 +71,72 @@
     </section>
 
     <section id="project-page" class="page project-page" aria-labelledby="project-title" hidden>
-      <div class="project-heading"><a href="#projects" class="back-link">← All projects</a><div class="project-heading-row"><div><p id="project-kicker" class="kicker">03 / PROJECT WORKSPACE</p><h1 id="project-title">Loading project…</h1><p id="project-subtitle"></p></div><span id="project-badge" class="project-badge">EVIDENCE RECORD</span></div></div>
-      <div class="project-layout">
-        <aside class="project-sidebar" aria-label="Project sections"><p class="sidebar-label">WORKSPACE</p><button data-tab="overview" class="tab-button active">Overview</button><button data-tab="visits" class="tab-button">Visits & photos</button><button data-tab="compare" class="tab-button">Compare</button><button data-tab="review" class="tab-button">Review</button><button data-tab="report" class="tab-button">Report</button><div id="integration-status" class="sidebar-status"></div></aside>
-        <div class="project-content">
+      <div class="project-heading">
+        <div class="project-heading-row">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+              <a href="#projects" class="back-link" style="margin:0;">← All sites</a>
+              <span style="color:var(--line,#445047); font-size:12px;">|</span>
+              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA PLATFORM WORKSPACE</p>
+              <span style="color:var(--line,#445047); font-size:12px;">|</span>
+              <label for="project-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
+                <span class="meta" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Site:</span>
+                <select id="project-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
+              </label>
+            </div>
+            <h1 id="project-title">Loading project…</h1>
+            <p id="project-subtitle"></p>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+            <span id="project-badge" class="project-badge">EVIDENCE RECORD</span>
+            <div id="integration-status" class="sidebar-status" style="font-size:11px; text-align:right; margin:0; padding:0; border:0;"></div>
+          </div>
+        </div>
+
+        <!-- SETOWA 5-Stage Primary Workspace Navigation -->
+        <nav class="workspace-main-nav" aria-label="SETOWA Platform Stages">
+          <button data-tab="media-library" class="tab-button workspace-nav-btn active" id="nav-btn-media" type="button">
+            <span class="nav-step">01</span>
+            <div class="nav-text">
+              <strong>Media</strong>
+              <small>Pipeline &amp; Frame Analytics</small>
+            </div>
+          </button>
+          <button data-tab="skills" class="tab-button workspace-nav-btn" id="nav-btn-skills" type="button">
+            <span class="nav-step">02</span>
+            <div class="nav-text">
+              <strong>Skills</strong>
+              <small>Runtime Registry &amp; Tester</small>
+            </div>
+          </button>
+          <button data-tab="workflows" class="tab-button workspace-nav-btn" id="nav-btn-workflows" type="button">
+            <span class="nav-step">03</span>
+            <div class="nav-text">
+              <strong>Workflows</strong>
+              <small>Visual Studio DAG</small>
+            </div>
+          </button>
+          <button data-tab="review" class="tab-button workspace-nav-btn" id="nav-btn-review" type="button">
+            <span class="nav-step">04</span>
+            <div class="nav-text">
+              <strong>Review &amp; Evidence</strong>
+              <small>Verification &amp; Trust Layer</small>
+            </div>
+          </button>
+          <button data-tab="impact" class="tab-button workspace-nav-btn" id="nav-btn-impact" type="button">
+            <span class="nav-step">05</span>
+            <div class="nav-text">
+              <strong>Impact Story</strong>
+              <small>Timeline &amp; Public Share</small>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <div class="project-layout full-width-layout">
+        <div class="project-content full-width-content">
           <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
+
 
           <section id="tab-overview" class="tab-panel" aria-labelledby="overview-title">
             <div class="content-title"><p class="kicker">PROJECT OVERVIEW</p><h2 id="overview-title">A record of what changed.</h2><p id="overview-description"></p></div>
@@ -81,23 +150,534 @@
             <label class="search-label">Search visits or photo sources<input id="media-filter" type="search" placeholder="Type a date, visit, or source"></label><div id="visits" class="visit-grid empty">No visits yet.</div>
           </section>
 
-          <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title"><div class="content-title"><p class="kicker">02 / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
-            <div class="pair-grid"><label>Before photo<select id="before-select"></select><img id="before-preview" class="pair-preview" alt="Before selection preview" hidden></label><label>After photo<select id="after-select"></select><img id="after-preview" class="pair-preview" alt="After selection preview" hidden></label></div>
+          <section id="tab-media-library" class="tab-panel" hidden aria-labelledby="media-library-title">
+            <div class="content-title">
+              <p class="kicker">01B / MEDIA ASSET PIPELINE</p>
+              <h2 id="media-library-title">Media library & bulk ingestion.</h2>
+              <p>Store, transform, and deliver environmental evidence via Cloudinary with derived poster frames, responsive previews, and video processing.</p>
+            </div>
+
+            <div class="media-library-toolbar">
+              <div class="media-filters">
+                <label>Media Type
+                  <select id="media-type-filter">
+                    <option value="">All media (Images & Videos)</option>
+                    <option value="image">Images only</option>
+                    <option value="video">Videos only</option>
+                  </select>
+                </label>
+                <label>Permission Status
+                  <select id="media-perm-filter">
+                    <option value="">All permissions</option>
+                    <option value="granted">Granted</option>
+                    <option value="pending_verification">Pending verification</option>
+                    <option value="revoked">Revoked</option>
+                  </select>
+                </label>
+                <label>AI Intelligence
+                  <select id="media-ai-status-filter">
+                    <option value="">All AI status</option>
+                    <option value="analyzed">Analyzed</option>
+                    <option value="uncertain">Uncertain</option>
+                    <option value="insufficient_evidence">Insufficient evidence</option>
+                    <option value="unanalyzed">Unanalyzed</option>
+                  </select>
+                </label>
+                <label class="media-search-label">Search collection
+                  <input id="media-search-input" type="search" placeholder="Search by filename, source, or ID...">
+                </label>
+                <label class="media-tag-label">AI Tag / Signal
+                  <input id="media-tag-input" type="search" placeholder="Filter by tag (vegetation, debris...)...">
+                </label>
+              </div>
+            </div>
+
+            <details id="bulk-upload-details" class="bulk-upload-panel paper-card">
+              <summary><strong>+ Bulk Ingest Media Collection</strong> <span>Upload multiple files ▾</span></summary>
+              <form id="bulk-upload-form" class="bulk-form">
+                <p>Select multiple photographs (JPEG, PNG, WebP) and MP4/WebM videos. The Setowa media pipeline uploads directly to Cloudinary, extracts metadata and duration, generates responsive previews and video poster frames, and links the collection to this project.</p>
+                <div class="form-grid">
+                  <label class="full-width">Media Files (Multiple images or videos)
+                    <input id="bulk-files-input" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" required>
+                  </label>
+                  <label>Collection Date
+                    <input id="bulk-date-input" type="date" required>
+                  </label>
+                  <label>Permission Status
+                    <select id="bulk-perm-select">
+                      <option value="granted">Granted (Verified consent)</option>
+                      <option value="pending_verification">Pending verification</option>
+                      <option value="revoked">Revoked</option>
+                    </select>
+                  </label>
+                  <label class="full-width">Source Attribution
+                    <input id="bulk-source-input" maxlength="200" required placeholder="e.g. Ranger Drone Sweep / Cleanup Team Volunteer">
+                  </label>
+                </div>
+                <div class="bulk-actions-row">
+                  <button id="bulk-submit-btn" class="button primary" type="submit">Ingest Collection to Cloudinary →</button>
+                  <span id="bulk-upload-status" class="bulk-status-text"></span>
+                </div>
+                <div id="bulk-results-box" class="bulk-results-box" hidden></div>
+              </form>
+            </details>
+
+            <div id="media-library-grid" class="media-library-grid empty">No media assets found.</div>
+          </section>
+
+          <section id="tab-skills" class="tab-panel" hidden aria-labelledby="skills-title">
+            <div class="content-title">
+              <p class="kicker">01C / VISUAL INTELLIGENCE SKILLS</p>
+              <h2 id="skills-title">Setowa Skill Registry & Runtime.</h2>
+              <p>Reusable, versioned visual-AI and deterministic capabilities consuming typed inputs and producing structured, verifiable outputs.</p>
+            </div>
+
+            <div class="skills-header-row">
+              <span class="skills-count-badge" id="skills-count-badge">2 Skills Registered</span>
+              <p class="skills-disclaimer">ℹ Skills declare typed inputs, outputs, and permissions. AI confidence reflects model certainty, not factual accuracy.</p>
+            </div>
+
+            <div id="skills-list-grid" class="skills-grid"></div>
+
+            <div id="skill-tester-panel" class="skill-tester-panel paper-card" hidden>
+              <div class="tester-header">
+                <div>
+                  <h3 id="tester-skill-title">Test Skill</h3>
+                  <p id="tester-skill-desc"></p>
+                </div>
+                <button type="button" id="close-tester-btn" class="button button-small secondary">✕ Close</button>
+              </div>
+              <form id="skill-test-form">
+                <div id="tester-inputs-container" class="form-grid"></div>
+                <div class="tester-actions-row">
+                  <button id="run-skill-btn" class="button primary" type="submit">Execute Skill →</button>
+                  <span id="skill-run-status" class="bulk-status-text"></span>
+                </div>
+              </form>
+              <div id="skill-run-output" class="skill-run-output" hidden>
+                <h4>Execution Result</h4>
+                <div class="skill-result-meta" id="skill-result-meta"></div>
+                <pre id="skill-result-json" class="report-json-view"></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-workflows" class="tab-panel" hidden aria-labelledby="workflows-title">
+            <div class="content-title">
+              <p class="kicker">01D / COMPOSABLE WORKFLOW STUDIO</p>
+              <h2 id="workflows-title">Visual Workflow Engine & Builder.</h2>
+              <p>Compose reusable Setowa Skills into declarative Directed Acyclic Graph (DAG) pipelines with dependency tracking and topological execution.</p>
+            </div>
+
+            <!-- Workflow Studio Toolbar -->
+            <div class="wf-toolbar paper-card">
+              <div class="wf-toolbar-left">
+                <label class="wf-select-label">Workflow:
+                  <select id="wf-selector"></select>
+                </label>
+                <input id="wf-name-input" type="text" placeholder="Workflow Name" class="wf-name-input" value="New Workflow">
+                <input id="wf-version-input" type="text" placeholder="1.0.0" class="wf-version-input" value="1.0.0" style="width: 70px;">
+              </div>
+              <div class="wf-toolbar-right">
+                <span id="wf-status-badge" class="badge">Draft</span>
+                <button id="wf-new-btn" type="button" class="button secondary button-small">+ New</button>
+                <button id="wf-validate-btn" type="button" class="button secondary button-small">Validate</button>
+                <button id="wf-save-btn" type="button" class="button secondary button-small">Save</button>
+                <button id="wf-run-btn" type="button" class="button primary button-small">▶ Run</button>
+                <button id="wf-clear-btn" type="button" class="button secondary button-small">Clear</button>
+              </div>
+            </div>
+
+            <div id="wf-validation-alert" class="pair-warning" hidden></div>
+
+            <!-- Workflow 3-Column Studio -->
+            <div class="wf-studio-grid">
+              <!-- Left: Skill Palette -->
+              <div class="wf-palette-col paper-card">
+                <div class="wf-col-header">
+                  <h4>Skill Palette</h4>
+                  <small>Click to add node</small>
+                </div>
+                <div id="wf-palette-list" class="wf-palette-list"></div>
+              </div>
+
+              <!-- Center: Interactive Canvas -->
+              <div class="wf-canvas-col paper-card">
+                <div class="wf-col-header">
+                  <h4>DAG Canvas</h4>
+                  <small id="wf-canvas-meta">0 nodes, 0 edges</small>
+                </div>
+                <div id="wf-canvas-container" class="wf-canvas-container">
+                  <svg id="wf-canvas-svg" class="wf-canvas-svg"></svg>
+                  <div id="wf-canvas-nodes" class="wf-canvas-nodes">
+                    <div id="wf-canvas-empty" class="wf-canvas-empty">
+                      <p><strong>Canvas is empty</strong></p>
+                      <p>Select a skill from the palette on the left or load an existing workflow from the toolbar above.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Node Inspector -->
+              <div class="wf-inspector-col paper-card">
+                <div class="wf-col-header">
+                  <h4>Node Inspector</h4>
+                </div>
+                <div id="wf-inspector-content" class="wf-inspector-content">
+                  <p class="muted">Select a node on the canvas to configure its inputs and connections.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom: Execution & Results Panel -->
+            <div id="wf-execution-panel" class="wf-execution-panel paper-card">
+              <div class="wf-exec-header">
+                <div>
+                  <h3>Workflow Execution</h3>
+                  <p>Trigger execution with typed inputs and inspect topological step results.</p>
+                </div>
+                <div id="wf-exec-status-badge" class="badge">Idle</div>
+              </div>
+
+              <form id="wf-exec-form" class="compact-form">
+                <div id="wf-exec-inputs" class="form-grid"></div>
+                <div class="bulk-actions-row">
+                  <button id="wf-exec-submit-btn" class="button primary" type="submit">Execute Workflow →</button>
+                  <span id="wf-exec-status-text" class="bulk-status-text"></span>
+                </div>
+              </form>
+
+              <div id="wf-exec-results" class="wf-exec-results" hidden>
+                <div class="wf-exec-metrics-row">
+                  <div><strong>Status:</strong> <span id="wf-res-status"></span></div>
+                  <div><strong>Duration:</strong> <span id="wf-res-duration"></span></div>
+                  <div><strong>Execution ID:</strong> <code id="wf-res-id"></code></div>
+                </div>
+                <h4>Topological Step Results</h4>
+                <div id="wf-res-steps" class="wf-res-steps-grid"></div>
+                <div class="wf-res-details-box">
+                  <h4>Selected Step Details</h4>
+                  <pre id="wf-step-detail-json" class="report-json-view">Click any step above to inspect its inputs, outputs, errors, and telemetry.</pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn active" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04A / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
+            <div class="pair-grid">
+              <label>Before photo
+                <select id="before-select"></select>
+                <div id="before-card" class="pair-provenance-card" hidden>
+                  <div class="provenance-img-wrap"><img id="before-preview" class="pair-preview" alt="Before selection preview"><button type="button" class="zoom-btn" data-target="before-preview" aria-label="Zoom before image">⤢ Enlarge</button></div>
+                  <div class="provenance-info"><div class="provenance-header"><strong>Before Visit</strong><span id="before-perm-badge" class="badge granted">Granted</span></div><p id="before-visit-info" class="meta"></p><p id="before-source-info" class="meta"></p><span class="cloudinary-tag">☁ Cloudinary Verified</span></div>
+                </div>
+              </label>
+              <label>After photo
+                <select id="after-select"></select>
+                <div id="after-card" class="pair-provenance-card" hidden>
+                  <div class="provenance-img-wrap"><img id="after-preview" class="pair-preview" alt="After selection preview"><button type="button" class="zoom-btn" data-target="after-preview" aria-label="Zoom after image">⤢ Enlarge</button></div>
+                  <div class="provenance-info"><div class="provenance-header"><strong>After Visit</strong><span id="after-perm-badge" class="badge granted">Granted</span></div><p id="after-visit-info" class="meta"></p><p id="after-source-info" class="meta"></p><span class="cloudinary-tag">☁ Cloudinary Verified</span></div>
+                </div>
+              </label>
+            </div>
+            <div id="pair-validation-warning" class="pair-warning" hidden></div>
+            <div class="stage-toggle-row"><span>Comparison display:</span><button id="toggle-stage-view" class="button button-small secondary" type="button">Switch to Reveal Slider</button></div>
             <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Drag to reveal<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
             <div class="compare-actions"><button id="compare" class="button primary" type="button">Compare and draft observation</button><p id="compare-hint">A valid pair needs two dated photos.</p></div>
           </section>
 
-          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title"><div class="content-title"><p class="kicker">03 / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>Drafts are suggestions. Only approved text enters the report.</p></div><div id="observations" class="observation-list empty">No observations yet.</div></section>
+          <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04B / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div>
+            <div id="observations" class="observation-list empty">No observations yet.</div>
+          </section>
 
-          <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title"><div class="content-title"><p class="kicker">04 / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
-            <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><button id="export" class="button primary" type="button">Download Markdown report</button></div>
+          <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title">
+            <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
+              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+            </div>
+            <div class="content-title"><p class="kicker">04C / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
+            <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><p class="report-rule-note">ℹ Trust Rule: Unapproved AI observations are strictly excluded from all report outputs.</p><div class="report-button-row"><button id="export" class="button primary" type="button">Download Markdown report (.md)</button><button id="toggle-json-report" class="button secondary" type="button">View Raw JSON</button></div></div>
+            <div id="report-live-preview" class="report-live-preview"></div>
+            <pre id="report-json-view" class="report-json-view" hidden></pre>
             <div class="content-title smaller"><h3>Record a measured outcome</h3><p>Optional. Photos cannot establish weight or other quantities on their own.</p></div>
             <form id="measurement-form" class="paper-card measurement-form"><div class="form-grid"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="full-width">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label></div><button class="button secondary" type="submit">Save measurement</button></form><div id="measurements" class="measurement-list"></div>
+          </section>
+
+          <section id="tab-impact" class="tab-panel" hidden aria-labelledby="impact-title">
+            <div class="content-title">
+              <p class="kicker">05 / SUSTAINABILITY TIMELINE</p>
+              <h2 id="impact-title">Impact Story & Timeline.</h2>
+              <p>Synthesize persisted project media, video frame evidence, and human-verified findings into a traceable impact narrative.</p>
+            </div>
+
+            <!-- Project Impact Header / Metrics -->
+            <div class="paper-card impact-header-card">
+              <div class="impact-header-top">
+                <div>
+                  <p class="kicker">PROJECT DOSSIER</p>
+                  <h3 id="impact-project-name">Impact Dossier</h3>
+                  <p id="impact-date-range" class="meta">Date range: Calculating...</p>
+                </div>
+                <div class="impact-actions">
+                  <button id="btn-top-open-public" class="button button-small secondary" type="button" hidden title="Open public presentation">🔗 Public View</button>
+                  <button id="btn-generate-impact" class="button primary" type="button">Generate Story →</button>
+                  <button id="btn-refresh-impact" class="button secondary" type="button">Refresh</button>
+                </div>
+              </div>
+              <div class="summary-grid impact-metrics-grid" aria-label="Impact story metrics">
+                <div><strong id="impact-metric-events">0</strong><span>Timeline Events</span></div>
+                <div><strong id="impact-metric-media">0</strong><span>Assets Linked</span></div>
+                <div><strong id="impact-metric-verified">0</strong><span>Approved Findings</span></div>
+                <div><strong id="impact-metric-measurements">0</strong><span>Measurements</span></div>
+              </div>
+            </div>
+
+            <!-- Grounded Narrative Card -->
+            <div id="impact-narrative-panel" class="paper-card impact-narrative-card">
+              <div class="impact-section-header">
+                <div>
+                  <p class="kicker">GROUNDED SYNTHESIS</p>
+                  <h3>Verified Impact Summary</h3>
+                </div>
+                <div class="impact-status-controls">
+                  <span id="impact-status-pill" class="badge approved">Draft</span>
+                  <select id="impact-status-select" class="impact-status-dropdown" title="Change Story Status">
+                    <option value="draft">Status: Draft</option>
+                    <option value="in_review">Status: In Review</option>
+                    <option value="published">Status: Published</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Public Sharing Bar (Milestone T018) -->
+              <div id="impact-share-bar" class="impact-share-bar" style="margin-top: 14px; padding: 12px 14px; background: rgba(0,0,0,0.03); border: 1px solid var(--border, #e2e8f0); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div class="share-info" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                  <span id="share-status-icon">🔒</span>
+                  <span id="share-status-label" style="font-weight: 600;">Private</span>
+                  <span id="share-url-display" class="meta" style="word-break: break-all;">Story must be published to share publicly.</span>
+                </div>
+                <div id="share-actions-group" class="share-actions-group" style="display: flex; gap: 8px;">
+                  <button id="btn-open-public-story" class="button button-small primary" type="button" disabled title="Open read-only public story presentation">🔗 Open Public Story</button>
+                  <button id="btn-copy-share-link" class="button button-small secondary" type="button" disabled title="Copy shareable public link">📋 Copy Link</button>
+                  <button id="btn-rotate-share-link" class="button button-small secondary" type="button" disabled title="Rotate share token (invalidates old link)">🔄 Rotate</button>
+                  <button id="btn-revoke-share-link" class="button button-small secondary" type="button" disabled title="Revoke public access">🚫 Revoke</button>
+                </div>
+              </div>
+              <div id="impact-narrative-text" class="impact-narrative-content">
+                <p class="muted">No impact story generated yet. Click <strong>Generate Story</strong> above to synthesize your timeline and evidence records.</p>
+              </div>
+              <div id="impact-uncertainty-callout" class="uncertainty-callout warning" hidden>
+                <strong>Observation & Verification Caveats</strong>
+                <p id="impact-uncertainty-text"></p>
+              </div>
+            </div>
+
+            <!-- Before / After Evidence Cards Section -->
+            <div class="impact-section-heading">
+              <div>
+                <p class="kicker">COMPARATIVE PROOF</p>
+                <h3>Before / After Evidence Cards</h3>
+                <p>Side-by-side photographic pairs backed by Cloudinary delivery, human verification status, and reviewer provenance.</p>
+              </div>
+            </div>
+            <div id="impact-cards-container" class="impact-cards-grid empty">
+              No comparison records found for this project.
+            </div>
+
+            <!-- Chronological Timeline Section -->
+            <div class="impact-section-heading">
+              <div>
+                <p class="kicker">CHRONOLOGICAL SPINE</p>
+                <h3>Project Activity & Milestone Timeline</h3>
+                <p>Every recorded field visit, cleanup drone video, frame observation, and verified outcome in chronological order.</p>
+              </div>
+            </div>
+            <div id="impact-timeline-container" class="impact-timeline-spine">
+              <div class="empty-state">No timeline events recorded yet.</div>
+            </div>
           </section>
         </div>
       </div>
     </section>
   </main>
-  <footer><span>SETOWA · BY TEAM LEX</span><span>AI proposes. Evidence supports. People verify.</span></footer>
+  <dialog id="lightbox-modal" class="lightbox-modal" aria-label="Evidence Media Lightbox">
+    <div class="lightbox-content">
+      <button id="lightbox-close" class="lightbox-close" type="button" aria-label="Close media preview">✕ Close</button>
+      <img id="lightbox-img" alt="Enlarged field evidence photo">
+      <video id="lightbox-video" controls playsinline style="display:none; max-width:80vw; max-height:70vh; border-radius:4px;"></video>
+      <div class="lightbox-meta">
+        <div>
+          <h4 id="lightbox-title"></h4>
+          <p id="lightbox-details"></p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span id="lightbox-type-badge" class="badge"></span>
+          <span id="lightbox-badge" class="badge"></span>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="frames-modal" class="frames-modal" aria-label="Video Frame Analytics">
+    <div class="frames-modal-content">
+      <div class="frames-modal-header">
+        <div>
+          <span class="kicker">SETOWA FIELD VIDEO ANALYTICS</span>
+          <h3 id="frames-modal-title">Frame Derivation &amp; Visual Observation</h3>
+          <p id="frames-modal-subtitle" class="frames-meta"></p>
+        </div>
+        <button id="frames-close-btn" class="button quiet" type="button" aria-label="Close frame analytics">✕ Close</button>
+      </div>
+
+      <div class="frames-modal-body">
+        <div class="frames-left-pane">
+          <div class="frames-video-box">
+            <video id="frames-video-player" controls playsinline></video>
+          </div>
+
+          <div class="paper-card frames-config-card">
+            <h4>Sampling Strategy</h4>
+            <div class="form-grid">
+              <label>Strategy
+                <select id="frame-strategy-select">
+                  <option value="interval">Interval (Every N seconds)</option>
+                  <option value="uniform">Uniform (N evenly spaced)</option>
+                </select>
+              </label>
+              <label id="frame-param-label">Interval (Seconds)
+                <input id="frame-param-input" type="number" min="0.5" max="30" step="0.5" value="2.0">
+              </label>
+              <label>Max Frame Limit
+                <input id="frame-max-input" type="number" min="1" max="60" value="20">
+              </label>
+            </div>
+            <div class="frames-actions-row">
+              <button id="btn-extract-frames" class="button primary button-small" type="button">Extract Frames →</button>
+              <span id="extract-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+
+          <div class="paper-card frames-analyze-card">
+            <h4>Visual Intelligence (SkillRuntime)</h4>
+            <p class="frames-info-note">Executes <code>field-frame-observation@1.0.0</code> via SETOWA SkillRuntime using Gemini vision intelligence.</p>
+            <div class="frames-actions-row">
+              <button id="btn-analyze-frames" class="button secondary button-small" type="button">Analyze All Extracted Frames</button>
+              <span id="analyze-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="frames-right-pane">
+          <div id="frames-summary-card" class="paper-card frames-summary-card" hidden>
+            <div class="summary-card-header">
+              <h4>Aggregated Video Observation</h4>
+              <span id="summary-status-badge" class="badge"></span>
+            </div>
+            <p id="summary-text" class="summary-text"></p>
+            <div class="summary-signals-wrap">
+              <strong>Detected Signals:</strong>
+              <div id="summary-signals-tags" class="summary-signals-tags"></div>
+            </div>
+            <div id="summary-warnings-box" class="summary-warnings-box" hidden></div>
+          </div>
+
+          <div class="timeline-header-row">
+            <h4>Sampled Frames Timeline</h4>
+            <span id="frames-count-badge" class="badge">0 frames</span>
+          </div>
+          <div id="frames-timeline-container" class="frames-timeline-container empty">
+            No frames extracted yet. Choose a sampling strategy and click "Extract Frames".
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="intelligence-modal" class="lightbox-dialog frames-modal" aria-labelledby="intel-modal-title">
+    <div class="lightbox-card frames-modal-card">
+      <div class="lightbox-header">
+        <div>
+          <span class="kicker">01D / STRUCTURED AI MEDIA INTELLIGENCE</span>
+          <h3 id="intel-modal-title">Media Intelligence & Provenance</h3>
+        </div>
+        <button id="close-intel-modal" class="button secondary button-small" type="button" aria-label="Close intelligence dialog">Close ✕</button>
+      </div>
+
+      <div class="frames-modal-body">
+        <div class="frames-left-pane">
+          <div class="frames-video-box">
+            <img id="intel-preview-img" src="" alt="Media asset preview" style="max-height: 240px; width: 100%; object-fit: contain; border-radius: 4px;">
+          </div>
+          <div class="paper-card">
+            <h4>Asset Provenance</h4>
+            <div id="intel-provenance-info" class="meta" style="line-height: 1.6;"></div>
+            <div class="frames-actions-row" style="margin-top: 12px;">
+              <button id="btn-reanalyze-asset" class="button primary button-small" type="button">🔄 Re-analyze Asset</button>
+              <span id="reanalyze-status-text" class="status-indicator"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="frames-right-pane">
+          <div id="intel-details-card" class="paper-card">
+            <div class="summary-card-header">
+              <h4>Structured AI Findings</h4>
+              <span id="intel-status-badge" class="badge"></span>
+            </div>
+            <p id="intel-description-text" class="summary-text" style="font-size: 15px; margin: 8px 0;"></p>
+            
+            <div style="margin: 12px 0;">
+              <strong>Observations (Observed vs Inferred):</strong>
+              <ul id="intel-observations-list" style="margin: 6px 0 12px 18px; padding: 0;"></ul>
+            </div>
+
+            <div class="summary-signals-wrap">
+              <strong>Controlled Tags:</strong>
+              <div id="intel-tags-container" class="summary-signals-tags" style="margin-top: 4px;"></div>
+            </div>
+
+            <div class="summary-signals-wrap" style="margin-top: 10px;">
+              <strong>Visual Signals:</strong>
+              <div id="intel-signals-container" class="summary-signals-tags" style="margin-top: 4px;"></div>
+            </div>
+
+            <div id="intel-activity-wrap" style="margin-top: 10px;" hidden>
+              <strong>Activity Classification:</strong>
+              <span id="intel-activity-pill" class="delivery-pill" style="margin-left: 6px;"></span>
+            </div>
+
+            <div id="intel-uncertainty-box" class="warning-callout" style="margin-top: 12px;" hidden>
+              <strong>Uncertainty / Ambiguity:</strong>
+              <p id="intel-uncertainty-text" style="margin: 4px 0 0 0;"></p>
+            </div>
+
+            <div id="intel-warnings-box" class="warning-callout" style="margin-top: 8px;" hidden>
+              <strong>Quality Warnings:</strong>
+              <ul id="intel-warnings-list" style="margin: 4px 0 0 16px; padding: 0;"></ul>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <h4>Analysis History & Audit Trail</h4>
+            <div id="intel-history-container" style="max-height: 180px; overflow-y: auto; font-size: 13px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <footer><span>SETOWA</span><span>Built by Team LEX for Code Cubicle · AI proposes. Evidence supports. People verify.</span></footer>
+
 </body>
 </html>
+

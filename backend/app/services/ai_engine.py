@@ -50,10 +50,10 @@ class AIEngineService:
             source_desc = "mock-engine (fallback after API error)"
 
         mock_result = (
-            f"[LEX Intelligence Engine ({task.capitalize()})]\n"
-            f"Successfully synthesized input: '{prompt_preview}'.\n"
-            f"• Key Findings: High-confidence pattern alignment detected.\n"
-            f"• Recommendation: Proceed with automated workflow dispatch.\n"
+            f"[LEX Intelligence Engine ({task.capitalize()}) — Demo Mode]\n"
+            f"Simulated reasoning for input: '{prompt_preview}'.\n"
+            f"• Note: Demonstration output only — not a real-world benchmark.\n"
+            f"• Protocol: Human verification required before inclusion in records.\n"
             f"• Resilience: Zero-friction fallback active."
         )
 
@@ -62,7 +62,7 @@ class AIEngineService:
             task_type=task,
             source=source_desc,
             result=mock_result,
-            confidence=0.994,
+            confidence=0.95,
             latency_ms=simulated_latency,
         )
 

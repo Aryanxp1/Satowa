@@ -14,7 +14,10 @@ def ensure_local_env():
         prefix = '' if not existing or existing.endswith('\n') else '\n'
         with env_path.open('a') as stream:
             stream.write(prefix + 'REVIEWER_TOKENS=' + json.dumps({'Farhan': token}) + '\n')
-        env_path.chmod(0o600)
+        try:
+            env_path.chmod(0o600)
+        except OSError:
+            pass
         print('A local reviewer token was created in backend/.env (gitignored).')
     else:
         print('Using existing REVIEWER_TOKENS from backend/.env.')
@@ -22,5 +25,5 @@ def ensure_local_env():
 
 if __name__ == '__main__':
     ensure_local_env()
-    from seed_local_demo import seed
-    seed()
+    from seed_demo import seed_demo_dataset
+    seed_demo_dataset()

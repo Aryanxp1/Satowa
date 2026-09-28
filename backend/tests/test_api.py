@@ -27,7 +27,7 @@ def test_health_check():
 
 
 def test_mock_stats():
-    """Verify showcase stats endpoint returns metrics list."""
+    """Verify showcase stats endpoint returns metrics list without ungrounded claims."""
     response = client.get("/api/v1/mock-stats")
     assert response.status_code == 200
     data = response.json()
@@ -36,6 +36,11 @@ def test_mock_stats():
     labels = [m["label"] for m in data["metrics"]]
     assert "Response Latency" in labels
     assert "AI Accuracy" in labels
+    for metric in data["metrics"]:
+        assert "99.4" not in metric["value"]
+    accuracy_metric = next(m for m in data["metrics"] if m["label"] == "AI Accuracy")
+    assert "Demo" in accuracy_metric["value"] or "Synthetic" in accuracy_metric["trend"]
+
 
 
 def test_analyze_mock_mode():

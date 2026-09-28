@@ -1,0 +1,1 @@
+"""SETOWA scripts package."""

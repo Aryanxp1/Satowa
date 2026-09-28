@@ -1,0 +1,261 @@
+# CHANGELOG.md — Setowa / LEX
+# Tracking all changes made across sessions and agents
+
+## [Unreleased]
+
+### 2026-09-27
+- **AGY**: Completed T019 (Hackathon Demo + Production Hardening):
+  - Safe Environment & Production Validation (`backend/app/services/env_validator.py`):
+    - Implemented `validate_environment(settings)`: classifies environment variables as `configured` or `missing` without leaking secrets or values.
+    - Implemented `validate_production_readiness(settings)`: blocks production deployment if `USE_MOCK` is true, if `ALLOWED_ORIGINS` has wildcard `*` or `localhost`, if database is in-memory (`:memory:`), or if required Cloudinary/Gemini credentials are missing.
+  - Health & Readiness Probes (`backend/app/routes/health.py`, `backend/app/schemas/api.py`, `backend/app/schemas/__init__.py`):
+    - `GET /api/v1/health`: Liveness probe reporting status, version, environment, and mock_mode.
+    - `GET /api/v1/ready`: Operational readiness probe pinging SQLite (`SELECT 1`), checking Cloudinary and Gemini configuration status without exposing credentials, returning 200 when ready or 503 with specific degraded reasons.
+    - Root route `/` in `backend/app/main.py`: Advertises `/api/v1/ready` readiness endpoint, health check, and direct public demo story link.
+  - Deterministic Demo Seed Dataset (`backend/scripts/seed_demo.py`, `backend/scripts/setup_local_demo.py`):
+    - Created idempotent multi-site demo dataset for Mombasa Marine Litter & Mangrove Restoration (`proj_mombasa_marine`), Nyali Creek (`site_nyali_creek`), 3 chronological visits, 3 media items (`ast_mombasa_before`, `ast_mombasa_video`, `ast_mombasa_after`), derived video frames in `video_frames`, intelligence in `media_intelligence`, approved observation pair in `observations`, weigh slip in `measurements`, and published impact story with share token `pst_demo_mombasa_coastal_2026`.
+    - Preserved legacy `demo-riverbank` fixtures for backward test compatibility.
+  - Cross-Platform Demo Startup (`backend/scripts/start_demo.py`):
+    - One-command launcher (`python scripts/start_demo.py`) that checks environment, seeds demo dataset, displays ASCII banner with quick-access links, and starts Uvicorn.
+  - Unified CLI Path (`backend/app/cli.py`, `backend/setowa_cli.py`):
+    - Implemented CLI commands: `skill list`, `workflow list`, `workflow run <id>`, `run status <id>`, `story show <proj_id>`, and `ingest <dir>` reusing backend domain services directly with JSON output support.
+  - Documentation:
+    - `docs/DEMO_RUNBOOK.md`: 10-section operational runbook covering prerequisites, setup, quickstart, CLI, live script, verification, troubleshooting, and tear-down.
+    - `docs/DEMO_SCRIPT.md`: 5-minute hackathon pitch narrative detailing Cloudinary programmable media, Gemini multimodal reasoning, skill contracts, and human verification.
+  - Automated Smoke Test (`backend/scripts/smoke_test.py`):
+    - 9-phase automated test verifying health, ingestion, Cloudinary delivery, Gemini intelligence, skills, workflows, verification, impact story, and public share gating. All 9 phases passed.
+  - Testing & Quality Assurance (`backend/tests/test_demo_hardening.py`):
+    - Added 18 comprehensive tests covering all 18 demo hardening requirements.
+    - Verified full test suite: 296 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure (`test_local_setup.py:62`), 0 functional regressions (+18 new tests).
+  - Added ADR D021 in `DECISIONS.md`.
+  - Database Schema & Migration (`evidence_store.py`): Added `share_token TEXT UNIQUE` column to `impact_stories` table with unique index `idx_impact_stories_share_token` and non-destructive migration guard. Added persistence helpers `get_impact_story_by_share_token()`, `set_impact_story_share_token()`, and `get_asset = get_media_item` alias.
+  - Public Projection & Schemas (`schemas/api.py`, `schemas/__init__.py`): Defined `PublicImpactStory`, `PublicTimelineEvent`, `PublicBeforeAfterCard`, and `ShareStoryResponse`. Sanitized projection stripping internal DB IDs, reviewer auth tokens, secret environment variables, and private operational data.
+  - Public Story Service (`services/public_story.py`): Implemented 128-bit cryptographically secure URL-safe share token generation (`pst_` prefix), rotation, and revocation. Implemented `get_public_impact_story()` with published-status gating (draft and in_review strictly return 404), asset provenance resolution (`assets.source`), and site name resolution. Implemented `render_public_story_html()` producing clean standalone HTML5 with Open Graph social metadata, Cloudinary hero media, before/after comparison split cards, chronological timeline spine with event badges, verified findings callout, explicit uncertainty caveats, and `@media print` styles.
+  - Impact Story Lifecycle Integration (`services/impact_story.py`): Updated `generate_impact_story` and `get_impact_story_by_id` to include share token and URL. Auto-generated `share_token` when story transitions to `published`.
+  - REST API Endpoints:
+    - Added `routes/public_impact.py`: `GET /share/{public_token}` (HTML presentation) and `GET /api/v1/public/impact/{public_token}` (JSON projection).
+    - Updated `routes/impact_stories.py`: `POST /api/v1/impact-stories/{story_id}/share`, `POST /api/v1/impact-stories/{story_id}/share/rotate`, and `POST /api/v1/impact-stories/{story_id}/share/revoke`.
+  - Setowa Workspace UI Integration (`backend/app/demo/`): Added `#btn-top-open-public` and `#impact-share-bar` inside `#tab-impact` with interactive "Open Public Story", "Copy Share Link", "Rotate", and "Revoke" controls.
+  - Testing & Quality Assurance (`tests/test_public_story.py`): Added 25 comprehensive tests covering published access, draft/in_review blocking (404), invalid tokens, public projection safety, secret exclusion, reviewer token exclusion, verification badges, pending/rejected/uncertain finding handling, timeline preservation, before/after preservation, Cloudinary URL delivery, provenance preservation, public API, public page HTML route, share token generation and uniqueness, token rotation and revocation, Open Graph metadata, and backward compatibility. Verified full test suite: 278 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 0 functional regressions (+25 passed).
+  - Live Validation: Tested against `proj_default` on live server; verified draft/in_review 404, published 200 HTML & JSON, Cloudinary hero media, timeline events, before/after evidence, zero secrets, zero reviewer tokens.
+  - Added ADR D020 in `DECISIONS.md`.
+- **AGY**: Completed T017 (Sustainability Timeline + Impact Story):
+  - Domain Model & SQLite Schema (`evidence_store.py`): Created `impact_stories` and `impact_story_events` tables with indexes on `project_id`, `story_id`, and `event_type`. Added persistence and retrieval helper methods (`save_impact_story`, `get_impact_story`, `get_project_impact_story`, `update_impact_story`, `save_impact_story_events`, `get_impact_story_events`, `delete_impact_story_events`).
+  - Schemas (`schemas/api.py`, `schemas/__init__.py`): Defined `TimelineEventType` (`before`, `activity`, `after`, `verified_finding`, `measurement`, `milestone`), `TimelineEvent`, `BeforeAfterCard`, `ImpactStoryResponse`, `GenerateImpactStoryRequest`, `UpdateImpactStoryRequest`.
+  - Service Layer (`services/impact_story.py`):
+    - `build_project_timeline_events`: Gathers and chronologically orders events across visits, cleanup action videos, timestamped video frames, post-cleanup imagery, physical measurements, and verified findings.
+    - `build_before_after_cards`: Generates comparative proof cards with Cloudinary delivery URLs, verification status (`approved`, `pending`, `rejected`), reviewer provenance, and uncertainty caveats.
+    - `generate_grounded_impact_narrative`: Grounded narrative synthesis utilizing Gemini multimodal/text API with strict anti-hallucination rules (zero invented carbon/area/percentage metrics), explicit uncertainty flagging, and deterministic offline fallback.
+    - Deterministic lifecycle management (`generate_impact_story`, `get_impact_story_by_id`, `get_project_impact_story`, `update_impact_story_fields`, `get_story_timeline_events`).
+  - REST API Endpoints (`routes/impact_stories.py`, `main.py`): Added `GET /api/v1/projects/{project_id}/impact-story`, `POST /api/v1/projects/{project_id}/impact-story/generate`, `GET /api/v1/impact-stories/{story_id}`, `PUT /api/v1/impact-stories/{story_id}`, `GET /api/v1/impact-stories/{story_id}/timeline`.
+  - Setowa Workspace UI Extension (`backend/app/demo/`):
+    - Added `Impact Story` tab button and `#tab-impact` workspace view in `index.html`.
+    - Added Project Dossier header with dynamic metrics (events, assets, approved findings, measurements).
+    - Added Grounded Synthesis card with status controls and observation/verification caveats callout.
+    - Added Before/After Evidence Cards grid with Cloudinary responsive delivery and click-to-lightbox inspection.
+    - Added Chronological Spine with color-coded type markers, media thumbnails (image/video), frame observations, and traceable provenance.
+  - Testing & Quality Assurance (`tests/test_impact_story.py`): Added 23 comprehensive tests covering all 23 required scenarios. Verified full test suite: 253 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 0 functional regressions (+23 passed).
+  - Live Gemini Validation: Live multimodal narrative synthesis executed with configured credentials (`GEMINI_API_KEY`). Produced 683-character strictly grounded narrative referencing verified observations and exact weigh slip measurement (320.0 kg), with 0 secrets leaked.
+  - Added ADR D019 in `DECISIONS.md`.
+- **AGY**: Completed T016 (AI Media Intelligence + Discovery Foundation):
+  - Roadmap Reconciliation: Aligned roadmap numbering across `SETOWA_MASTER_PLAN.md` and `.ai/DECISIONS.md` (ADR D017, D018). Preserved T014 (Field Video Ingestion + Frame Analytics) and T015 (Spatial-Temporal Grouping). Established T016 as AI Media Intelligence, T017 as Sustainability Timeline.
+  - Schema & Persistence (`evidence_store.py`): Created `media_intelligence` table with indexed `asset_id`, `status`, and `frame_id`. Added `save_media_intelligence()`, `get_media_intelligence()`, and `get_media_intelligence_history()`. Updated `list_media()` with deterministic filtering by `tag`, `signal`, and `ai_status`.
+  - Built-in Skill `media-intelligence@1.0.0` (`app/skills/builtins/media_intelligence.py`): Created structured visual intelligence skill executing via `SkillRuntime`. Built controlled taxonomies (`CONTROLLED_TAGS`, `CONTROLLED_SIGNALS`). Implemented strict OBSERVED vs INFERRED grounding, uncertainty extraction, and warning flags. Multi-model fallback (`gemini-flash-latest`, `gemini-3.8-flash`) and offline resilience.
+  - Service Layer (`app/services/media_intelligence.py`): Added `analyze_asset`, `get_asset_intelligence`, `get_asset_intelligence_history`, and bounded `analyze_batch` with isolated per-asset failure boundaries.
+  - REST APIs (`app/routes/media.py`): Implemented `/api/v1/media/{asset_id}/analyze`, `/intelligence`, `/intelligence/history`, `/reanalyze`, `frames/{frame_id}/analyze`, and `analyze-batch`. Enhanced `/api/v1/media/query` and `/api/v1/media` with tag/signal/status discovery filters.
+  - Media Library UI Extension (`backend/app/demo/`): Extended toolbar with AI status and tag filters. Added status badges, description summaries, tag/signal pills, and warning indicators to asset cards. Added interactive `#intelligence-modal` for inspecting observations, signals, warnings, uncertainty, and analysis audit history.
+  - Testing & Validation (`tests/test_media_intelligence.py`): Added 20 comprehensive tests covering all edge cases. Verified full test suite (230 passed, 1 skipped, 1 pre-existing Windows chmod baseline, 0 regressions). Conducted live Gemini multimodal validation with `gemini-flash-latest` against Cloudinary media (PASS, zero secrets leaked).
+- **AGY**: Completed T015 (Project / Location / Timeline Media Grouping & Spatial-Temporal Queries):
+  - Added `projects` table and updated `sites` and `assets` schemas with `project_id`, `latitude`, `longitude`, `captured_at`.
+  - Implemented `media_query.py` service for multi-dimensional spatial-temporal asset queries, day-bucketed timelines, and project summaries.
+  - Added project/site/media query REST endpoints.
+  - Added 21 targeted tests in `tests/test_media_query.py` (210 passed, 0 regressions).
+  - Cloudinary Permission & Precheck: Verified MASTER ADMIN authenticated access and video creation/upload capability (`ping: ok`). Verified existing T011 video ingestion pipeline (`resource_type="video"`), container header validation, duration persistence, and poster frame generation.
+  - Frame Extraction & Transformation (`backend/app/services/video_frames.py`): Implemented on-the-fly frame derivation using Cloudinary video transformations (`start_offset="so_<ts>"`, `.jpg` format, and `c_fill,h_225,w_400,so_<ts>` thumbnails) without local video download or re-encoding. Deterministic interval, uniform, and custom timestamp sampling with safety bounds (`max_frames <= 60`).
+  - Frame Provenance & Persistence (`backend/app/services/evidence_store.py`): Added `video_frames` table schema and data access helpers (`save_video_frame`, `get_video_frames_by_asset`, `get_video_frame`, `delete_video_frames_by_asset`). Frame model captures unambiguous provenance: `frame_id`, `asset_id`, `frame_index`, `timestamp_seconds`, `frame_url`, `thumbnail_url`, `source_video_url`, `width`, `height`, `extraction_method`.
+  - Built-in Skill: `field-frame-observation@1.0.0` (`backend/app/skills/builtins/field_frame_observation.py`): Implemented structured visual intelligence observation skill consuming frame image via Gemini multimodal API. Outputs: `observations`, `detected_signals`, `status` (`analyzed` | `uncertain` | `insufficient_evidence`), `confidence` (bounded [0.0, 1.0]), and `warnings`. Automatic multi-model fallback (`gemini-flash-latest`, `gemini-3.8-flash`) and safe offline handling. Persistence in `frame_analyses` table with aggregated video-level summary and signal deduplication.
+  - REST API Endpoints (`backend/app/routes/media.py`): `POST /api/v1/media/{asset_id}/frames/extract`, `GET /api/v1/media/{asset_id}/frames`, `GET /api/v1/media/{asset_id}/frames/{frame_id}`, `POST /api/v1/media/{asset_id}/frames/analyze`, `GET /api/v1/media/{asset_id}/frame-analysis`.
+  - Setowa Workspace UI Extension (`backend/app/demo/`): Media Library card action: `🎬 Frame Analytics` button for video assets; interactive `#frames-modal` dialog with inline HTML5 video player, sampling strategy selector (interval vs uniform), extraction trigger, batch/single-frame analysis trigger, and aggregated observation summary card; responsive frame timeline rendering thumbnails, timestamps, signal tags, observations, and confidence pills.
+  - Testing & Quality Assurance (`backend/tests/test_video_frames.py`): 19 targeted tests covering all required edge cases. Full test suite: 189 passed, 1 skipped, 1 known pre-existing Windows chmod baseline, 0 regressions.
+  - Live End-to-End Validation: Cloudinary video upload (`setowa/t014_live_walkthrough`, 13.41s, 854x480, PASS), frame derivation and delivery (HTTP 200, 23,702 bytes, image/jpeg, PASS), and live Gemini Vision inference via `SkillRuntime` (HTTP 200 OK, accurate visual observations, honest `insufficient_evidence` status and `0.1` confidence, PASS).
+  - Added ADR D016 in `DECISIONS.md`.
+- **AGY**: Completed T013 (SETOWA Workflow Engine + Builder):
+  - Created `backend/app/workflows/models.py`: declarative schema definitions (`WorkflowDefinition`, `WorkflowNode`, `WorkflowEdge`, `WorkflowInputDefinition`, `WorkflowSummary`, `WorkflowValidationResult`, `WorkflowExecutionRequest`, `WorkflowExecutionResult`, `WorkflowExecutionStatus`, `NodeExecutionStatus`, `NodeExecutionResult`).
+  - Created `backend/app/workflows/dag.py`: `DAGGraph` with Kahn's algorithm and DFS cycle detection for cycle and self-loop rejection, dependency analysis, and deterministic topological ordering.
+  - Created `backend/app/workflows/validation.py`: comprehensive validation for node uniqueness, skill registry resolution, semver matching, edge port compatibility, and reference binding (`$input.key`, `$node.node_id.output_key`).
+  - Created `backend/app/workflows/engine.py`: `WorkflowEngine` orchestrating dynamic state propagation, executing nodes strictly via T012 `SkillRuntime`, skipping downstream nodes on upstream failures, and producing structured execution reports with latency metrics.
+  - Created `backend/app/workflows/store.py`: SQLite persistence for `workflows` and `workflow_executions` tables, including automatic seeding of `wf_evidence_compare` (Before-After Evidence Comparison multi-skill workflow).
+  - Created `backend/app/workflows/__init__.py`: module exports and singleton engine/store accessors.
+  - Created `backend/app/routes/workflows.py`: REST API endpoints for workflow CRUD, draft and stored DAG validation, topological execution, and run history.
+  - Registered `workflows_router` in `backend/app/main.py`.
+  - Added Setowa Workspace Visual Workflow Builder in `backend/app/demo/`:
+    - `#tab-workflows` studio with 3-column layout (Skill Palette, interactive DAG Canvas with SVG connections, Node Inspector for `$input`/`$node` mapping, and Step Execution Panel).
+    - Toolbar with New, Validate, Save, Run, Clear, and Workflow selector.
+    - Full bidirectional wiring to backend `/api/v1/workflows` endpoints.
+  - Added 22 focused tests in `backend/tests/test_workflows.py` covering all 22 required test scenarios.
+  - Full test suite verified: 170 passed, 1 skipped, 1 known Windows chmod baseline, 0 regressions.
+  - Added ADR D015 in `DECISIONS.md`.
+- **AGY**: Completed T012 (SETOWA Skill Runtime):
+
+  - Created `backend/app/skills/models.py`: declarative `SkillManifest`, `SkillInputDefinition`, `SkillOutputDefinition`, `SkillExecutionStatus` (4-state: `success`, `failed`, `invalid_input`, `unavailable`), `SkillExecutionRequest`, and `SkillExecutionResult`.
+  - Created `backend/app/skills/validation.py`: manifest integrity checking (unique inputs/outputs, semver, valid namespace:action permissions), input type validation, and execution context permission enforcement.
+  - Created `backend/app/skills/loader.py`: `BaseSkill` abstract base class defining standard execution interface.
+  - Created `backend/app/skills/registry.py`: `SkillRegistry` with multi-version support, semantic version resolution (latest vs exact), duplicate prevention, and discovery/listing with kind filtering.
+  - Created `backend/app/skills/runtime.py`: `SkillRuntime` enforcing permission validation, input checking, latency measurement, and unhandled exception safety.
+  - Created built-in skills in `backend/app/skills/builtins/`:
+    - `media-metadata@1.0.0`: deterministic inspector extracting Cloudinary delivery URLs, format, dimensions, duration, and DB asset records.
+    - `evidence-comparison@1.0.0`: structured before/after comparison reusing core `image_comparison` service with 4-state output and zero unbenchmarked accuracy claims.
+  - Created `backend/app/routes/skills.py`: REST API endpoints for discovery (`GET /api/v1/skills`), manifest inspection (`GET /api/v1/skills/{name}`), and execution (`POST /api/v1/skills/{name}/execute`).
+  - Integrated `skills_router` into `backend/app/main.py` and exported models in `backend/app/schemas/__init__.py`.
+  - Added Setowa Workspace Skills UI in `backend/app/demo/`: `#tab-skills` section, skills overview cards, tags for permissions/inputs/outputs, and interactive in-page execution tester (`#skill-tester-panel`).
+  - Added 15 comprehensive unit & API tests in `backend/tests/test_skills.py` covering all 14 required test scenarios.
+  - Full test suite verified: 148 passed, 1 skipped, 1 known Windows chmod failure, 0 regressions.
+  - Added ADR D014 in `DECISIONS.md`.
+
+### 2026-09-26
+- **AGY**: Initialized `.ai/` control plane (T001) with `AGENTS.md`, `PROJECT_STATE.md`, `TASK_BOARD.md`, `DECISIONS.md`, `HANDOFF.md`, and `CHANGELOG.md`.
+- **AGY**: Established verified test baseline (T003): 47 tests collected, 45 passed, 1 pre-existing Windows-specific permission failure (`chmod 0o600`), 2 library deprecation errors.
+- **AGY**: Documented root causes and verified zero code regressions.
+- **AGY**: Prepared detailed task specification and constraints for T002 (Schema Alignment).
+- **Cline**: Completed T002 (Schema Alignment):
+  - Updated `assets` table schema with `permission_status TEXT NOT NULL DEFAULT 'granted'` and nullable `thumbnail_url TEXT`.
+  - Added non-destructive schema migration guards with column inspection and `ALTER TABLE`.
+  - Persisted `thumbnail_url` and validated `permission_status` on image upload.
+  - Mapped unreliable AI comparisons to `review_status = 'pending'`, preserving `reliability_reason` without text fabrication.
+  - Migrated legacy `unreliable` observation records to `pending`.
+  - Updated `CHECK` constraint on `observations.review_status` to `('pending','approved','rejected')`.
+  - Added `AssetResponse` and `PermissionStatus` to `schemas/api.py` and exported them in `schemas/__init__.py`.
+  - Added 3 focused migration, persistence, and validation tests; verified all 48 tests pass (1 pre-existing Windows failure unchanged, zero regressions).
+- **Cline**: Completed T004 (Defuse the Mock Accuracy Claim):
+  - Removed unsupported `99.4%` and `10x` claims from `backend/app/routes/analyze.py` (`get_mock_stats`).
+  - Labeled showcase metrics explicitly as `Unbenchmarked (Demo)`, `Simulated Mock`, and `Assisted Review / Human In The Loop`.
+  - Updated `backend/app/services/ai_engine.py` mock prompt reasoning to explicitly state demo mode and human verification requirement; replaced `0.994` confidence with `0.95`.
+  - Updated `backend/tests/test_api.py` to assert that no `99.4` percentage exists and that accuracy metric is identified as demo/synthetic.
+  - Verified complete test suite: 48 passed, zero regressions.
+- **Cline**: Completed T005 (Evidence / Pair Validation Hardening):
+  - Strengthened `validate_pair` in `backend/app/routes/evidence.py` to authoritatively enforce server-side validation invariants:
+    - Same cleanup site validation across before and after visits.
+    - Strict chronological visit ordering (`before_visit['visited_on'] < after_visit['visited_on']`).
+    - Persistent asset existence verification in `assets` table (404 for missing before or after asset).
+    - Asset-to-visit and visit-to-site relational consistency with tamper detection against forged IDs.
+    - Media validity checks (supported image formats `jpeg/jpg/png/webp`, positive dimensions, secure URL).
+    - Evidence permission status enforcement (only `'granted'` permission permitted for pairs and reports).
+    - Rejection of cross-site tampering when editing existing observations (`422 Cannot change the site of an observation`).
+    - Filtered `report_rows` to guarantee only assets with `permission_status='granted'` appear in approved reports.
+  - Extended `PairInput` and `EditInput` schemas to support optional client-claimed `site_id`, `before_visit_id`, and `after_visit_id` with strict server-side validation.
+  - Added 13 focused tests covering Test Matrix items A through M (`test_pair_validation_matrix_*`).
+  - Verified full test suite: 61 passed, 1 pre-existing Windows-specific failure unchanged, zero regressions.
+- **Cline**: Completed T006 (Structured AI Comparison / Uncertainty):
+  - Designed and implemented structured AI comparison proposal contract:
+    - 4-state enum `ComparisonStatus`: `changed`, `unchanged`, `uncertain`, `insufficient_evidence`.
+    - Bounded model confidence `[0.0, 1.0]`, explicitly representing model certainty rather than real-world accuracy.
+    - Controlled vocabulary enum `UncertaintyReason` for machine/human-readable reasoning.
+    - Structured `VisualChange` list for verified visual differences without invented measurements.
+    - Summary and evidence notes for technical review.
+  - Implemented strict safety guardrails:
+    - Rejection of unverified quantitative claims (weights, counts, percentages, bags) via `QUANTITATIVE_CLAIM_PATTERN`.
+    - Safe fallback handling for malformed JSON, provider failures, network timeouts, invalid enum values, and invalid confidence ranges.
+  - Review workflow integrity:
+    - AI comparison outputs are strictly proposals; created observations are ALWAYS `review_status = 'pending'` and `approved_text = None`.
+    - Unapproved observations are strictly excluded from downstream reports until explicit human review approval.
+  - Maintained full backward compatibility with legacy `reliable`, `observation`, and `reason` accessors.
+  - Added ADR D008 in `DECISIONS.md`.
+  - Added 35 new tests covering Test Matrix A through O: 34 tests in `test_image_comparison.py`, 1 test in `test_evidence.py`.
+- **Cline / AGY**: Completed T007 (Real Cloudinary -> Gemini End-to-End Integration):
+  - End-to-End Integration Pipeline:
+    - Verified real Cloudinary upload handling: persists `secure_url`, `public_id`, `width`, `height`, `format`, `permission_status`, and `thumbnail_url`.
+    - Local Binary Protection: strictly prohibits storing image binaries on the backend; all operations reference trusted Cloudinary URLs.
+    - Gemini Multimodal Client: added code fence stripping for markdown-wrapped model responses; validated structured output schema.
+    - Evidence Review Integrity: AI outputs strictly proposal-only (`review_status='pending'`, `approved_text=None`); human review approval required before inclusion in report.
+    - Approval Invalidation: editing an observation or changing evidence immediately resets approval to `pending` and drops it from reports.
+    - Report Traceability: verified before/after assets, dates, URLs, and reviewer attribution in JSON and markdown reports; excluded revoked permission assets.
+  - Deterministic Error Matrix (A through J):
+    - Added comprehensive unit tests in `backend/tests/test_integration_pipeline.py` covering: missing Cloudinary credentials (503), upload failure (502, secrets redacted), invalid Cloudinary response (502), missing Gemini credentials (safe fallback, pending), Gemini timeout/failure (safe uncertain, pending), malformed JSON (safe fallback), invalid schema (safe fallback), valid response (draft proposed, pending, excluded from report until approval), uncertain response (uncertainty_reason preserved), insufficient evidence response (reason preserved).
+  - Live Integration Suite:
+    - Added `test_live_cloudinary_and_gemini_pipeline` gated strictly by `RUN_LIVE_INTEGRATION=1`.
+    - Skips cleanly when flag is not set or when credentials are dummy/placeholder values.
+    - Added read-only safe connectivity check scripts: `backend/scripts/check_cloudinary.py` and `backend/scripts/check_gemini.py`.
+  - Added ADR D009 in `DECISIONS.md`.
+  - Total test suite now passes 107 tests (+11 new tests in `test_integration_pipeline.py`, 1 skipped live test, zero regressions).
+- **Cline / AGY**: Completed T008 (Judge-Facing Review Experience):
+  - Primary Review Interface & Visual Comparison:
+    - Built comprehensive provenance cards displaying Site, Visit labels/dates, Source asset IDs, Permission status (`granted`, `pending_verification`, `revoked`), and Cloudinary verified badge.
+    - Added dual visual comparison modes: Side-by-side mode and interactive split-reveal comparison slider with toggle.
+    - Added high-resolution image inspection lightbox dialog.
+    - Added real-time pair validation feedback (chronology, permissions, distinct assets).
+  - Structured AI Proposal Presentation:
+    - Displayed 4-state status badges (`Changed`, `Unchanged`, `Uncertain`, `Insufficient Evidence`).
+    - Rendered concise AI observation summary, structured visual changes list, and supporting visual notes.
+    - Rendered bounded model confidence gauge with explicit `MODEL CONFIDENCE` labeling and certainty disclaimer.
+  - Trust & Invariant Distinction:
+    - Distinct visual hierarchy between `AI PROPOSAL` (amber border, `⚠ AI suggestion — Human verification required` banner) and `HUMAN VERIFIED RECORD` (emerald border, `✓ HUMAN VERIFIED RECORD` banner, reviewer identity, approval date).
+    - Approval Invalidation: editing an approved observation immediately resets review status to `pending` and drops it from verified reports.
+  - Uncertainty UX:
+    - Prominently displays: "AI could not determine the outcome with sufficient confidence." or "Insufficient evidence for a reliable comparison."
+    - Discloses controlled human-friendly reasons (Camera angle mismatch, Lighting difference, Insufficient visual overlap, etc.).
+  - Human Review Workflow:
+    - Wired `[ Approve ]`, `[ Save Draft / Edit ]`, and `[ Reject ]` review actions directly to backend endpoints.
+  - Live In-Page Report Preview:
+    - Rendered in-page live report preview strictly filtering out unapproved proposals, with Markdown export and raw JSON toggle.
+  - Added ADR D010 in `DECISIONS.md`.
+  - Added 11 deterministic tests in `backend/tests/test_demo_ui.py` covering static delivery, HTML contract, and all 9 critical review behaviors.
+  - Total test suite now passes 118 tests (+11 new tests, zero regressions).
+- **Cline / AGY**: Completed T009 (Demo Hardening & End-to-End QA):
+  - Fresh-Start & Startup Hardening:
+    - Updated `run_local.sh` with portable venv detection (`.venv` and `venv`, Git Bash on Windows vs Linux/macOS `bin/activate` vs `Scripts/activate`).
+    - Protected `backend/scripts/setup_local_demo.py` with `try...except OSError` around `chmod 0o600` to guarantee smooth, error-free fresh starts on all operating systems and environments.
+    - Verified clean-slate initialization from nonexistent database file.
+  - Demo UX & Loading States:
+    - Added loading state notifications and button-disabled handling across all network operations in `backend/app/demo/app.js` (`"Comparing with Gemini..."`, `"Uploading to Cloudinary..."`, `"Approving..."`, `"Saving..."`, `"Rejecting..."`, `"Generating report..."`), preventing accidental double-submissions.
+    - Implemented comprehensive `sanitizeErrorMessage` handling HTTP 400, 403, 404, 409, 413, 415, 422, 502, 503, and network disconnects without raw tracebacks or secret leakage.
+    - Cleaned platform-specific text in `backend/app/demo/index.html` to be OS-neutral.
+  - Security & Secret Audit:
+    - Verified zero `.env`, credentials, local databases, or private media files are committed to git.
+    - Checked logs and API responses for secret leaks.
+    - Audited mock claims and confirmed zero unsupported accuracy claims (99.4%, 10x) across code and showcase.
+  - Comprehensive End-to-End Test Suite:
+    - Added `backend/tests/test_e2e_journey.py` (9 tests) verifying:
+      - Fresh-start clean database migration and table integrity
+      - Complete judge happy path: Site -> Visits -> Assets -> Pair -> Gemini -> AI Proposal -> Human Review -> Approval -> Certified Report
+      - Approval invalidation lifecycle (re-editing approved observation resets to pending)
+      - Chronological visit order rejection (HTTP 400)
+      - Revoked permission rejection (HTTP 400)
+      - Cross-site evidence pairing rejection (HTTP 400)
+      - Version conflict / stale overwrite prevention (HTTP 409)
+      - Uncertainty and insufficient evidence preservation
+      - Static bundle and script syntax contract
+  - Created `docs/DEMO_RUNBOOK.md`:
+    - Documented prerequisites, environment variables (names only), backend/frontend startup instructions, Cloudinary/Gemini setup, exact 8-step demo sequence, failure recovery guide, and judge demo safety guidelines ("AI-generated visual assessment", "Human-verified observation").
+  - Added ADR D011 in `DECISIONS.md`.
+  - Test baseline post-T009: 129 collected, 127 passed, 1 skipped, 1 failed (Windows chmod), 2 deprecation errors. Zero regressions.
+
+### 2026-09-27
+- **AGY**: Completed T011 (Media Pipeline + Bulk Ingestion):
+  - Database Schema & Helper Extensions (`backend/app/services/evidence_store.py`):
+    - Non-destructively migrated `assets` table schema to include `site_id`, `media_type`, `processing_status`, `original_filename`, `duration`, `preview_url`, `created_at`, `metadata_json`.
+    - Added helper methods: `ensure_ingestion_visit`, `save_asset`, `get_media_item`, `list_media`.
+  - Pydantic Schemas (`backend/app/schemas/api.py`, `backend/app/schemas/__init__.py`):
+    - Added `MediaType`, `ProcessingStatus`, `MediaItemResponse`, `BulkMediaItemResult`, `BulkMediaUploadResponse`.
+  - Cloudinary Media Pipeline (`backend/app/services/media.py`):
+    - Enforced Cloudinary delivery transformations: `f_auto,q_auto`, responsive preview (`w_1200,h_900,c_limit`), square thumbnail (`w_640,h_480`), and video poster frames at offset 0 (`so_0`).
+    - Added `validate_video_header` checking magic bytes for MP4/WebM/MOV and enforcing 50 MiB limit.
+    - Added `ingest_video` for Cloudinary `resource_type="video"` uploads and duration extraction.
+    - Added `ingest_media` unified dispatcher for images and videos.
+  - Media API Endpoints (`backend/app/routes/media.py`):
+    - `POST /api/v1/media/bulk`: Multi-file upload with safe per-file error isolation preventing entire-batch rollback on individual file failure.
+    - `POST /api/v1/media/videos`: Dedicated video upload with poster frame generation.
+    - `GET /api/v1/media`: Filtered media library retrieval (by project, media type, permission status, with pagination).
+    - `GET /api/v1/media/{asset_id}`: Single media asset inspection.
+  - Setowa Workspace Media Library UI (`backend/app/demo/`):
+    - Added Media Library tab (`#tab-media-library`) with media type filter, permission filter, and text search.
+    - Built bulk ingestion accordion form (`#bulk-upload-form`) with real-time feedback and per-file result summaries.
+    - Rendered media cards with poster frames, duration tags, Cloudinary tags, dimensions, quick CDN URL copying, and inline video playback via lightbox modal.
+  - Standalone Ingestion CLI (`backend/scripts/ingest_collection.py`):
+    - Built CLI supporting directory ingestion with `--dir`, `--project`, `--source`, `--date`, `--permission`, `--json`.
+  - Test Suite & Quality Assurance:
+    - Fixed pytest byte serialization hanging in `backend/tests/test_media.py` by adding explicit test IDs.
+    - Added `backend/tests/test_bulk_media.py` (5 tests) verifying video upload, container header validation, mixed image/video bulk upload, partial failure resilience, and media library filtering.
+    - Added ADR D012 in `DECISIONS.md`.
+    - Total test suite: 133 tests passed, 1 skipped, 1 known pre-existing Windows chmod failure, 0 regressions.
+
+

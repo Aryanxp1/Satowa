@@ -12,6 +12,11 @@ from app.routes.media import router as media_router
 from app.routes.health import router as health_router
 from app.routes.analyze import router as analyze_router
 from app.routes.local_setup import router as local_setup_router
+from app.routes.skills import router as skills_router
+from app.routes.workflows import router as workflows_router
+from app.routes.projects import router as projects_router
+from app.routes.impact_stories import router as impact_stories_router
+from app.routes.public_impact import public_router
 
 # Configure logging
 logging.basicConfig(
@@ -43,10 +48,15 @@ app.add_middleware(
 
 # Register route modules
 app.include_router(media_router)
+app.include_router(projects_router)
+app.include_router(impact_stories_router)
 app.include_router(evidence_router)
 app.include_router(health_router)
 app.include_router(analyze_router)
 app.include_router(local_setup_router)
+app.include_router(skills_router)
+app.include_router(workflows_router)
+app.include_router(public_router)
 app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
 showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
 if showcase_dir.is_dir():
@@ -66,4 +76,14 @@ async def root(request: Request):
         'mock_mode': settings.USE_MOCK or not bool(settings.GEMINI_API_KEY),
         'docs_url': '/docs',
         'healthcheck': '/api/v1/health',
+        'readiness': '/api/v1/ready',
+        'public_demo_story': '/share/pst_demo_mombasa_coastal_2026',
     }
+
+
+@app.get("/workspace", include_in_schema=False)
+@app.get("/workspace/", include_in_schema=False)
+async def workspace_redirect():
+    """Redirect canonical workspace alias to /demo/."""
+    return RedirectResponse('/demo/', status_code=307)
+

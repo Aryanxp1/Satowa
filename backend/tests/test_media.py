@@ -47,6 +47,7 @@ def test_upload_preserves_identity(provider, fmt, mime):
     assert response.status_code == 201
     result = response.json()
     assert result['asset_id'] == 'asset-1'
+    assert result['permission_status'] == 'granted'
     assert '/v123/lex/river/image-1.png' in result['thumbnail_url']
     assert result['context']['visit_date'] == '2026-09-23'
     assert len(result['context']['sha256']) == 64
@@ -58,12 +59,13 @@ def test_upload_preserves_identity(provider, fmt, mime):
     assert 'test-secret' not in response.text
 
 
+
 @pytest.mark.parametrize('data,mime,status', [
     (b'', 'image/png', 422), (b'not an image', 'image/png', 422),
     (picture(), 'image/jpeg', 415), (picture('GIF'), 'image/gif', 415),
     (b'x' * (media.MAX_BYTES + 1), 'image/png', 413),
     (picture()[:40], 'image/png', 422),
-])
+], ids=['empty', 'not_image', 'wrong_mime', 'gif', 'oversized', 'truncated'])
 def test_invalid_files_never_reach_provider(provider, data, mime, status):
     assert post(data, mime).status_code == status
     provider.assert_not_called()
@@ -105,3 +107,18 @@ def test_provider_error_is_redacted(provider):
 def test_incomplete_provider_response(provider):
     provider.return_value = {}
     assert post().status_code == 502
+
+
+def test_upload_permission_status_validation():
+    valid = post(permission_status='pending_verification')
+    assert valid.status_code == 201
+    assert valid.json()['permission_status'] == 'pending_verification'
+
+    revoked = post(permission_status='revoked')
+    assert revoked.status_code == 201
+    assert revoked.json()['permission_status'] == 'revoked'
+
+    invalid = post(permission_status='invalid_status')
+    assert invalid.status_code == 422
+    assert 'permission_status must be one of' in invalid.text
+
