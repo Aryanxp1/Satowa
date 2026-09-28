@@ -834,6 +834,11 @@ def update_impact_story_fields(db, story_id: str, updates: dict) -> Optional[Imp
     # If transitioning to published, ensure a share token is generated if none exists
     if updates.get("status") == "published":
         existing = store.get_impact_story(db, story_id)
+        if existing:
+            project = store.get_project(db, existing["project_id"])
+            project_meta = safe_json_loads(project.get("metadata_json"), {}) if project else {}
+            if project_meta.get("synthetic_demo"):
+                raise ValueError("Illustrative demo scenarios cannot be published as field evidence")
         if existing and not existing.get("share_token"):
             from app.services.public_story import generate_share_token
             updates["share_token"] = generate_share_token()

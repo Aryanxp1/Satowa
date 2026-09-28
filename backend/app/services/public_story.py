@@ -88,6 +88,9 @@ def get_public_impact_story(db, share_token: str, base_url: str = "") -> Optiona
         return None
 
     project = store.get_project(db, story["project_id"])
+    project_meta = safe_json_loads(project.get("metadata_json"), {}) if project else {}
+    if project_meta.get("synthetic_demo"):
+        return None
     project_name = project["name"] if project else "Environmental Project"
     project_desc = project.get("description") if project else None
 
@@ -167,7 +170,8 @@ def get_public_impact_story(db, share_token: str, base_url: str = "") -> Optiona
         if not is_approved and card.comparison_summary:
             proposal_text = card.comparison_summary
 
-        reviewer_role = "Independent Field Auditor" if is_approved else None
+        # Approval is an application state, not proof of an independent audit.
+        reviewer_role = None
 
         public_cards.append(
             PublicBeforeAfterCard(

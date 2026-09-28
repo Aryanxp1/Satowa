@@ -216,12 +216,13 @@ def test_media_library_filtering_and_retrieval():
         },
     )
 
-    # 1. Filter by project_id
-    resp_alpha = client.get("/api/v1/media?project_id=site-alpha", headers={"Authorization": "Bearer test-token"})
+    # 1. Filter by site_id; project_id names the parent project.
+    resp_alpha = client.get("/api/v1/media?site_id=site-alpha", headers={"Authorization": "Bearer test-token"})
     assert resp_alpha.status_code == 200
     alpha_items = resp_alpha.json()
     assert len(alpha_items) == 2
     assert all(item["site_id"] == "site-alpha" for item in alpha_items)
+    assert all(item["project_id"] == "proj_default" for item in alpha_items)
 
     # 2. Filter by media_type=video
     resp_video = client.get("/api/v1/media?media_type=video", headers={"Authorization": "Bearer test-token"})

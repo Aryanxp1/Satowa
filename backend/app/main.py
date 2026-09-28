@@ -77,7 +77,6 @@ async def root(request: Request):
         'docs_url': '/docs',
         'healthcheck': '/api/v1/health',
         'readiness': '/api/v1/ready',
-        'public_demo_story': '/share/pst_demo_mombasa_coastal_2026',
     }
 
 
@@ -87,3 +86,8 @@ async def workspace_redirect():
     """Redirect canonical workspace alias to /demo/."""
     return RedirectResponse('/demo/', status_code=307)
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_redirect():
+    """Serve the Setowa mark for browsers that request the default icon path."""
+    return RedirectResponse('/demo/favicon.svg', status_code=307)

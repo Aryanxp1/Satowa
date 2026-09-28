@@ -6,6 +6,8 @@
     session: null,
     integrations: null,
     sites: [],
+    projects: [],
+    projectFilter: '',
     site: '',
     siteRecord: null,
     visits: [],
@@ -285,11 +287,23 @@
   function goToTab(tab) { location.hash = projectHash(state.site, tab); }
 
   async function loadProjects() {
-    state.sites = await request('/sites');
+    [state.projects, state.sites] = await Promise.all([request('/projects'), request('/sites')]);
+    const projectFilter = $('library-project-select');
+    projectFilter.replaceChildren(new Option('All projects', ''));
+    for (const project of state.projects) {
+      projectFilter.add(new Option(project.name, project.project_id));
+    }
+    if (state.projectFilter && !state.projects.some(p => p.project_id === state.projectFilter)) state.projectFilter = '';
+    projectFilter.value = state.projectFilter;
+    const parentSelect = $('site-project-select');
+    parentSelect.replaceChildren();
+    for (const project of state.projects) parentSelect.add(new Option(project.name, project.project_id));
+    if (state.projectFilter) parentSelect.value = state.projectFilter;
     const list = $('project-list');
     list.replaceChildren();
-    if (!state.sites.length) list.append(element('p', 'empty-state', 'No projects yet. Create a site to begin.'));
-    const projects = await Promise.all(state.sites.map(async site => {
+    const visibleSites = state.sites.filter(site => !state.projectFilter || site.project_id === state.projectFilter);
+    if (!visibleSites.length) list.append(element('p', 'empty-state', 'No sites in this project yet. Create a site to begin.'));
+    const projects = await Promise.all(visibleSites.map(async site => {
       const [visits, observations] = await Promise.all([
         request(`/sites/${encodeURIComponent(site.id)}/visits`),
         request(`/sites/${encodeURIComponent(site.id)}/observations`),
@@ -304,14 +318,14 @@
       return a.site.name.localeCompare(b.site.name);
     });
 
-    const select = $('project-select');
-    if (select) {
+    for (const select of [$('topbar-site-select'), $('site-select')]) {
+      if (!select) continue;
       select.replaceChildren();
-      for (const p of projects) {
+      for (const site of state.sites) {
         const opt = document.createElement('option');
-        opt.value = p.site.id;
-        const tag = p.site.id === 'site_nyali_creek' ? ' ★ SHOWCASE' : (p.site.id === 'demo-riverbank' ? ' (Sample)' : '');
-        opt.textContent = `${p.site.name}${tag}`;
+        opt.value = site.id;
+        const tag = site.id === 'site_nyali_creek' ? ' (Unverified scenario)' : (site.id === 'demo-riverbank' ? ' (Synthetic sample)' : '');
+        opt.textContent = `${site.name}${tag}`;
         select.appendChild(opt);
       }
       if (state.site) select.value = state.site;
@@ -330,14 +344,16 @@
         card.append(photo);
       }
       const body = element('div', 'project-card-body');
-      const kickerText = isMombasa ? '★ CANONICAL SHOWCASE' : (sample ? 'GUIDED SAMPLE' : 'CLEANUP PROJECT');
+      const kickerText = isMombasa ? 'ILLUSTRATIVE SCENARIO · UNVERIFIED' : (sample ? 'GUIDED SAMPLE · SYNTHETIC' : 'CLEANUP SITE');
+      const parent = state.projects.find(p => p.project_id === site.project_id);
       body.append(element('p', 'kicker', kickerText),
         element('h2', '', site.name),
+        element('p', 'meta', `Project: ${parent ? parent.name : 'Unassigned'}`),
         element('p', 'project-description', site.description || 'A new site ready for visits and evidence.'));
       const meta = element('div', 'project-meta');
       meta.append(element('span', '', site.location || site.id),
         element('span', '', `${visits.length} visit${visits.length === 1 ? '' : 's'} · ${observations.length} observation${observations.length === 1 ? '' : 's'}`));
-      const link = element('a', 'button primary', isMombasa ? 'Open Showcase Workspace →' : (sample ? 'Try guided demo →' : 'Open project →'));
+      const link = element('a', 'button primary', isMombasa ? 'Open scenario →' : (sample ? 'Try guided demo →' : 'Open site →'));
       link.href = projectHash(site.id, 'media-library');
       body.append(meta, link);
       card.append(body);
@@ -353,7 +369,7 @@
       request(`/sites/${id}/observations`),
       request(`/sites/${id}/measurements`),
       request(`/sites/${id}/report`),
-      request(`/media?project_id=${id}`).catch(() => []),
+      request(`/media?site_id=${id}`).catch(() => []),
     ]);
     state.visits = visits;
     state.observations = observations;
@@ -410,12 +426,15 @@
     if (!site) { location.hash = '#projects'; throw new Error('Project not found.'); }
     state.site = id;
     state.siteRecord = site;
-    const select = $('project-select');
-    if (select) select.value = id;
+    for (const select of [$('topbar-site-select'), $('site-select')]) {
+      if (select) select.value = id;
+    }
+    const parent = state.projects.find(p => p.project_id === site.project_id);
+    $('project-kicker').textContent = parent ? `${parent.name} / SITE WORKSPACE` : 'SITE WORKSPACE';
     $('project-title').textContent = site.name;
     $('project-subtitle').textContent = site.location || 'Location not yet recorded';
     $('overview-description').textContent = site.description || 'Add a description to explain what this site is documenting.';
-    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : (id === 'site_nyali_creek' ? '★ VERIFIED SHOWCASE' : 'EVIDENCE RECORD');
+    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : (id === 'site_nyali_creek' ? 'UNVERIFIED SCENARIO' : 'EVIDENCE RECORD');
     for (const key of ['name', 'location', 'description']) {
       const field = $('site-edit-form').elements.namedItem(key);
       if (field) field.value = site[key] || '';
@@ -435,7 +454,7 @@
     await connectLocal();
     if (!hash || hash === '/') {
       if (!state.sites.length) await loadProjects();
-      const defaultSite = state.sites.find(s => s.id === 'site_nyali_creek') || state.sites[0];
+      const defaultSite = state.sites.find(s => s.id === 'demo-riverbank') || state.sites[0];
       if (defaultSite) {
         location.hash = `#project/${encodeURIComponent(defaultSite.id)}/media-library`;
         return;
@@ -535,11 +554,12 @@
           button.textContent = 'Uploading to Cloudinary...';
           try {
             const data = new FormData(form);
-            data.set('project_id', state.site);
+            data.set('project_id', state.siteRecord.project_id);
+            data.set('site_id', state.site);
             data.set('visit_id', visit.id);
             data.set('visit_date', visit.visited_on);
             await request('/media/images', { method: 'POST', body: data });
-            notice('Photo uploaded and verified.');
+            notice('Photo uploaded. Check permission and provenance before using it as evidence.');
             await refreshSite();
           } finally {
             button.disabled = false;
@@ -1578,7 +1598,7 @@
       const banner = element('div', 'card-banner');
       if (isApproved) {
         banner.append(
-          element('span', 'banner-badge', '✓ HUMAN VERIFIED RECORD'),
+          element('span', 'banner-badge', '✓ HUMAN-APPROVED RECORD'),
           element('span', '', 'INCLUDED IN OFFICIAL REPORT'),
           element('span', '', `Revision ${observation.version}`)
         );
@@ -1716,10 +1736,10 @@
       if (isApproved) {
         const verifiedDisplay = element('div', 'verified-display');
         verifiedDisplay.append(
-          element('h4', '', 'OFFICIAL VERIFIED OBSERVATION'),
+          element('h4', '', 'APPROVED OBSERVATION'),
           element('p', 'verified-text', observation.approved_text || observation.working_text),
           element('p', 'verification-trail',
-            `✓ Verified by ${observation.reviewed_by || 'Human Reviewer'} on ${observation.reviewed_at ? observation.reviewed_at.slice(0, 16).replace('T', ' ') : 'recently'} UTC`
+            `✓ Approved by ${observation.reviewed_by || 'Human Reviewer'} on ${observation.reviewed_at ? observation.reviewed_at.slice(0, 16).replace('T', ' ') : 'recently'} UTC`
           ),
           element('p', 'invalidation-note',
             'ℹ Any subsequent edit to this text or change of paired evidence will immediately invalidate this approval.'
@@ -1770,7 +1790,7 @@
             { method, json: { expected_version: observation.version, ...payload } });
           notice(
             method === 'PATCH' ? 'Edit saved. Approval invalidated; observation returned to pending.' :
-            payload.decision === 'approve' ? 'Observation approved and verified. Now included in official report.' :
+            payload.decision === 'approve' ? 'Observation approved. It is now eligible for the evidence report.' :
             'Observation rejected and excluded from report.'
           );
           await refreshSite();
@@ -1932,6 +1952,28 @@
     $('new-project-panel').hidden = !$('new-project-panel').hidden;
     if (!$('new-project-panel').hidden) $('site-form').elements.namedItem('name').focus();
   });
+  $('new-parent-project-button').addEventListener('click', () => {
+    $('new-parent-project-panel').hidden = !$('new-parent-project-panel').hidden;
+    if (!$('new-parent-project-panel').hidden) $('parent-project-form').elements.namedItem('name').focus();
+  });
+  $('library-project-select').addEventListener('change', event => {
+    state.projectFilter = event.target.value;
+    run(loadProjects);
+  });
+  $('parent-project-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    run(async () => {
+      const data = Object.fromEntries(new FormData(form));
+      await request('/projects', { method: 'POST', json: data });
+      state.projectFilter = data.id;
+      form.reset();
+      $('new-parent-project-panel').hidden = true;
+      await loadProjects();
+      $('new-project-panel').hidden = false;
+      notice('Project created. Add its first site.', 'success');
+    });
+  });
 
   $('site-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
@@ -1941,7 +1983,7 @@
       try {
         const data = Object.fromEntries(new FormData(form));
         await request('/sites', { method: 'POST', json: data });
-        form.reset(); notice('Project created. Add its first visit.');
+        form.reset(); notice('Site created. Add its first visit.');
         await loadProjects(); location.hash = projectHash(data.id);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
@@ -2852,7 +2894,7 @@
 
     if ($('impact-narrative-text')) {
       $('impact-narrative-text').innerHTML = `
-        <p class="muted">No impact story generated for this project yet. Click <strong>Generate Story</strong> above to synthesize your persisted field media, before/after evidence comparisons, and human-verified outcomes.</p>
+        <p class="muted">No impact story generated for this project yet. Click <strong>Generate Story</strong> above to synthesize your persisted field media, before/after evidence comparisons, and human-approved observations.</p>
       `;
     }
     if ($('impact-uncertainty-callout')) $('impact-uncertainty-callout').hidden = true;
@@ -2890,7 +2932,7 @@
 
     if ($('impact-metric-events')) $('impact-metric-events').textContent = eventCount || events.length || '5';
     if ($('impact-metric-media')) $('impact-metric-media').textContent = mediaCount || '3';
-    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = verifiedCount || '1';
+    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = String(verifiedCount);
     if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = measurementCount || '1';
 
     if ($('impact-status-pill')) {
@@ -2983,7 +3025,7 @@
       }
 
       const footer = element('div', 'impact-card-footer');
-      const reviewer = card.reviewed_by ? `Verified by ${card.reviewed_by}` : 'AI Proposal (Unverified)';
+      const reviewer = card.reviewed_by ? `Approved by ${card.reviewed_by}` : 'AI Proposal (Unverified)';
       const dateStr = (card.reviewed_at || card.updated_at || '').slice(0, 10);
       footer.append(element('span', '', reviewer), element('span', '', dateStr));
 
@@ -3087,7 +3129,7 @@
       });
       state.impactStory = story;
       renderImpactStory(story);
-      notice('Impact story generated and verified successfully!', 'success');
+      notice('Impact story generated. Review evidence and approval states before sharing.', 'success');
     } catch (err) {
       console.error('Failed to generate impact story:', err);
       notice(`Story generation failed: ${sanitizeErrorMessage(err.message || String(err))}`, 'error');
@@ -3240,9 +3282,9 @@
     });
   }
 
-  const projectSelect = $('project-select');
-  if (projectSelect) {
-    projectSelect.addEventListener('change', (e) => {
+  for (const siteSelect of [$('topbar-site-select'), $('site-select')]) {
+    if (!siteSelect) continue;
+    siteSelect.addEventListener('change', (e) => {
       const selectedId = e.target.value;
       if (selectedId && selectedId !== state.site) {
         location.hash = `#project/${encodeURIComponent(selectedId)}/${state.activeTab || 'media-library'}`;
@@ -3253,4 +3295,3 @@
   window.addEventListener('hashchange', () => run(route));
   run(async () => { await getStatus(); await route(); });
 })();
-

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from app.services.evidence_store import connection
+from app.config import settings
 from app.workflows.models import (
     WorkflowDefinition,
     WorkflowExecutionResult,
@@ -47,6 +48,7 @@ class WorkflowStore:
     """Manages storage and retrieval of workflow definitions and execution runs."""
 
     def __init__(self):
+        self.db_path = settings.LEX_DB_PATH
         self._ensure_schema()
         self._seed_builtins()
 

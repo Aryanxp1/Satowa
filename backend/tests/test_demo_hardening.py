@@ -157,7 +157,7 @@ def test_deterministic_demo_seed():
     summary = seed_demo_dataset()
     assert summary["project_id"] == "proj_mombasa_marine"
     assert summary["site_id"] == "site_nyali_creek"
-    assert summary["share_token"] == "pst_demo_mombasa_coastal_2026"
+    assert summary["share_token"] is None
     assert summary["asset_count"] >= 3
     assert summary["frame_count"] >= 3
 
@@ -169,22 +169,24 @@ def test_deterministic_demo_seed():
 
         assets = conn.execute("SELECT asset_id FROM assets WHERE project_id = ?", ("proj_mombasa_marine",)).fetchall()
         assert len(assets) >= 3
+        assert conn.execute("SELECT COUNT(*) FROM assets WHERE project_id=? AND permission_status='granted'", ("proj_mombasa_marine",)).fetchone()[0] == 0
 
         derivations = conn.execute("SELECT frame_id FROM video_frames WHERE asset_id = 'ast_mombasa_video'").fetchall()
         assert len(derivations) >= 3
 
         obs = conn.execute("SELECT id, review_status FROM observations WHERE id = 'obs_mombasa_creek'").fetchone()
         assert obs is not None
-        assert obs["review_status"] == "approved"
+        assert obs["review_status"] == "pending"
 
         story = conn.execute("SELECT id, status, share_token FROM impact_stories WHERE project_id = ?", ("proj_mombasa_marine",)).fetchone()
         assert story is not None
-        assert story["status"] == "published"
-        assert story["share_token"] == "pst_demo_mombasa_coastal_2026"
+        assert story["status"] == "draft"
+        assert story["share_token"] is None
+        assert conn.execute("SELECT COUNT(*) FROM measurements WHERE id='msr_mombasa_weigh'").fetchone()[0] == 0
 
     # Re-running seed must be idempotent and succeed
     summary2 = seed_demo_dataset()
-    assert summary2["share_token"] == "pst_demo_mombasa_coastal_2026"
+    assert summary2["share_token"] is None
 
 
 # -------------------------------------------------------------------------
@@ -232,7 +234,7 @@ def test_cli_happy_path(capsys):
     assert cmd_story_show(args_story) == 0
     captured = capsys.readouterr()
     assert "IMPACT STORY" in captured.out
-    assert "pst_demo_mombasa_coastal_2026" in captured.out
+    assert "illustrative demo" in captured.out
 
 
 # -------------------------------------------------------------------------
@@ -287,50 +289,40 @@ def test_complete_end_to_end_flow():
     with store.connection() as conn:
         intel = store.get_media_intelligence(conn, "ast_mombasa_video")
         assert intel is not None
-        assert "volunteer" in intel["observations"].lower() or "flotsam" in intel["observations"].lower()
+        assert intel["status"] == "insufficient_evidence"
+        assert intel["model_provider"] == "demo-fixture"
 
     # 4. Verify skill runtime capability
     registry = get_default_registry()
     skill = registry.get("media-metadata")
     assert skill is not None
 
-    # 5. Verify human verification status
+    # 5. The fixture must not impersonate a human review.
     with store.connection() as conn:
         obs = store.one(conn, "SELECT * FROM observations WHERE id=?", ("obs_mombasa_creek",))
-        assert obs["review_status"] == "approved"
-        assert obs["reviewed_by"] == "Farhan (Field Lead)"
+        assert obs["review_status"] == "pending"
+        assert obs["reviewed_by"] is None
 
-    # 6. Verify public impact story projection
+    # 6. The unverified draft must not be publicly available.
     with store.connection() as conn:
         public_story = get_public_impact_story(conn, "pst_demo_mombasa_coastal_2026")
-        assert public_story is not None
-        assert "Nyali Creek Mangrove Restoration" in public_story.title
-        assert public_story.verified_findings_count >= 1
-        assert len(public_story.timeline) >= 1
+        assert public_story is None
 
 
 # -------------------------------------------------------------------------
 # 9. Public story smoke test
 # -------------------------------------------------------------------------
-def test_public_story_smoke():
-    """Verify public endpoints serve both rendered HTML and structured JSON."""
+def test_unverified_scenario_is_private():
+    """A demonstration seed must not publish unsubstantiated field claims."""
     seed_demo_dataset()
 
     # Public JSON endpoint
     json_res = client.get("/api/v1/public/impact/pst_demo_mombasa_coastal_2026")
-    assert json_res.status_code == 200
-    data = json_res.json()
-    assert "Nyali Creek Mangrove Restoration" in data["title"]
-    assert "Mombasa" in data["project_name"]
-    assert len(data["timeline"]) >= 3
+    assert json_res.status_code == 404
 
     # Public HTML page endpoint
     html_res = client.get("/share/pst_demo_mombasa_coastal_2026")
-    assert html_res.status_code == 200
-    assert "text/html" in html_res.headers["content-type"]
-    assert "Nyali Creek Mangrove Restoration" in html_res.text
-    assert "Setowa" in html_res.text or "SETOWA" in html_res.text
-    assert "Verified by:" in html_res.text or "Team LEX" in html_res.text
+    assert html_res.status_code == 404
 
 
 # -------------------------------------------------------------------------
