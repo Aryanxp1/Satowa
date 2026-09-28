@@ -401,7 +401,7 @@ get_asset = get_media_item
 
 
 
-def list_media(db, project_id: str | None = None, media_type: str | None = None,
+def list_media(db, project_id: str | None = None, site_id: str | None = None, media_type: str | None = None,
                permission_status: str | None = None, tag: str | None = None,
                signal: str | None = None, ai_status: str | None = None,
                limit: int = 50, offset: int = 0) -> list[dict]:
@@ -409,8 +409,11 @@ def list_media(db, project_id: str | None = None, media_type: str | None = None,
     query = 'SELECT * FROM assets WHERE 1=1'
     params = []
     if project_id:
-        query += ' AND (project_id=? OR site_id=? OR visit_id IN (SELECT id FROM visits WHERE site_id=?))'
-        params.extend([project_id, project_id, project_id])
+        query += ' AND project_id=?'
+        params.append(project_id)
+    if site_id:
+        query += ' AND (site_id=? OR visit_id IN (SELECT id FROM visits WHERE site_id=?))'
+        params.extend([site_id, site_id])
     if media_type:
         query += ' AND media_type=?'
         params.append(media_type.lower())
@@ -817,5 +820,4 @@ def get_impact_story_events(db, story_id: str) -> list[dict]:
         'SELECT * FROM impact_story_events WHERE story_id=? ORDER BY event_order ASC, timestamp_date ASC',
         (story_id,)
     )
-
 

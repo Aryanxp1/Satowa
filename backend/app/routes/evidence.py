@@ -1,6 +1,7 @@
 """Site visits, evidence selection, human review, and grounded exports."""
 from datetime import date
 from html import escape
+import json
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
@@ -500,7 +501,8 @@ def export_report(site_id: str, format: Literal['json','markdown'] = Query(defau
         measurements = store.rows(db, '''SELECT m.*,v.visited_on FROM measurements m
             JOIN visits v ON v.id=m.visit_id WHERE m.site_id=? ORDER BY m.recorded_at,m.id''',
             (site_id,))
-    demo_only = site_id == 'demo-riverbank' or any(
+    site_metadata = json.loads(site.get('metadata_json') or '{}')
+    demo_only = site_id in {'demo-riverbank', 'site_nyali_creek'} or site_metadata.get('synthetic_demo', False) or any(
         item['before_url'].startswith('/demo/sample-media/') or
         item['after_url'].startswith('/demo/sample-media/') for item in observations)
     if format == 'json':
@@ -509,7 +511,7 @@ def export_report(site_id: str, format: Literal['json','markdown'] = Query(defau
     lines = [f'# {escape(site["name"])} — Setowa Evidence Report', '',
              'Only reviewed observations and explicitly recorded measurements are included.', '']
     if demo_only:
-        lines += ['**SYNTHETIC DEMO — NOT FIELD EVIDENCE**', '']
+        lines += ['**SYNTHETIC DEMO / UNVERIFIED SCENARIO — NOT FIELD EVIDENCE**', '']
     for item in observations:
         lines += [f'## Observation {item["id"]}', '', escape(item['approved_text']), '',
                   f'Before ({item["before_date"]}): {item["before_url"]}',

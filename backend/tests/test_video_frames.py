@@ -257,7 +257,8 @@ def test_frame_inspection_api(auth_client):
 # 13. Frame analysis API (POST /media/{asset_id}/frames/analyze)
 # -----------------------------------------------------------------------------
 @pytest.mark.anyio
-async def test_frame_analysis_api(auth_client):
+async def test_frame_analysis_api(auth_client, monkeypatch):
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "test-only-key")
     # Extract frames
     auth_client.post("/api/v1/media/ast_video_123/frames/extract", json={"interval_seconds": 6.0})
 
@@ -395,7 +396,8 @@ async def test_multi_frame_selective_analysis(test_db):
 # 18. Analysis failure behavior
 # -----------------------------------------------------------------------------
 @pytest.mark.anyio
-async def test_analysis_failure_behavior(test_db):
+async def test_analysis_failure_behavior(test_db, monkeypatch):
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "test-only-key")
     with store.connection() as db:
         extract_frames_for_asset(db, "ast_video_123", FrameExtractionRequest(interval_seconds=5.0))
 

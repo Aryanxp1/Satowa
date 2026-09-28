@@ -64,6 +64,19 @@ def require_upload_token(request: Request, authorization: str | None = Header(de
 VALID_PERMISSION_STATUSES = {"granted", "pending_verification", "revoked"}
 
 
+def resolve_upload_location(project_id: str, site_id: str | None) -> tuple[str, str]:
+    """Accept legacy site IDs while validating explicit Project → Site uploads."""
+    resolved_site_id = site_id or project_id
+    with store.connection() as db:
+        site = store.get_site(db, resolved_site_id)
+        if site_id:
+            if not site:
+                raise HTTPException(404, "Site not found")
+            if site.get("project_id") != project_id:
+                raise HTTPException(422, "Site does not belong to the selected project")
+        return resolved_site_id, (site or {}).get("project_id") or "proj_default"
+
+
 def row_to_media_item(row: dict) -> MediaItemResponse:
     meta = None
     if row.get("metadata_json"):
@@ -87,6 +100,8 @@ def row_to_media_item(row: dict) -> MediaItemResponse:
         permission_status=row.get("permission_status") or "granted",
         processing_status=row.get("processing_status") or "ready",
         site_id=row.get("site_id"),
+        project_id=row.get("project_id"),
+        captured_at=row.get("captured_at"),
         visit_id=row.get("visit_id"),
         original_filename=row.get("original_filename"),
         created_at=row.get("created_at"),
@@ -102,6 +117,7 @@ async def upload_image(
     visit_date: Annotated[date, Form()],
     visit_id: Annotated[str | None, Form()] = None,
     permission_status: Annotated[str, Form()] = "granted",
+    site_id: Annotated[str | None, Form(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")] = None,
 ):
     """Upload one permissioned JPEG/PNG/WebP image with source attribution."""
     perm_status = permission_status.strip().lower()
@@ -111,6 +127,7 @@ async def upload_image(
             f"permission_status must be one of: {', '.join(sorted(VALID_PERMISSION_STATUSES))}",
         )
     try:
+        resolved_site_id, parent_project_id = resolve_upload_location(project_id, site_id)
         data = await file.read(MAX_BYTES + 1)
         if len(data) > MAX_BYTES:
             raise HTTPException(413, "Image exceeds 10 MiB")
@@ -121,23 +138,24 @@ async def upload_image(
                 visit = store.one(db, "SELECT * FROM visits WHERE id=?", (visit_id,))
                 if not visit:
                     raise HTTPException(404, "Visit not found")
-                if visit["site_id"] != project_id or visit["visited_on"] != visit_date.isoformat():
+                if visit["site_id"] != resolved_site_id or visit["visited_on"] != visit_date.isoformat():
                     raise HTTPException(422, "Upload site and date must match the visit")
         else:
             # Auto-create or find a visit for this site + date
             with store.connection() as db:
-                visit_id = store.ensure_ingestion_visit(db, project_id, visit_date.isoformat())
+                visit_id = store.ensure_ingestion_visit(db, resolved_site_id, visit_date.isoformat())
         result = await run_in_threadpool(
             ingest_image,
             data,
             file.content_type,
-            project_id,
+            resolved_site_id,
             source.strip(),
             visit_date.isoformat(),
             file.filename,
         )
         result["permission_status"] = perm_status
-        result["site_id"] = project_id
+        result["site_id"] = resolved_site_id
+        result["project_id"] = parent_project_id
         with store.connection() as db:
             store.save_asset(
                 db,
@@ -153,7 +171,9 @@ async def upload_image(
                     "format": result["format"],
                     "permission_status": perm_status,
                     "thumbnail_url": result.get("thumbnail_url"),
-                    "site_id": project_id,
+                    "site_id": resolved_site_id,
+                    "project_id": parent_project_id,
+                    "captured_at": None,
                     "media_type": "image",
                     "processing_status": "ready",
                     "original_filename": file.filename,
@@ -174,6 +194,7 @@ async def upload_video(
     visit_date: Annotated[date, Form()],
     visit_id: Annotated[str | None, Form()] = None,
     permission_status: Annotated[str, Form()] = "granted",
+    site_id: Annotated[str | None, Form(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")] = None,
 ):
     """Upload one permissioned MP4/WebM/MOV video up to 50 MiB with derived poster and previews."""
     perm_status = permission_status.strip().lower()
@@ -183,6 +204,7 @@ async def upload_video(
             f"permission_status must be one of: {', '.join(sorted(VALID_PERMISSION_STATUSES))}",
         )
     try:
+        resolved_site_id, parent_project_id = resolve_upload_location(project_id, site_id)
         data = await file.read(MAX_VIDEO_BYTES + 1)
         if len(data) > MAX_VIDEO_BYTES:
             raise HTTPException(413, "Video exceeds 50 MiB")
@@ -195,22 +217,23 @@ async def upload_video(
                 visit = store.one(db, "SELECT * FROM visits WHERE id=?", (visit_id,))
                 if not visit:
                     raise HTTPException(404, "Visit not found")
-                if visit["site_id"] != project_id or visit["visited_on"] != visit_date.isoformat():
+                if visit["site_id"] != resolved_site_id or visit["visited_on"] != visit_date.isoformat():
                     raise HTTPException(422, "Upload site and date must match the visit")
             else:
-                resolved_visit_id = store.ensure_ingestion_visit(db, project_id, visit_date.isoformat())
+                resolved_visit_id = store.ensure_ingestion_visit(db, resolved_site_id, visit_date.isoformat())
 
         result = await run_in_threadpool(
             ingest_video,
             data,
             file.content_type,
-            project_id,
+            resolved_site_id,
             source.strip(),
             visit_date.isoformat(),
             file.filename,
         )
         result["permission_status"] = perm_status
-        result["site_id"] = project_id
+        result["site_id"] = resolved_site_id
+        result["project_id"] = parent_project_id
         result["visit_id"] = resolved_visit_id
 
         with store.connection() as db:
@@ -228,7 +251,9 @@ async def upload_video(
                     "format": result.get("format") or "mp4",
                     "permission_status": perm_status,
                     "thumbnail_url": result.get("thumbnail_url"),
-                    "site_id": project_id,
+                    "site_id": resolved_site_id,
+                    "project_id": parent_project_id,
+                    "captured_at": None,
                     "media_type": "video",
                     "processing_status": "ready",
                     "original_filename": file.filename,
@@ -254,6 +279,7 @@ async def upload_bulk_media(
     visit_date: date = Form(...),
     visit_id: Optional[str] = Form(None),
     permission_status: str = Form("granted"),
+    site_id: Optional[str] = Form(None, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$"),
 ):
     """Bulk ingestion endpoint for multi-file image and video collections.
 
@@ -268,6 +294,7 @@ async def upload_bulk_media(
         )
     if not source.strip():
         raise HTTPException(422, "Source must not be blank")
+    resolved_site_id, parent_project_id = resolve_upload_location(project_id, site_id)
 
     # Resolve or create the associated visit
     with store.connection() as db:
@@ -275,11 +302,11 @@ async def upload_bulk_media(
             visit = store.one(db, "SELECT * FROM visits WHERE id=?", (visit_id,))
             if not visit:
                 raise HTTPException(404, "Visit not found")
-            if visit["site_id"] != project_id or visit["visited_on"] != visit_date.isoformat():
+            if visit["site_id"] != resolved_site_id or visit["visited_on"] != visit_date.isoformat():
                 raise HTTPException(422, "Upload site and date must match the visit")
             resolved_visit_id = visit_id
         else:
-            resolved_visit_id = store.ensure_ingestion_visit(db, project_id, visit_date.isoformat())
+            resolved_visit_id = store.ensure_ingestion_visit(db, resolved_site_id, visit_date.isoformat())
 
     results: List[BulkMediaItemResult] = []
     successful_count = 0
@@ -311,7 +338,7 @@ async def upload_bulk_media(
                 ingest_media,
                 data,
                 file.content_type,
-                project_id,
+                resolved_site_id,
                 source.strip(),
                 visit_date.isoformat(),
                 filename,
@@ -329,7 +356,9 @@ async def upload_bulk_media(
                 "format": result.get("format") or "jpg",
                 "permission_status": perm_status,
                 "thumbnail_url": result.get("thumbnail_url"),
-                "site_id": project_id,
+                "site_id": resolved_site_id,
+                "project_id": parent_project_id,
+                "captured_at": None,
                 "media_type": result.get("media_type") or "image",
                 "processing_status": "ready",
                 "original_filename": filename,
@@ -491,6 +520,7 @@ def media_timeline(
 @router.get("/media", response_model=List[MediaItemResponse], dependencies=[Depends(require_upload_token)])
 def list_media_assets(
     project_id: Optional[str] = None,
+    site_id: Optional[str] = None,
     media_type: Optional[str] = None,
     permission_status: Optional[str] = None,
     tag: Optional[str] = None,
@@ -504,6 +534,7 @@ def list_media_assets(
         rows = store.list_media(
             db,
             project_id=project_id,
+            site_id=site_id,
             media_type=media_type,
             permission_status=permission_status,
             tag=tag,
@@ -632,4 +663,3 @@ async def analyze_specific_frame_endpoint(asset_id: str, frame_id: str, request:
             context=request.context,
             force_reanalyze=request.force_reanalyze,
         )
-

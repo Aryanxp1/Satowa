@@ -6,6 +6,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Setowa helps teams turn cleanup media into reviewed, evidence-linked reports.">
   <title>Setowa — Evidence workspace</title>
+  <link rel="icon" href="/demo/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/demo/styles.css?v=4">
   <script src="/demo/app.js?v=4" defer></script>
 </head>
@@ -14,14 +15,13 @@
     <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
       <a class="brand" href="/showcase/" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>SETOWA</span></a>
       <div id="topbar-project-container" style="display:flex; align-items:center; gap:8px;">
-        <label for="project-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
-        <select id="project-select" aria-label="Select active project" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
+        <label for="topbar-site-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
+        <select id="topbar-site-select" aria-label="Select active site" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
       </div>
     </div>
     <nav class="top-actions" aria-label="Primary navigation">
       <a id="nav-projects" href="#projects" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">All Sites</a>
       <a href="/showcase/" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">Showcase</a>
-      <a id="nav-public-story-link" href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" style="text-decoration:none; font-size:0.83rem; font-weight:700; color:var(--green,#455f49);">Public Story ↗</a>
       <span id="session-label" class="session-label">Local workspace</span>
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button>
     </nav>
@@ -62,11 +62,15 @@
     </section>
 
     <section id="projects-page" class="page projects-page" aria-labelledby="projects-title" hidden>
-      <div class="page-heading"><div><p class="kicker">02 / PROJECT LIBRARY</p><h1 id="projects-title">Your cleanup sites<span class="period">.</span></h1><p>Open the guided sample or start a site of your own.</p></div><button id="new-project-button" class="button secondary" type="button">+ New project</button></div>
+      <div class="page-heading"><div><p class="kicker">02 / PROJECT LIBRARY</p><h1 id="projects-title">Your cleanup sites<span class="period">.</span></h1><p>Choose a project, then open a site and its dated visits.</p><label for="library-project-select">Project<select id="library-project-select" aria-label="Filter sites by project"></select></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button id="new-parent-project-button" class="button secondary" type="button">+ New project</button><button id="new-project-button" class="button secondary" type="button">+ New site</button></div></div>
       <div id="project-list" class="project-grid" aria-live="polite"></div>
+      <section id="new-parent-project-panel" class="new-project-panel" hidden aria-labelledby="new-parent-project-title">
+        <div><p class="kicker">NEW PROJECT</p><h2 id="new-parent-project-title">Group your cleanup sites.</h2></div>
+        <form id="parent-project-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120" placeholder="Coastal cleanup program"></label><label>Project ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="coastal-cleanup"></label><label class="full-width">Description<textarea name="description" maxlength="600" rows="2"></textarea></label></div><button class="button primary" type="submit">Create project →</button></form>
+      </section>
       <section id="new-project-panel" class="new-project-panel" hidden aria-labelledby="new-project-title">
-        <div><p class="kicker">NEW PROJECT</p><h2 id="new-project-title">Name the place you’re documenting.</h2><p>Site details and visit dates help keep before and after evidence in the right context.</p></div>
-        <form id="site-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label>Location<input name="location" maxlength="120" placeholder="Area, city or coordinates"></label><label class="full-width">What is this project documenting?<textarea name="description" maxlength="600" rows="3" placeholder="A short description of the site and cleanup work"></textarea></label></div><button class="button primary" type="submit">Create project <span aria-hidden="true">→</span></button></form>
+        <div><p class="kicker">NEW SITE</p><h2 id="new-project-title">Name the place you’re documenting.</h2><p>Choose its parent project, then record dated visits and media.</p></div>
+        <form id="site-form" class="project-form"><div class="form-grid"><label>Project<select name="project_id" id="site-project-select" required></select></label><label>Site name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label>Location<input name="location" maxlength="120" placeholder="Area, city or coordinates"></label><label class="full-width">What is this site documenting?<textarea name="description" maxlength="600" rows="3" placeholder="A short description of the site and cleanup work"></textarea></label></div><button class="button primary" type="submit">Create site <span aria-hidden="true">→</span></button></form>
       </section>
     </section>
 
@@ -77,11 +81,11 @@
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
               <a href="#projects" class="back-link" style="margin:0;">← All sites</a>
               <span style="color:var(--line,#445047); font-size:12px;">|</span>
-              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA PLATFORM WORKSPACE</p>
+              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA SITE WORKSPACE</p>
               <span style="color:var(--line,#445047); font-size:12px;">|</span>
-              <label for="project-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
+              <label for="site-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
                 <span class="meta" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Site:</span>
-                <select id="project-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
+                <select id="site-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
               </label>
             </div>
             <h1 id="project-title">Loading project…</h1>
@@ -135,7 +139,7 @@
 
       <div class="project-layout full-width-layout">
         <div class="project-content full-width-content">
-          <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
+          <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Demo scenario</strong><span>This workspace contains synthetic or unverified media. Dates and field claims are illustrative, and no impact is established.</span></div>
 
 
           <section id="tab-overview" class="tab-panel" aria-labelledby="overview-title">
@@ -680,4 +684,3 @@
 
 </body>
 </html>
-
