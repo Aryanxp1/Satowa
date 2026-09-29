@@ -790,3 +790,10 @@ def test_workflow_engine_compatibility_with_media_intelligence():
     node_res = res.node_results["node_intel"]
     assert node_res.status == NodeExecutionStatus.SUCCESS
     assert node_res.outputs["status"] == "analyzed"
+
+
+@pytest.fixture(autouse=True)
+def optional_gemini_provider_contract(monkeypatch):
+    """These legacy contract tests deliberately exercise the optional Gemini adapter."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "AI_PROVIDER", "gemini")

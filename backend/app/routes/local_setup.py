@@ -24,6 +24,7 @@ def public_status(request: Request):
                                  settings.CLOUDINARY_API_KEY,
                                  settings.CLOUDINARY_API_SECRET.get_secret_value())),
         'gemini_ready': bool(settings.GEMINI_API_KEY),
+        'nvidia_ready': bool(settings.NVIDIA_API_KEY.get_secret_value()),
         'reviewer_ready': bool(reviewer_tokens()),
         'reviewer': local_session_actor(request),
     }

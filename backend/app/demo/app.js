@@ -82,7 +82,7 @@
 
   function sanitizeErrorMessage(msg) {
     if (!msg) return 'The request could not be completed.';
-    if (msg.includes('503:')) return 'Service or credentials unavailable. Please check Cloudinary / Gemini configuration.';
+    if (msg.includes('503:')) return 'Service or provider unavailable. Check the server configuration, or continue with manual review and keyword search.';
     if (msg.includes('502:')) return 'Media or AI provider communication error. No partial or corrupt data was recorded.';
     if (msg.includes('409:')) return 'Observation version conflict. The record was modified and has been refreshed.';
     if (msg.includes('404:')) return 'Requested item not found. Please refresh the page.';
@@ -111,7 +111,7 @@
       relevant_area_not_visible: 'Relevant area not visible — The target cleanup zone is outside the camera frame.',
       incompatible_framing: 'Incompatible framing — The framing or zoom level prevents reliable comparison.',
       synthetic_walkthrough_evidence: 'Synthetic walkthrough evidence — Demo media for local walkthrough only.',
-      provider_unavailable: 'AI comparison provider not configured (GEMINI_API_KEY required).',
+      provider_unavailable: 'AI unavailable. You can inspect evidence and write a manual observation.',
       provider_error: 'AI provider error or timeout during comparison.',
       unverified_quantitative_claim: 'Unverified numerical impact claim was rejected.',
     };
@@ -208,7 +208,7 @@
     const pilot = state.accessMode === 'pilot';
     for (const [name, ready, message] of [
       ['cloudinary', status.cloudinary_ready, status.cloudinary_ready ? 'Ready for uploads' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Add keys for uploads')],
-      ['gemini', status.gemini_ready, status.gemini_ready ? 'Key present' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Optional for AI comparison')],
+      ['gemini', status.nvidia_ready, status.nvidia_ready ? 'NVIDIA key present' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Optional for AI comparison')],
       ['reviewer', status.reviewer_ready, status.reviewer_ready ? (pilot ? 'Pilot access ready' : 'Local access ready') : (pilot ? 'Enter reviewer token below' : 'Run ./run_local.sh')],
     ]) {
       $(`${name}-dot`).classList.toggle('ready', ready);
@@ -216,7 +216,7 @@
     }
     $('session-label').textContent = status.reviewer ? `${status.reviewer} / ${pilot ? 'pilot' : 'local'}` : (pilot ? 'Pilot workspace' : 'Local workspace');
     $('integration-status').textContent = !status.reviewer && pilot ? 'Connect to check integrations' :
-      `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · Gemini ${status.gemini_ready ? 'ready' : 'not configured'}`;
+      `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · AI ${status.nvidia_ready ? 'configured' : 'optional — manual tools available'}`;
     $('nav-projects').hidden = !status.reviewer;
   }
 
@@ -753,7 +753,7 @@
 
       const meta = element('p', 'meta');
       const dim = item.width && item.height ? `${item.width}×${item.height}` : '';
-      const parts = [dim, item.format?.toUpperCase(), item.created_at ? item.created_at.slice(0, 10) : ''].filter(Boolean);
+      const parts = [dim, item.format?.toUpperCase(), item.captured_at ? `Captured ${item.captured_at.slice(0, 10)}` : (item.created_at ? `Uploaded ${item.created_at.slice(0, 10)} · capture date not recorded` : 'Capture date not recorded')].filter(Boolean);
       meta.textContent = `${parts.join(' · ')} · Source: ${item.source || 'Unspecified'}`;
 
       const actions = element('div', 'media-card-actions');
@@ -2210,8 +2210,8 @@
     const compareBtn = $('compare');
     const originalText = compareBtn.textContent;
     compareBtn.disabled = true;
-    compareBtn.textContent = 'Comparing with Gemini...';
-    notice('Analyzing evidence pair with Gemini vision model...');
+    compareBtn.textContent = 'Checking evidence pair...';
+    notice('Checking the pair. If automatic comparison is unavailable, review the two images and write an observation manually.');
     try {
       const result = await request('/pairs', { method: 'POST', json: { before_asset_id, after_asset_id } });
       if (result.comparison) {
@@ -2733,7 +2733,7 @@
         <strong>Media Type:</strong> ${(asset.media_type || 'image').toUpperCase()}<br>
         <strong>Dimensions:</strong> ${asset.width || '?'}×${asset.height || '?'} · ${asset.format ? asset.format.toUpperCase() : ''}<br>
         <strong>Source:</strong> ${asset.source || 'Unspecified'}<br>
-        <strong>Model:</strong> ${intel ? (intel.model_name || 'Gemini Vision') : 'Pending Analysis'}<br>
+        <strong>Model:</strong> ${intel ? (intel.model_name || 'Unspecified provider') : 'Pending analysis'}<br>
         <strong>Analyzed At:</strong> ${intel ? (intel.created_at || '').slice(0, 19).replace('T', ' ') : 'Not yet analyzed'}
       `;
     }
@@ -2823,7 +2823,7 @@
           <span class="meta">${(h.created_at || '').slice(0, 19).replace('T', ' ')}</span>
         </div>
         <p style="margin:2px 0;">${h.description || ''}</p>
-        <span class="meta">Model: ${h.model_name || 'gemini'} · Tags: ${(h.tags || []).join(', ') || 'none'}</span>
+        <span class="meta">Model: ${h.model_name || 'unavailable'} · Tags: ${(h.tags || []).join(', ') || 'none'}</span>
       `);
       list.append(item);
     }
@@ -2845,7 +2845,7 @@
       statusIndicator.textContent = forceReanalyze ? 'Re-analyzing...' : 'Analyzing...';
       statusIndicator.className = 'status-indicator loading';
     }
-    notice(forceReanalyze ? 'Re-analyzing media with Gemini vision intelligence...' : 'Analyzing media with Gemini vision intelligence...');
+    notice(forceReanalyze ? 'Re-analyzing registered media...' : 'Analyzing registered media...');
 
     try {
       const endpoint = forceReanalyze ? `/media/${assetId}/reanalyze` : `/media/${assetId}/analyze`;
@@ -3343,7 +3343,7 @@
     }
   }
 
-  async function searchEvidence() {
+  async function searchEvidence(index = false) {
     const query = $('semantic-query').value.trim();
     if (query.length < 3 || state.searchBusy) return;
     const projectId = state.siteRecord?.project_id;
@@ -3357,17 +3357,18 @@
     button.disabled = true;
     more.hidden = true;
     $('semantic-search-results').setAttribute('aria-busy', 'true');
-    $('semantic-search-status').textContent = 'Indexing the next evidence batch and searching by meaning…';
+    $('semantic-search-status').textContent = index ? 'Indexing the next evidence batch…' : 'Searching saved evidence…';
     try {
+      if (index) await request(`/projects/${encodeURIComponent(projectId)}/search-index`, { method: 'POST' });
       const result = await request(`/projects/${encodeURIComponent(projectId)}/semantic-search`,
         { method: 'POST', json: { query, limit: 8 } });
       const box = $('semantic-search-results');
       box.replaceChildren();
       const coverage = `${result.indexed_count} of ${result.total_documents} project records indexed`;
       $('semantic-search-status').textContent = result.total_documents
-        ? `${result.results.length} result(s) · ${coverage}${result.truncated ? ' · More records remain' : ' · Collection ready'}`
+        ? `${result.mode === 'keyword' ? 'Keyword search (not semantic AI)' : 'Semantic search'} · ${result.results.length} result(s) · ${coverage}${result.truncated ? ' · More records remain' : ' · Collection ready'}`
         : 'No searchable records in this project yet. Add permissioned media, an approved observation, or a sourced measurement.';
-      more.hidden = !result.truncated;
+      more.hidden = !result.truncated || !state.integrations?.nvidia_ready;
       more.textContent = `Index the next ${result.batch_size} records and search again`;
       for (const hit of result.results) {
         const card = element('article', 'paper-card discovery-result');
@@ -3405,7 +3406,7 @@
     event.preventDefault();
     run(searchEvidence);
   });
-  $('semantic-search-more').addEventListener('click', () => run(searchEvidence));
+  $('semantic-search-more').addEventListener('click', () => run(() => searchEvidence(true)));
   document.querySelectorAll('[data-search-example]').forEach(button => button.addEventListener('click', () => {
     $('semantic-query').value = button.dataset.searchExample;
     run(searchEvidence);

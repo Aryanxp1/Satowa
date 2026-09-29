@@ -48,7 +48,7 @@
       <div class="setup-lower">
         <div class="setup-intro"><p id="setup-mode-label" class="kicker">LOCAL SETUP</p><h2 id="setup-mode-title">Connect the tools you already have.</h2><p id="setup-mode-description">Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
         <div class="setup-panel">
-          <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
+          <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Visual AI</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
           <form id="pilot-token-form" class="pilot-token-form" autocomplete="off" hidden><label for="pilot-token">Reviewer token<input id="pilot-token" type="password" autocomplete="off" spellcheck="false" required placeholder="Enter your pilot reviewer token"></label><button class="button primary" type="submit">Connect to workspace →</button><p class="meta">The token stays in this tab's memory and clears on reload. Provider keys belong in the Render service configuration, never in this form.</p></form>
           <details id="credential-details" class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
             <form id="credential-form" autocomplete="off">
@@ -521,11 +521,11 @@
             </div>
           </section>
           <section id="tab-discovery" class="tab-panel" hidden aria-labelledby="discovery-title">
-            <div class="content-title"><p class="kicker">06 / DISCOVERY</p><h2 id="discovery-title">Find the evidence.</h2><p>Ask in plain language across this project's media descriptions, approved observations, and recorded measurements. AI descriptions are labelled as unreviewed. Search uses Gemini API quota only when you submit a query; results are leads to inspect, not verified answers.</p></div>
+            <div class="content-title"><p class="kicker">06 / DISCOVERY</p><h2 id="discovery-title">Find the evidence.</h2><p>Ask in plain language across this project's media descriptions, approved observations, and recorded measurements. AI descriptions are labelled as unreviewed. Semantic indexing uses NVIDIA only when requested. Without AI access, keyword search remains available. Results are leads to inspect, not verified answers.</p></div>
             <form id="semantic-search-form" class="paper-card compact-form discovery-form">
               <label for="semantic-query">What are you looking for?<input id="semantic-query" type="search" minlength="3" maxlength="300" required placeholder="Where did the team document less visible litter?"></label>
               <button class="button primary" type="submit">Search evidence</button>
-              <p class="meta discovery-form-note">Search ranks source records by meaning. Every hit carries its review status and a route back to its evidence.</p>
+              <p class="meta discovery-form-note">Indexed records can be ranked by meaning; keyword fallback is labeled explicitly. Every hit carries its review status and evidence links.</p>
             </form>
             <div class="discovery-suggestions" aria-label="Example searches"><span class="meta">Try:</span><button type="button" data-search-example="Where did volunteers document visible litter?">Visible litter</button><button type="button" data-search-example="Which visits recorded a measured cleanup quantity?">Measured cleanup</button><button type="button" data-search-example="Show reviewed before and after observations">Reviewed changes</button></div>
             <p id="semantic-search-status" class="meta discovery-search-status" role="status">Enter a question to explore this project's evidence.</p>
@@ -603,7 +603,7 @@
 
           <div class="paper-card frames-analyze-card">
             <h4>Visual Intelligence (SkillRuntime)</h4>
-            <p class="frames-info-note">Executes <code>field-frame-observation@1.0.0</code> via SETOWA SkillRuntime using Gemini vision intelligence.</p>
+            <p class="frames-info-note">Analyzes registered video frames when a visual provider is available; otherwise continue with manual review.</p>
             <div class="frames-actions-row">
               <button id="btn-analyze-frames" class="button secondary button-small" type="button">Analyze All Extracted Frames</button>
               <span id="analyze-status-text" class="status-indicator"></span>

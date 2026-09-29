@@ -391,7 +391,7 @@ def test_static_demo_bundle_and_script_syntax(client):
     js_text = r_js.text
 
     # Verify loading state text patterns are present
-    assert "Comparing with Gemini..." in js_text
+    assert "Checking evidence pair..." in js_text
     assert "Uploading to Cloudinary..." in js_text
     assert "Generating report..." in js_text
 
