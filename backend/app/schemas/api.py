@@ -19,6 +19,7 @@ class ReadinessResponse(BaseModel):
     database: str = Field("ready", description="Database operational status")
     cloudinary: str = Field(..., description="Cloudinary configuration status ('configured' or 'missing')")
     gemini: str = Field(..., description="Gemini configuration status ('configured' or 'missing')")
+    nvidia: str = "missing"
     reviewer_auth: str = Field(..., description="Named reviewer configuration ('configured', 'missing', or 'misconfigured')")
     environment: str = Field(..., description="Deployment environment")
     mode: str = Field(..., description="Operating mode ('live' or 'mock/fallback')")

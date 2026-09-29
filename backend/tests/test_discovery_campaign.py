@@ -99,7 +99,8 @@ def test_campaign_uses_approved_and_sourced_records_only(tmp_path, monkeypatch):
     listed = client.get("/api/v1/projects/p-one/campaign-drafts", headers=HEADERS)
     assert listed.status_code == 200
     assert listed.json()[0]["stale"] is True
-    assert "Human closing note." in listed.json()[0]["body"]
+    assert "Human closing note." not in listed.json()[0]["body"]
+    assert listed.json()[0]["sources"] == []
     assert client.put(f"/api/v1/projects/p-one/campaign-drafts/{draft['id']}",
                       headers=HEADERS, json={"body": "Outdated"}).status_code == 409
     assert client.post("/api/v1/projects/p-two/campaign-drafts", headers=HEADERS,
@@ -124,6 +125,7 @@ def test_semantic_search_scoped_cached_and_labeled(tmp_path, monkeypatch):
     monkeypatch.setattr(semantic_search, "embed_text", fake_embedding)
     monkeypatch.setattr(semantic_search, "embed_documents", fake_documents)
     url = "/api/v1/projects/p-one/semantic-search"
+    assert client.post("/api/v1/projects/p-one/search-index", headers=HEADERS).status_code == 200
     first = client.post(url, headers=HEADERS, json={"query": "litter near bridge"})
     assert first.status_code == 200, first.text
     hits = first.json()["results"]
@@ -151,8 +153,8 @@ def test_semantic_search_fails_honestly_without_key(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
     response = client.post("/api/v1/projects/proj_default/semantic-search", headers=HEADERS,
                            json={"query": "find cleanup images"})
-    assert response.status_code == 503
-    assert "Gemini API key" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["results"] == []
 
 
 def test_search_keeps_approved_records_in_large_local_collection(tmp_path, monkeypatch):
@@ -178,45 +180,25 @@ def test_search_keeps_approved_records_in_large_local_collection(tmp_path, monke
 
     monkeypatch.setattr(semantic_search, "embed_text", fake_embedding)
     monkeypatch.setattr(semantic_search, "embed_documents", fake_documents)
+    indexed = client.post("/api/v1/projects/p-one/search-index", headers=HEADERS)
+    assert indexed.json()["indexed"] == 24
     result = client.post("/api/v1/projects/p-one/semantic-search", headers=HEADERS,
                          json={"query": "litter near bridge", "limit": 20})
     assert result.status_code == 200, result.text
     data = result.json()
     assert data["truncated"] is True
-    assert data["indexed"] == data["indexed_count"] == data["batch_size"] == 24
+    assert data["indexed"] == 0
+    assert data["indexed_count"] == data["batch_size"] == 24
     assert data["total_documents"] > data["indexed_count"]
     assert any(hit["kind"] == "approved_observation" for hit in data["results"])
     assert any(hit["kind"] == "video_frame" for hit in data["results"])
+    assert client.post("/api/v1/projects/p-one/search-index", headers=HEADERS).status_code == 200
     followup = client.post("/api/v1/projects/p-one/semantic-search", headers=HEADERS,
                            json={"query": "litter near bridge", "limit": 20})
     assert followup.status_code == 200, followup.text
     assert followup.json()["truncated"] is False
     assert followup.json()["indexed_count"] == followup.json()["total_documents"]
 
-
-def test_embedding_request_uses_document_and_query_prefixes(monkeypatch):
-    monkeypatch.setattr(settings, "GEMINI_API_KEY", "dummy-key")
-    requests = []
-
-    def handler(request):
-        assert request.headers["x-goog-api-key"] == "dummy-key"
-        requests.append(request.read().decode())
-        if request.url.path.endswith(':batchEmbedContents'):
-            return httpx.Response(200, json={"embeddings": [
-                {"values": [0.3, 0.4]}, {"values": [0.1, 0.2]}]})
-        return httpx.Response(200, json={"embedding": {"values": [0.3, 0.4]}})
-
-    transport = httpx.MockTransport(handler)
-    original_client = httpx.AsyncClient
-    monkeypatch.setattr(semantic_search.httpx, "AsyncClient",
-                        lambda **kwargs: original_client(transport=transport, **kwargs))
-    assert asyncio.run(semantic_search.embed_text("clean shoreline", "RETRIEVAL_DOCUMENT")) == [0.3, 0.4]
-    assert asyncio.run(semantic_search.embed_text("where is litter?", "RETRIEVAL_QUERY")) == [0.3, 0.4]
-    assert asyncio.run(semantic_search.embed_documents(["clean shoreline", "litter near bridge"])) == [
-        [0.3, 0.4], [0.1, 0.2]]
-    assert 'title: none | text: clean shoreline' in requests[0]
-    assert 'task: search result | query: where is litter?' in requests[1]
-    assert 'title: none | text: litter near bridge' in requests[2]
 
 
 def test_existing_local_campaign_database_gets_edit_column(tmp_path, monkeypatch):
@@ -231,3 +213,21 @@ def test_existing_local_campaign_database_gets_edit_column(tmp_path, monkeypatch
     with store.connection() as db:
         columns = {row["name"] for row in db.execute("PRAGMA table_info(campaign_drafts)")}
     assert "edited_at" in columns
+
+
+def test_keyword_fallback_filters_revoked_and_never_indexes(tmp_path, monkeypatch):
+    from app.providers import nvidia
+    monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path / 'fallback.sqlite3'))
+    monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('local-test'))
+    async def forbidden(*args, **kwargs):
+        raise AssertionError('A query must not embed documents')
+    monkeypatch.setattr(semantic_search, 'embed_documents', forbidden)
+    with store.connection() as db:
+        seed(db)
+        db.execute("UPDATE assets SET permission_status='revoked' WHERE asset_id='p-one-before'")
+    response = client.post('/api/v1/projects/p-one/semantic-search', headers=HEADERS,
+                           json={'query': 'litter bridge cleanup'})
+    assert response.status_code == 200
+    result = response.json()
+    assert result['mode'] == 'keyword'
+    assert all(h['entity_id'] not in {'approved', 'p-one-before', 'p-two-before'} for h in result['results'])

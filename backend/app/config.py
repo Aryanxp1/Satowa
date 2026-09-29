@@ -22,7 +22,11 @@ class Settings(BaseSettings):
 
     # AI Service Settings
     USE_MOCK: bool = True
-    AI_PROVIDER: str = "gemini"
+    AI_PROVIDER: str = "nvidia"
+    NVIDIA_API_KEY: SecretStr = SecretStr("")
+    NVIDIA_API_BASE: str = "https://integrate.api.nvidia.com/v1"
+    NVIDIA_EMBED_MODEL: str = "nvidia/nemotron-3-embed-1b"
+    NVIDIA_VISION_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
 
@@ -35,6 +39,7 @@ class Settings(BaseSettings):
 
     # SQLite persistence for sites, visits, evidence, and review history.
     LEX_DB_PATH: str = "./lex.sqlite3"
+    DATABASE_URL: SecretStr = SecretStr("")
     GEMINI_VISION_MODEL: str = "gemini-3.8-flash"
 
     # CORS origins

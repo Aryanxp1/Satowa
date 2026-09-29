@@ -1,5 +1,8 @@
 """Main application entry point for Project LEX Backend."""
 import logging
+import uuid
+from contextlib import asynccontextmanager
+from app.services.env_validator import validate_production_readiness
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,8 +31,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger("lex.main")
 
+@asynccontextmanager
+async def lifespan(app):
+    if settings.ENVIRONMENT.lower() in {'production', 'prod'}:
+        ready, issues = validate_production_readiness(settings)
+        if not ready:
+            raise RuntimeError("Unsafe production configuration: " + "; ".join(issues))
+    yield
+
+
 # Initialize FastAPI application
 app = FastAPI(
+    lifespan=lifespan,
     title="Setowa — Evidence API",
     description=(
         "Setowa, built by Team LEX for Code Cubicle. "
@@ -43,11 +56,29 @@ app = FastAPI(
 # Configure Cross-Origin Resource Sharing (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins if settings.cors_origins else ["*"],
+    allow_origins=settings.cors_origins if settings.cors_origins else [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware('http')
+async def response_security(request: Request, call_next):
+    response = await call_next(request)
+    response.headers['X-Request-ID'] = uuid.uuid4().hex
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['X-Frame-Options'] = 'DENY'
+    if request.url.path.startswith(('/demo', '/share/')):
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://res.cloudinary.com; "
+            "media-src 'self' blob: https://res.cloudinary.com; connect-src 'self'; "
+            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'")
+    if request.url.path.startswith(('/api/', '/share/')):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @app.middleware('http')
@@ -86,6 +117,11 @@ showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
 if showcase_dir.is_dir():
     app.mount('/showcase', StaticFiles(directory=showcase_dir, html=True), name='showcase')
 
+else:
+    @app.get('/showcase/', include_in_schema=False)
+    async def hosted_showcase_redirect():
+        return RedirectResponse('/demo/', status_code=307)
+
 
 @app.get("/", tags=["System Root"], include_in_schema=False)
 async def root(request: Request):
@@ -97,7 +133,7 @@ async def root(request: Request):
         'team': 'Team LEX (Code Cubicle Hackathon)',
         'version': __version__,
         'status': 'online',
-        'mock_mode': settings.USE_MOCK or not bool(settings.GEMINI_API_KEY),
+        'mock_mode': settings.USE_MOCK,
         'docs_url': '/docs',
         'healthcheck': '/api/v1/health',
         'readiness': '/api/v1/ready',

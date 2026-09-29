@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import HTTPException
+from app.config import settings
 
 from app.schemas.api import (
     BatchMediaAnalysisItemResult,
@@ -102,6 +103,9 @@ async def analyze_asset(
     if not asset:
         raise HTTPException(status_code=404, detail=f"Media asset '{asset_id}' not found.")
 
+    if asset.get("permission_status") != "granted":
+        raise HTTPException(403, "Media permission is not granted")
+
     target_url = asset["secure_url"]
 
     if frame_id:
@@ -118,7 +122,12 @@ async def analyze_asset(
     # Check for existing intelligence if not forcing re-analysis
     if not force_reanalyze:
         existing = store.get_media_intelligence(db, asset_id, frame_id)
-        if existing and existing.get("status") in ("analyzed", "uncertain", "insufficient_evidence"):
+        cache_matches = existing and (settings.AI_PROVIDER != "nvidia" or (
+            existing.get("model_provider") == "nvidia" and
+            existing.get("model_name") == settings.NVIDIA_VISION_MODEL and
+            safe_json_loads(existing.get("evidence_json"), {}).get("asset_version") == asset["version"] and
+            safe_json_loads(existing.get("evidence_json"), {}).get("schema_version") == "nvidia-description-v1"))
+        if cache_matches and existing.get("status") in ("analyzed", "uncertain", "insufficient_evidence"):
             return row_to_intelligence_record(existing)
 
     # Invoke built-in skill through SkillRuntime

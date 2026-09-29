@@ -258,6 +258,22 @@ class MediaIntelligenceSkill(BaseSkill):
                 },
             )
 
+        if settings.AI_PROVIDER == "nvidia":
+            from app.providers import nvidia
+            try:
+                outputs = await nvidia.describe_registered_media(asset_id, frame_id)
+                return SkillExecutionResult(skill_name=self.name, skill_version=self.version,
+                    status=SkillExecutionStatus.SUCCESS, outputs=outputs,
+                    evidence=outputs["evidence"], metadata={"provider": "nvidia"})
+            except nvidia.ProviderUnavailable as error:
+                return SkillExecutionResult(skill_name=self.name, skill_version=self.version,
+                    status=SkillExecutionStatus.UNAVAILABLE,
+                    outputs={"description": "Visual AI unavailable; inspect evidence manually.",
+                        "observations": [], "tags": [], "detected_signals": [], "activity": None,
+                        "status": "unavailable", "warnings": [str(error)], "uncertainty": str(error),
+                        "evidence": evidence_meta, "model_name": settings.NVIDIA_VISION_MODEL,
+                        "model_provider": "nvidia"}, warnings=[str(error)])
+
         # 2. Check Gemini credentials
         gemini_key = None
         if settings.GEMINI_API_KEY:

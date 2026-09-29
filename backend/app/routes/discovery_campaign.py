@@ -32,6 +32,13 @@ async def semantic_search(project_id: str, payload: SearchRequest):
         return await search_project(db, project_id, payload.query.strip(), payload.limit)
 
 
+@router.post("/{project_id}/search-index")
+async def index_search(project_id: str):
+    """Explicit bounded indexing; ordinary searches never embed the collection."""
+    with store.connection() as db:
+        return await search_project(db, project_id, "", index=True)
+
+
 @router.post("/{project_id}/campaign-drafts", status_code=201)
 def create_campaign_draft(project_id: str, payload: CampaignRequest):
     """Save a channel-specific draft using only reviewed/sourced records."""

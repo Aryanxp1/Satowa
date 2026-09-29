@@ -308,3 +308,10 @@ class TestCriticalBehavior:
         )
         assert stale_resp.status_code == 409
         assert 'Observation changed; reload before reviewing' in stale_resp.text
+
+
+@pytest.fixture(autouse=True)
+def optional_gemini_provider_contract(monkeypatch):
+    """These legacy contract tests deliberately exercise the optional Gemini adapter."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "AI_PROVIDER", "gemini")
