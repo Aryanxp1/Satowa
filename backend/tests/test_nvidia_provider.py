@@ -76,3 +76,37 @@ def test_nvidia_pair_does_not_invent_comparison(monkeypatch):
     assert result.reliable is False
     assert result.observation is None
     assert result.uncertainty_reason == 'pair_model_not_validated'
+
+
+def test_registered_vision_schema_cache_and_revocation(tmp_path, monkeypatch):
+    import json
+    from app.services import evidence_store as store
+    from app.services.media_intelligence import analyze_asset
+    from fastapi import HTTPException
+    from tests.test_discovery_campaign import seed
+    monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path / 'registered.sqlite3'))
+    monkeypatch.setattr(settings, 'AI_PROVIDER', 'nvidia')
+    monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'test')
+    with store.connection() as db:
+        seed(db)
+    calls = []
+    async def vision(endpoint, body):
+        calls.append(body)
+        return {'choices': [{'message': {'content': json.dumps({
+            'description': 'Visible debris near water.', 'observations': ['Visible debris.'],
+            'tags': ['debris', 'water'], 'status': 'analyzed', 'uncertainty': None})}}]}
+    monkeypatch.setattr(nvidia, 'request_json', vision)
+    async def run_analysis():
+        with store.connection() as db:
+            return await analyze_asset(db, 'p-one-before')
+    first = asyncio.run(run_analysis())
+    second = asyncio.run(run_analysis())
+    assert first.id == second.id
+    assert first.model_provider == 'nvidia'
+    assert len(calls) == 1
+    with store.connection() as db:
+        db.execute("UPDATE assets SET permission_status='revoked' WHERE asset_id='p-one-before'")
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(run_analysis())
+    assert error.value.status_code == 403
+    assert len(calls) == 1
