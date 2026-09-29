@@ -3,5 +3,9 @@
 .env.*
 !.env.example
 credentials.json
+credential.json
+*.sqlite3
+*.sqlite
+*.db
 __pycache__/
 .pytest_cache/
