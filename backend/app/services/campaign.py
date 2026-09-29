@@ -9,6 +9,7 @@ import json
 from fastapi import HTTPException
 
 from app.services import evidence_store as store
+from app.services.image_comparison import QUANTITATIVE_CLAIM_PATTERN
 
 CHANNELS = {"social", "newsletter", "volunteer_update"}
 
@@ -29,6 +30,10 @@ def source_records(db, project_id: str) -> list[dict]:
     """, (project_id,))
     for o in observations:
         if o["before_permission"] != "granted" or o["after_permission"] != "granted":
+            continue
+        # Quantities must come from measurement rows with a supplied source,
+        # not from prose in a photo observation, even when a reviewer approved it.
+        if QUANTITATIVE_CLAIM_PATTERN.search(o["approved_text"]):
             continue
         sources.append({"type": "approved_observation", "id": o["id"],
                         "text": o["approved_text"], "site_id": o["site_id"],

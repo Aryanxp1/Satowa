@@ -70,6 +70,13 @@ def test_campaign_uses_approved_and_sourced_records_only(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "MEDIA_UPLOAD_TOKEN", SecretStr("local-test"))
     with store.connection() as db:
         seed(db)
+        now = store.timestamp()
+        db.execute("""INSERT INTO observations
+            (id,site_id,before_asset_id,after_asset_id,approved_text,
+             review_status,created_at,updated_at)
+             VALUES(?,?,?,?,?,?,?,?)""",
+             ("unsourced-quantity", "p-one-site", "p-one-before", "p-one-after",
+              "35 kg of waste was removed", "approved", now, now))
     result = client.post("/api/v1/projects/p-one/campaign-drafts", headers=HEADERS,
                          json={"channel": "social"})
     assert result.status_code == 201, result.text
@@ -77,6 +84,7 @@ def test_campaign_uses_approved_and_sourced_records_only(tmp_path, monkeypatch):
     assert "Less visible litter" in draft["body"]
     assert "2.0 kg" in draft["body"]
     assert "AI invented" not in draft["body"]
+    assert "35 kg" not in draft["body"]
     assert len(draft["sources"]) == 2
     assert draft["status"] == "draft"
     edit = client.put(f"/api/v1/projects/p-one/campaign-drafts/{draft['id']}",
