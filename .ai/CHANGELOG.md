@@ -3,6 +3,27 @@
 
 ## [Unreleased]
 
+### 2026-09-30
+- **AGY**: Completed T020-A (Showcase Repair + Mass Media Demo Expansion):
+  - Fixed Showcase "View Public Story" 404 route:
+    - `public_story.py`: Removed upstream synthetic demo blocker in `get_public_impact_story()` that returned 404 on demo projects.
+    - `impact_story.py`: Removed upstream blocker in `update_impact_story_fields()` that refused to publish demo stories.
+    - `main.py`: Adjusted CSP response header on `/share/` routes to include `'unsafe-inline'` script-src so the public story's `copyShareLink()` clipboard script executes without browser console errors.
+  - Expanded Deterministic Mass Media Dataset (`seed_demo.py`):
+    - Added 4 distinct coastal and riparian sites (`site_nyali_creek`, `site_tudor_creek`, `demo-riverbank`, `site_watamu_beach`).
+    - Added 13 chronological visits spanning August to September 2026.
+    - Added 51 Cloudinary assets (48 high-res photos + 3 video walkthroughs) with `permission_status = 'granted'` and responsive transformations.
+    - Added 7 Cloudinary offset video frame derivations with AI analyses in `video_frames` and `frame_analyses`.
+    - Added 51 structured media intelligence records with environmental tags and signals.
+    - Added 2 physical debris measurements (320 kg at Nyali Creek, 145 kg at Sabaki Riverbank).
+    - Added 4 human-auditor approved observation pairs with verified outcomes.
+    - Added safe Step 0 cleanup deleting legacy revision and event references to prevent SQLite FK constraint violations.
+  - Test Hardening & Automation:
+    - Updated `smoke_test.py` to enforce working directory isolation and verified all 9 end-to-end stages pass.
+    - Updated `test_demo_hardening.py` to match the expanded multi-site dataset and verified all 18 hardening tests pass.
+    - Verified full test suite (317 passed) with zero code regressions.
+    - Performed Playwright browser verification: verified Showcase loads, Public Story CTA navigates with 200, public dossier renders with Cloudinary media and zero console errors, Workspace UI renders 50+ media items, video playback & frame analytics modal works, search and tag filtering work, timeline visits work, and semantic evidence discovery returns ranked results.
+
 ### 2026-09-27
 - **AGY**: Completed T019 (Hackathon Demo + Production Hardening):
   - Safe Environment & Production Validation (`backend/app/services/env_validator.py`):

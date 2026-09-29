@@ -15,12 +15,15 @@ from pathlib import Path
 import json
 import sys
 
-# Ensure backend root on sys.path
+# Ensure backend root on sys.path and working directory is backend
 backend_dir = Path(__file__).resolve().parents[1]
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+import os
+os.chdir(backend_dir)
 
 from fastapi.testclient import TestClient
+from app.config import settings
 from app.main import app
 from app.services import evidence_store as store
 from scripts.seed_demo import seed_demo_dataset, DEMO_PROJECT_ID, DEMO_SHARE_TOKEN

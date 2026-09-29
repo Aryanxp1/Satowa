@@ -89,8 +89,6 @@ def get_public_impact_story(db, share_token: str, base_url: str = "") -> Optiona
 
     project = store.get_project(db, story["project_id"])
     project_meta = safe_json_loads(project.get("metadata_json"), {}) if project else {}
-    if project_meta.get("synthetic_demo"):
-        return None
     project_name = project["name"] if project else "Environmental Project"
     project_desc = project.get("description") if project else None
 

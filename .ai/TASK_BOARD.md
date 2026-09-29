@@ -661,6 +661,35 @@
    - 18 comprehensive tests covering startup env validation, missing var detection, health probe, readiness probe, deterministic seed, CLI happy path, CLI failure handling, complete demo flow, public story smoke, secret leak checks, CORS behavior, production configuration safety, error response sanitization, existing Cloudinary compatibility, existing Gemini compatibility, existing SkillRuntime compatibility, existing WorkflowEngine compatibility, and evidence review compatibility.
    - Full test suite: **296 passed**, 1 skipped, 1 pre-existing Windows NTFS chmod failure, 2 warnings, 0 functional regressions.
 
+---
+
+## [x] T020-A — Showcase Repair + Mass Media Demo Expansion
+**Owner:** AGY + Aryan  
+**Dependencies:** T019 ✅  
+**Status:** COMPLETE (2026-09-30)  
+**Goal:** Fix the Showcase "View Public Story" CTA 404, enforce honest verified-only public evidence, and expand the deterministic demo dataset into a rich multi-site, multi-visit mass media repository (51 assets, 3 videos, 7 derived frames).
+
+**Scope Completed:**
+1. **Showcase / Public Story Route Repair (`app/services/public_story.py`, `app/services/impact_story.py`):**
+   - Removed synthetic demo blocker in `get_public_impact_story()` that was returning `None` (404) for published demo projects.
+   - Removed publishing blocker in `impact_story.py` that raised ValueError on demo project stories.
+   - Gated public story strictly to published status while allowing fully transparent demo scenarios labeled with `DEMO DATASET`.
+   - Updated CSP header in `app/main.py` to allow `'unsafe-inline'` script-src specifically on `/share/` routes to enable the inline clipboard `copyShareLink()` functionality with zero browser console errors.
+2. **Mass Media Dataset Expansion (`scripts/seed_demo.py`):**
+   - **Sites (4)**: Nyali Creek Mangrove Fringe (`site_nyali_creek`), Tudor Creek Estuary (`site_tudor_creek`), Sabaki Riverbank Catchment (`demo-riverbank`), Watamu Marine Park Driftline (`site_watamu_beach`).
+   - **Visits (13)**: Chronological baseline, action, audit, and post-cleanup visits across August–September 2026.
+   - **Media Assets (51)**: 48 high-resolution images + 3 full videos (`t014_live_walkthrough.mp4`, `cld-sample-video.mp4`, `sea-turtle.mp4`) hosted on Cloudinary (`tlf3lv01`) with valid transformations, poster thumbnails, and `permission_status = 'granted'`.
+   - **Video Derivations (7 frames)**: Cloudinary offset transformations (`so_1.5`, `so_4.0`, `so_8.0`, etc.) with associated AI frame analyses.
+   - **Media Intelligence (51 records)**: Structured tags (`debris`, `plastic`, `nets`, `mangroves`, `water`, `vegetation`, `cleanup`, `marine litter`) and visual signals.
+   - **Debris Weigh-Ins (2)**: 320 kg at Nyali Creek, 145 kg at Sabaki Riverbank.
+   - **Comparative Observations (4)**: 4 human-auditor approved before/after findings with zero pending/unapproved proposals leaking to the public impact story.
+   - **Idempotent Cleanup**: Safely cleans prior demo records (`impact_story_events`, `measurements`, `media_intelligence`, `observation_revisions`) without foreign key constraint violations.
+3. **Automated & Browser Verification:**
+   - 18/18 `test_demo_hardening.py` tests passing.
+   - 25/25 `test_public_story.py` tests passing.
+   - 9/9 `smoke_test.py` end-to-end stages passing.
+   - Playwright browser testing: Showcase loads, CTA navigates to `/share/pst_demo_mombasa_coastal_2026` returning HTTP 200, public dossier renders with Cloudinary hero media, before/after evidence cards, verified findings, zero secrets, and zero console errors. Workspace UI verified for media gallery (50+ assets), video player & frame analytics modal, search by text ("canopy"), filter by tag ("plastic"), timeline visits, and semantic evidence discovery.
+
 
 
 

@@ -359,14 +359,14 @@ cd backend
 
 ## What Is Ready Next
 
-- Milestone T019 is **COMPLETE**.
-- All planned milestones (T001 through T019) are fully implemented, verified, hardened, and tested.
-- Zero open technical debt; zero regressions; zero credential leaks.
-- Ready for live demonstration and judging.
+- Milestone **T020-A — SHOWCASE REPAIR + MASS MEDIA DEMO EXPANSION** is **COMPLETE**.
+- Showcase "View Public Story" CTA correctly navigates to `/share/pst_demo_mombasa_coastal_2026` returning HTTP 200 with Cloudinary hero media, before/after evidence cards, and verified auditor outcomes.
+- Deterministic demo dataset expanded to 51 assets (48 images + 3 videos) across 4 sites and 13 visits with structured intelligence, derived frames, weigh-in measurements, and comparative findings.
+- Zero credential leaks; zero console errors; all 9/9 smoke test stages passed; full test suite verified.
 
 ## Open Questions for User
 
-None. T019 is complete, smoke tests are 100% passing, test suite has 296 passed tests, and documentation is aligned.
+None. T020-A is complete and ready for review.
 
 
 

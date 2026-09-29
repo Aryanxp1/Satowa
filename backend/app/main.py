@@ -71,8 +71,9 @@ async def response_security(request: Request, call_next):
     response.headers['Referrer-Policy'] = 'no-referrer'
     response.headers['X-Frame-Options'] = 'DENY'
     if request.url.path.startswith(('/demo', '/share/')):
+        script_src = "'self' 'unsafe-inline'" if request.url.path.startswith('/share/') else "'self'"
         response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            f"default-src 'self'; script-src {script_src}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://res.cloudinary.com; "
             "media-src 'self' blob: https://res.cloudinary.com; connect-src 'self'; "
             "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'")

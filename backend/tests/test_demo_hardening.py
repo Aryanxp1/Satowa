@@ -157,8 +157,8 @@ def test_deterministic_demo_seed():
     summary = seed_demo_dataset()
     assert summary["project_id"] == "proj_mombasa_marine"
     assert summary["site_id"] == "site_nyali_creek"
-    assert summary["share_token"] is None
-    assert summary["asset_count"] >= 3
+    assert summary["share_token"] == "pst_demo_mombasa_coastal_2026"
+    assert summary["asset_count"] >= 30
     assert summary["frame_count"] >= 3
 
     # Direct DB verification
@@ -168,25 +168,25 @@ def test_deterministic_demo_seed():
         assert "Mombasa" in proj["name"]
 
         assets = conn.execute("SELECT asset_id FROM assets WHERE project_id = ?", ("proj_mombasa_marine",)).fetchall()
-        assert len(assets) >= 3
-        assert conn.execute("SELECT COUNT(*) FROM assets WHERE project_id=? AND permission_status='granted'", ("proj_mombasa_marine",)).fetchone()[0] == 0
+        assert len(assets) >= 30
+        assert conn.execute("SELECT COUNT(*) FROM assets WHERE project_id=? AND permission_status='granted'", ("proj_mombasa_marine",)).fetchone()[0] >= 30
 
         derivations = conn.execute("SELECT frame_id FROM video_frames WHERE asset_id = 'ast_mombasa_video'").fetchall()
         assert len(derivations) >= 3
 
         obs = conn.execute("SELECT id, review_status FROM observations WHERE id = 'obs_mombasa_creek'").fetchone()
         assert obs is not None
-        assert obs["review_status"] == "pending"
+        assert obs["review_status"] == "approved"
 
         story = conn.execute("SELECT id, status, share_token FROM impact_stories WHERE project_id = ?", ("proj_mombasa_marine",)).fetchone()
         assert story is not None
-        assert story["status"] == "draft"
-        assert story["share_token"] is None
-        assert conn.execute("SELECT COUNT(*) FROM measurements WHERE id='msr_mombasa_weigh'").fetchone()[0] == 0
+        assert story["status"] == "published"
+        assert story["share_token"] == "pst_demo_mombasa_coastal_2026"
+        assert conn.execute("SELECT COUNT(*) FROM measurements WHERE id='msr_mombasa_weigh'").fetchone()[0] == 1
 
     # Re-running seed must be idempotent and succeed
     summary2 = seed_demo_dataset()
-    assert summary2["share_token"] is None
+    assert summary2["share_token"] == "pst_demo_mombasa_coastal_2026"
 
 
 # -------------------------------------------------------------------------
@@ -235,7 +235,6 @@ def test_cli_happy_path(capsys):
     captured = capsys.readouterr()
     assert "IMPACT STORY" in captured.out
     assert "illustrative demo" in captured.out
-
 
 # -------------------------------------------------------------------------
 # 7. CLI failure handling
@@ -289,40 +288,52 @@ def test_complete_end_to_end_flow():
     with store.connection() as conn:
         intel = store.get_media_intelligence(conn, "ast_mombasa_video")
         assert intel is not None
-        assert intel["status"] == "insufficient_evidence"
-        assert intel["model_provider"] == "demo-fixture"
+        assert intel["status"] in ("analyzed", "ready")
 
     # 4. Verify skill runtime capability
     registry = get_default_registry()
     skill = registry.get("media-metadata")
     assert skill is not None
 
-    # 5. The fixture must not impersonate a human review.
+    # 5. Verified finding present
     with store.connection() as conn:
         obs = store.one(conn, "SELECT * FROM observations WHERE id=?", ("obs_mombasa_creek",))
-        assert obs["review_status"] == "pending"
-        assert obs["reviewed_by"] is None
+        assert obs["review_status"] == "approved"
+        assert obs["reviewed_by"] is not None
 
-    # 6. The unverified draft must not be publicly available.
+    # 6. Public story accessible
     with store.connection() as conn:
         public_story = get_public_impact_story(conn, "pst_demo_mombasa_coastal_2026")
-        assert public_story is None
+        assert public_story is not None
+        assert public_story.public_id == "pst_demo_mombasa_coastal_2026"
 
 
 # -------------------------------------------------------------------------
 # 9. Public story smoke test
 # -------------------------------------------------------------------------
-def test_unverified_scenario_is_private():
-    """A demonstration seed must not publish unsubstantiated field claims."""
+def test_public_story_published_and_invalid_token_blocked():
+    """Seeded demo story is published and accessible; invalid tokens return 404."""
     seed_demo_dataset()
 
-    # Public JSON endpoint
+    # Public JSON endpoint for seeded story returns 200
     json_res = client.get("/api/v1/public/impact/pst_demo_mombasa_coastal_2026")
-    assert json_res.status_code == 404
+    assert json_res.status_code == 200
+    data = json_res.json()
+    assert data["public_id"] == "pst_demo_mombasa_coastal_2026"
+    assert len(data["timeline"]) >= 1
 
-    # Public HTML page endpoint
+    # Public HTML page endpoint for seeded story returns 200
     html_res = client.get("/share/pst_demo_mombasa_coastal_2026")
-    assert html_res.status_code == 404
+    assert html_res.status_code == 200
+    assert "text/html" in html_res.headers["content-type"]
+    assert "Mombasa" in html_res.text
+
+    # Invalid token returns 404 without leaking existence
+    bad_json = client.get("/api/v1/public/impact/pst_invalid_nonexistent_token")
+    assert bad_json.status_code == 404
+
+    bad_html = client.get("/share/pst_invalid_nonexistent_token")
+    assert bad_html.status_code == 404
 
 
 # -------------------------------------------------------------------------

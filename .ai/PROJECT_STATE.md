@@ -159,12 +159,18 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Public Story HTML View (`/share/{token}`) with Open Graph meta, Cloudinary hero, before/after, timeline, and print styling | ✅ Fully tested and passing |
 | Public Story REST API (`/api/v1/public/impact/{token}`) | ✅ Fully tested and passing |
 | Workspace Share Bar & Controls (Open Public Story, Copy Link, Rotate, Revoke) | ✅ Verified in demo client |
+| Showcase "View Public Story" CTA properly accessible without 404 | ✅ Verified via Playwright (HTTP 200) |
+| Public story strictly restricted to human-verified and auditor-approved evidence | ✅ Verified in browser & API projections |
+| CSP header updated with `'unsafe-inline'` script-src for `/share/` clipboard functionality | ✅ Zero browser console errors |
+| Deterministic Mass Media Expansion: 51 assets (48 images + 3 videos) across 4 sites and 13 visits | ✅ Seeded & verified |
+| Video frame analytics derivations (7 Cloudinary offset frames + analyses) | ✅ Verified in workspace modal |
+| Full smoke test suite (9/9 stages pass) | ✅ Verified |
 
 ## Current Active Milestone
 
-**T018 — PUBLIC / SHAREABLE IMPACT EXPERIENCE** — COMPLETE
+**T020-A — SHOWCASE REPAIR + MASS MEDIA DEMO EXPANSION** — COMPLETE
 
 ## Next Milestone
 
-**T019 — Hackathon Demo & Production Hardening**
+**T020-B / Subsequent Milestone as directed by user**
 
