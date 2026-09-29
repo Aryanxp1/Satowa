@@ -374,9 +374,9 @@ class MediaIntelligenceSkill(BaseSkill):
                     if not model or model in seen_models:
                         continue
                     seen_models.add(model)
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                     try:
-                        r = await client.post(url, json=payload)
+                        r = await client.post(url, headers={"x-goog-api-key": gemini_key}, json=payload)
                         if r.status_code == 200:
                             gemini_resp = r
                             used_model = model
@@ -385,19 +385,13 @@ class MediaIntelligenceSkill(BaseSkill):
                             logger.info(f"Gemini model {model} returned HTTP {r.status_code}; trying next model.")
                             gemini_resp = r
                             continue
-                    except Exception as net_err:
-                        logger.warning(f"Error calling Gemini model {model}: {net_err}")
+                    except Exception:
+                        logger.warning("Error calling Gemini model %s.", model)
                         continue
 
                 if not gemini_resp or gemini_resp.status_code != 200:
                     status_code = gemini_resp.status_code if gemini_resp else "timeout"
-                    error_detail = "API call timed out or failed to reach provider"
-                    if gemini_resp:
-                        try:
-                            err_json = gemini_resp.json()
-                            error_detail = err_json.get("error", {}).get("message", f"HTTP {status_code}")
-                        except Exception:
-                            error_detail = f"HTTP {status_code}"
+                    error_detail = f"HTTP {status_code}" if gemini_resp else "provider timeout"
 
                     return SkillExecutionResult(
                         skill_name=self.name,
@@ -433,8 +427,8 @@ class MediaIntelligenceSkill(BaseSkill):
 
                 try:
                     parsed = json.loads(raw_text)
-                except Exception as parse_err:
-                    logger.warning(f"Failed to parse Gemini JSON output: {parse_err}. Raw text: {raw_text[:200]}")
+                except Exception:
+                    logger.warning("Gemini returned malformed JSON output.")
                     return SkillExecutionResult(
                         skill_name=self.name,
                         skill_version=self.version,
@@ -510,13 +504,13 @@ class MediaIntelligenceSkill(BaseSkill):
                     },
                 )
         except Exception as exc:
-            logger.exception(f"Unhandled error in MediaIntelligenceSkill: {exc}")
+            logger.error("Media intelligence failed (%s).", type(exc).__name__)
             return SkillExecutionResult(
                 skill_name=self.name,
                 skill_version=self.version,
                 status=SkillExecutionStatus.FAILED,
                 outputs={
-                    "description": f"AI media intelligence failed: {str(exc)}",
+                    "description": "AI media intelligence failed; retry or review manually.",
                     "observations": [],
                     "tags": [],
                     "detected_signals": [],
@@ -528,6 +522,6 @@ class MediaIntelligenceSkill(BaseSkill):
                     "model_name": "unknown",
                     "model_provider": "gemini",
                 },
-                errors=[f"Media intelligence execution error: {str(exc)}"],
+                errors=["Media intelligence execution error."],
                 evidence=evidence_meta,
             )

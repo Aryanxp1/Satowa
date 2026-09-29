@@ -2,6 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.config import settings
 
 client = TestClient(app)
 
@@ -64,3 +65,12 @@ def test_analyze_empty_prompt():
     payload = {"prompt": "   "}
     response = client.post("/api/v1/analyze", json=payload)
     assert response.status_code == 422
+
+
+def test_analyze_live_mode_without_gemini_key_never_returns_mock(monkeypatch):
+    monkeypatch.setattr(settings, "USE_MOCK", False)
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
+    response = client.post("/api/v1/analyze", json={"prompt": "Describe this evidence"})
+    assert response.status_code == 503
+    assert "GEMINI_API_KEY" in response.json()["detail"]
+    assert "mock-engine" not in response.text

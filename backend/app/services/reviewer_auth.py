@@ -86,14 +86,26 @@ def reviewer_tokens():
         raise HTTPException(503, 'Reviewer authentication is misconfigured') from None
     if not isinstance(configured, dict) or any(
         not isinstance(name, str) or not name.strip() or
-        not isinstance(token, str) or not token
+        not isinstance(token, str) or not token.strip()
         for name, token in configured.items()
     ) or len(set(configured.values())) != len(configured) or any(
         hmac.compare_digest(token, settings.MEDIA_UPLOAD_TOKEN.get_secret_value())
         for token in configured.values()
-    ):
+    ) or (settings.ENVIRONMENT.lower() == 'pilot' and
+          (len(configured) != 1 or any(len(token) < 32 for token in configured.values()))):
         raise HTTPException(503, 'Reviewer authentication is misconfigured')
     return configured
+
+
+def reviewer_configuration_status() -> str:
+    """Return public configuration state without exposing reviewer names or tokens."""
+    if not settings.REVIEWER_TOKENS.get_secret_value().strip():
+        return 'missing'
+    try:
+        reviewer_tokens()
+    except HTTPException:
+        return 'misconfigured'
+    return 'configured'
 
 
 def reviewer_for_authorization(authorization):
