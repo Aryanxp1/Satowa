@@ -59,6 +59,29 @@ def test_upload_preserves_identity(provider, fmt, mime):
     assert 'test-secret' not in response.text
 
 
+def test_explicit_project_site_upload_is_kept_separate(provider):
+    headers = {'Authorization': 'Bearer test-token'}
+    project = client.post('/api/v1/projects', headers=headers,
+        json={'id': 'proj-coast', 'name': 'Coastal program'})
+    assert project.status_code == 201
+    site = client.post('/api/v1/sites', headers=headers,
+        json={'id': 'site-coast', 'name': 'East bank', 'project_id': 'proj-coast'})
+    assert site.status_code == 201
+
+    uploaded = post(project_id='proj-coast', site_id='site-coast')
+    assert uploaded.status_code == 201
+    assert uploaded.json()['site_id'] == 'site-coast'
+    assert uploaded.json()['project_id'] == 'proj-coast'
+    by_project = client.get('/api/v1/media?project_id=proj-coast', headers=headers)
+    by_site = client.get('/api/v1/media?site_id=site-coast', headers=headers)
+    assert [item['asset_id'] for item in by_project.json()] == ['asset-1']
+    assert [item['asset_id'] for item in by_site.json()] == ['asset-1']
+    assert by_project.json()[0]['captured_at'] is None
+
+    invalid = post(project_id='proj_default', site_id='site-coast')
+    assert invalid.status_code == 422
+
+
 
 @pytest.mark.parametrize('data,mime,status', [
     (b'', 'image/png', 422), (b'not an image', 'image/png', 422),
@@ -121,4 +144,3 @@ def test_upload_permission_status_validation():
     invalid = post(permission_status='invalid_status')
     assert invalid.status_code == 422
     assert 'permission_status must be one of' in invalid.text
-

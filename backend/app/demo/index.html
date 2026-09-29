@@ -6,22 +6,22 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Setowa helps teams turn cleanup media into reviewed, evidence-linked reports.">
   <title>Setowa — Evidence workspace</title>
-  <link rel="stylesheet" href="/demo/styles.css?v=4">
-  <script src="/demo/app.js?v=4" defer></script>
+  <link rel="icon" href="/demo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/demo/styles.css?v=6">
+  <script src="/demo/app.js?v=6" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
       <a class="brand" href="/showcase/" aria-label="Setowa home"><svg class="brand-symbol" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 31V21a15 15 0 0 1 30 0v10M5 31h30"/></svg><span>SETOWA</span></a>
       <div id="topbar-project-container" style="display:flex; align-items:center; gap:8px;">
-        <label for="project-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
-        <select id="project-select" aria-label="Select active project" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
+        <label for="topbar-site-select" class="kicker" style="margin:0; font-size:10px;">SITE</label>
+        <select id="topbar-site-select" aria-label="Select active site" style="margin:0; padding:6px 10px; font-size:13px; font-weight:600; min-width:260px; max-width:380px; border-radius:4px;"></select>
       </div>
     </div>
     <nav class="top-actions" aria-label="Primary navigation">
       <a id="nav-projects" href="#projects" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">All Sites</a>
       <a href="/showcase/" class="top-action-link" style="text-decoration:none; font-size:0.83rem; font-weight:700;">Showcase</a>
-      <a id="nav-public-story-link" href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" style="text-decoration:none; font-size:0.83rem; font-weight:700; color:var(--green,#455f49);">Public Story ↗</a>
       <span id="session-label" class="session-label">Local workspace</span>
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button>
     </nav>
@@ -46,10 +46,11 @@
       </div>
 
       <div class="setup-lower">
-        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
+        <div class="setup-intro"><p id="setup-mode-label" class="kicker">LOCAL SETUP</p><h2 id="setup-mode-title">Connect the tools you already have.</h2><p id="setup-mode-description">Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
         <div class="setup-panel">
           <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
-          <details class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
+          <form id="pilot-token-form" class="pilot-token-form" autocomplete="off" hidden><label for="pilot-token">Reviewer token<input id="pilot-token" type="password" autocomplete="off" spellcheck="false" required placeholder="Enter your pilot reviewer token"></label><button class="button primary" type="submit">Connect to workspace →</button><p class="meta">The token stays in this tab's memory and clears on reload. Provider keys belong in the Render service configuration, never in this form.</p></form>
+          <details id="credential-details" class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
             <form id="credential-form" autocomplete="off">
               <p>Leave a field blank to keep its saved value. Provider keys are never sent back to this page.</p>
               <div class="form-grid"><label>Cloud name<input name="cloud_name" autocomplete="off" placeholder="Your Cloudinary cloud name"></label><label>Cloudinary API key<input name="cloudinary_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label><label>Cloudinary API secret<input name="cloudinary_api_secret" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved secret"></label><label>Gemini API key <span class="optional">optional</span><input name="gemini_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label></div>
@@ -62,11 +63,15 @@
     </section>
 
     <section id="projects-page" class="page projects-page" aria-labelledby="projects-title" hidden>
-      <div class="page-heading"><div><p class="kicker">02 / PROJECT LIBRARY</p><h1 id="projects-title">Your cleanup sites<span class="period">.</span></h1><p>Open the guided sample or start a site of your own.</p></div><button id="new-project-button" class="button secondary" type="button">+ New project</button></div>
+      <div class="page-heading"><div><p class="kicker">02 / PROJECT LIBRARY</p><h1 id="projects-title">Your cleanup sites<span class="period">.</span></h1><p>Choose a project, then open a site and its dated visits.</p><label for="library-project-select">Project<select id="library-project-select" aria-label="Filter sites by project"></select></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button id="new-parent-project-button" class="button secondary" type="button">+ New project</button><button id="new-project-button" class="button secondary" type="button">+ New site</button></div></div>
       <div id="project-list" class="project-grid" aria-live="polite"></div>
+      <section id="new-parent-project-panel" class="new-project-panel" hidden aria-labelledby="new-parent-project-title">
+        <div><p class="kicker">NEW PROJECT</p><h2 id="new-parent-project-title">Group your cleanup sites.</h2></div>
+        <form id="parent-project-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120" placeholder="Coastal cleanup program"></label><label>Project ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="coastal-cleanup"></label><label class="full-width">Description<textarea name="description" maxlength="600" rows="2"></textarea></label></div><button class="button primary" type="submit">Create project →</button></form>
+      </section>
       <section id="new-project-panel" class="new-project-panel" hidden aria-labelledby="new-project-title">
-        <div><p class="kicker">NEW PROJECT</p><h2 id="new-project-title">Name the place you’re documenting.</h2><p>Site details and visit dates help keep before and after evidence in the right context.</p></div>
-        <form id="site-form" class="project-form"><div class="form-grid"><label>Project name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label>Location<input name="location" maxlength="120" placeholder="Area, city or coordinates"></label><label class="full-width">What is this project documenting?<textarea name="description" maxlength="600" rows="3" placeholder="A short description of the site and cleanup work"></textarea></label></div><button class="button primary" type="submit">Create project <span aria-hidden="true">→</span></button></form>
+        <div><p class="kicker">NEW SITE</p><h2 id="new-project-title">Name the place you’re documenting.</h2><p>Choose its parent project, then record dated visits and media.</p></div>
+        <form id="site-form" class="project-form"><div class="form-grid"><label>Project<select name="project_id" id="site-project-select" required></select></label><label>Site name<input name="name" required maxlength="120" placeholder="River Bend cleanup"></label><label>Site ID<input name="id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="river-bend"></label><label>Location<input name="location" maxlength="120" placeholder="Area, city or coordinates"></label><label class="full-width">What is this site documenting?<textarea name="description" maxlength="600" rows="3" placeholder="A short description of the site and cleanup work"></textarea></label></div><button class="button primary" type="submit">Create site <span aria-hidden="true">→</span></button></form>
       </section>
     </section>
 
@@ -77,11 +82,11 @@
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
               <a href="#projects" class="back-link" style="margin:0;">← All sites</a>
               <span style="color:var(--line,#445047); font-size:12px;">|</span>
-              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA PLATFORM WORKSPACE</p>
+              <p id="project-kicker" class="kicker" style="margin:0;">SETOWA SITE WORKSPACE</p>
               <span style="color:var(--line,#445047); font-size:12px;">|</span>
-              <label for="project-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
+              <label for="site-select" style="font-size:12px; margin:0; display:flex; align-items:center; gap:6px;">
                 <span class="meta" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Site:</span>
-                <select id="project-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
+                <select id="site-select" aria-label="Select cleanup site" style="padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--surface,#fff); color:var(--text,#111); border:1px solid var(--line,#ddd);"></select>
               </label>
             </div>
             <h1 id="project-title">Loading project…</h1>
@@ -130,12 +135,18 @@
               <small>Timeline &amp; Public Share</small>
             </div>
           </button>
+          <button data-tab="discovery" class="tab-button workspace-nav-btn" type="button">
+            <span class="nav-step">06</span><div class="nav-text"><strong>Discover</strong><small>Semantic evidence search</small></div>
+          </button>
+          <button data-tab="campaign" class="tab-button workspace-nav-btn" type="button">
+            <span class="nav-step">07</span><div class="nav-text"><strong>Campaign</strong><small>Grounded drafts</small></div>
+          </button>
         </nav>
       </div>
 
       <div class="project-layout full-width-layout">
         <div class="project-content full-width-content">
-          <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Sample project</strong><span>These images are synthetic. They demonstrate the review flow and are clearly labeled in exports.</span></div>
+          <div id="synthetic-banner" class="synthetic-banner" hidden><strong>Demo scenario</strong><span>This workspace contains synthetic or unverified media. Dates and field claims are illustrative, and no impact is established.</span></div>
 
 
           <section id="tab-overview" class="tab-panel" aria-labelledby="overview-title">
@@ -367,7 +378,7 @@
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
               <button type="button" class="evidence-subnav-btn active" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
               <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04A / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
             <div class="pair-grid">
@@ -396,7 +407,7 @@
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
               <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
               <button type="button" class="evidence-subnav-btn active" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04B / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div>
             <div id="observations" class="observation-list empty">No observations yet.</div>
@@ -406,7 +417,7 @@
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
               <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
               <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn active" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Certified Report &amp; Outcomes</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04C / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
             <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><p class="report-rule-note">ℹ Trust Rule: Unapproved AI observations are strictly excluded from all report outputs.</p><div class="report-button-row"><button id="export" class="button primary" type="button">Download Markdown report (.md)</button><button id="toggle-json-report" class="button secondary" type="button">View Raw JSON</button></div></div>
@@ -420,7 +431,7 @@
             <div class="content-title">
               <p class="kicker">05 / SUSTAINABILITY TIMELINE</p>
               <h2 id="impact-title">Impact Story & Timeline.</h2>
-              <p>Synthesize persisted project media, video frame evidence, and human-verified findings into a traceable impact narrative.</p>
+              <p>Review persisted project media, video frame evidence, and reviewer-approved observations in a traceable timeline.</p>
             </div>
 
             <!-- Project Impact Header / Metrics -->
@@ -450,7 +461,7 @@
               <div class="impact-section-header">
                 <div>
                   <p class="kicker">GROUNDED SYNTHESIS</p>
-                  <h3>Verified Impact Summary</h3>
+                  <h3>Evidence Summary</h3>
                 </div>
                 <div class="impact-status-controls">
                   <span id="impact-status-pill" class="badge approved">Draft</span>
@@ -490,7 +501,7 @@
               <div>
                 <p class="kicker">COMPARATIVE PROOF</p>
                 <h3>Before / After Evidence Cards</h3>
-                <p>Side-by-side photographic pairs backed by Cloudinary delivery, human verification status, and reviewer provenance.</p>
+                <p>Side-by-side photographic pairs with Cloudinary links, review status, and reviewer provenance.</p>
               </div>
             </div>
             <div id="impact-cards-container" class="impact-cards-grid empty">
@@ -502,12 +513,33 @@
               <div>
                 <p class="kicker">CHRONOLOGICAL SPINE</p>
                 <h3>Project Activity & Milestone Timeline</h3>
-                <p>Every recorded field visit, cleanup drone video, frame observation, and verified outcome in chronological order.</p>
+                <p>Recorded visits, media, observations, and measurements in chronological order.</p>
               </div>
             </div>
             <div id="impact-timeline-container" class="impact-timeline-spine">
               <div class="empty-state">No timeline events recorded yet.</div>
             </div>
+          </section>
+          <section id="tab-discovery" class="tab-panel" hidden aria-labelledby="discovery-title">
+            <div class="content-title"><p class="kicker">06 / DISCOVERY</p><h2 id="discovery-title">Find the evidence.</h2><p>Ask in plain language across this project's media descriptions, approved observations, and recorded measurements. AI descriptions are labelled as unreviewed. Search uses Gemini API quota only when you submit a query; results are leads to inspect, not verified answers.</p></div>
+            <form id="semantic-search-form" class="paper-card compact-form discovery-form">
+              <label for="semantic-query">What are you looking for?<input id="semantic-query" type="search" minlength="3" maxlength="300" required placeholder="Where did the team document less visible litter?"></label>
+              <button class="button primary" type="submit">Search evidence</button>
+              <p class="meta discovery-form-note">Search ranks source records by meaning. Every hit carries its review status and a route back to its evidence.</p>
+            </form>
+            <div class="discovery-suggestions" aria-label="Example searches"><span class="meta">Try:</span><button type="button" data-search-example="Where did volunteers document visible litter?">Visible litter</button><button type="button" data-search-example="Which visits recorded a measured cleanup quantity?">Measured cleanup</button><button type="button" data-search-example="Show reviewed before and after observations">Reviewed changes</button></div>
+            <p id="semantic-search-status" class="meta discovery-search-status" role="status">Enter a question to explore this project's evidence.</p>
+            <button id="semantic-search-more" class="button secondary" type="button" hidden>Index the next 24 records and search again</button>
+            <div id="semantic-search-results" class="discovery-results" aria-live="polite"></div>
+          </section>
+          <section id="tab-campaign" class="tab-panel" hidden aria-labelledby="campaign-title">
+            <div class="content-title"><p class="kicker">07 / CAMPAIGN STUDIO</p><h2 id="campaign-title">Draft from the record.</h2><p>Generate copy from reviewer-approved observations and sourced measurements. Numerical claims in observation text are omitted; quantities come from measurement records. Nothing is posted automatically. Check every source and media permission before sharing.</p></div>
+            <form id="campaign-form" class="paper-card compact-form">
+              <label for="campaign-channel">Format<select id="campaign-channel"><option value="social">Social post</option><option value="newsletter">Newsletter</option><option value="volunteer_update">Volunteer update</option></select></label>
+              <button class="button primary" type="submit">Generate draft</button>
+            </form>
+            <p id="campaign-status" class="meta" role="status"></p>
+            <div id="campaign-drafts" class="discovery-results" aria-live="polite"></div>
           </section>
         </div>
       </div>
@@ -680,4 +712,3 @@
 
 </body>
 </html>
-

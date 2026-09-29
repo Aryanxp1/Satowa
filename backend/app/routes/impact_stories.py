@@ -99,7 +99,10 @@ def update_impact_story_endpoint(story_id: str, payload: UpdateImpactStoryReques
         updates["summary_narrative"] = payload.summary_narrative.strip()
 
     with store.connection() as db:
-        story = update_impact_story_fields(db, story_id, updates)
+        try:
+            story = update_impact_story_fields(db, story_id, updates)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         if not story:
             raise HTTPException(status_code=404, detail=f"Impact story '{story_id}' not found")
         return story
@@ -170,4 +173,3 @@ def revoke_impact_story_share_endpoint(story_id: str):
             share_url=None,
             is_public=False,
         )
-

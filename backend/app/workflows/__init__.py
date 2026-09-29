@@ -1,5 +1,6 @@
 """SETOWA Workflow Engine package exporting models, DAG, validation, engine, and store."""
 from app.skills import get_default_registry, get_default_runtime
+from app.config import settings
 from app.workflows.dag import CycleError, DAGGraph
 from app.workflows.engine import WorkflowEngine
 from app.workflows.models import (
@@ -23,9 +24,9 @@ _default_engine: WorkflowEngine = None
 
 
 def get_default_workflow_store() -> WorkflowStore:
-    """Return the global singleton WorkflowStore instance."""
+    """Return a store bound to the current database path."""
     global _default_store
-    if _default_store is None:
+    if _default_store is None or getattr(_default_store, "db_path", None) != settings.LEX_DB_PATH:
         _default_store = WorkflowStore()
     return _default_store
 

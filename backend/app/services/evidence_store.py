@@ -153,6 +153,20 @@ CREATE TABLE IF NOT EXISTS impact_story_events (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS semantic_documents (
+ doc_key TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
+ site_id TEXT, kind TEXT NOT NULL, entity_id TEXT NOT NULL,
+ content TEXT NOT NULL, content_hash TEXT NOT NULL, model TEXT NOT NULL,
+ embedding_json TEXT NOT NULL, evidence_json TEXT NOT NULL,
+ review_status TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS campaign_drafts (
+ id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
+ channel TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+ sources_json TEXT NOT NULL, source_fingerprint TEXT NOT NULL,
+ demo_only INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
+ edited_at TEXT
+);
 """
 
 # All indexes are applied post-migration to guarantee columns exist
@@ -175,6 +189,8 @@ _POST_MIGRATION_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_impact_story_events_type ON impact_story_events(event_type)',
     # T018 indexes
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_impact_stories_share_token ON impact_stories(share_token)',
+    'CREATE INDEX IF NOT EXISTS idx_semantic_documents_project ON semantic_documents(project_id)',
+    'CREATE INDEX IF NOT EXISTS idx_campaign_drafts_project ON campaign_drafts(project_id, created_at)',
 ]
 
 
@@ -254,6 +270,10 @@ def connection():
         story_columns = {row['name'] for row in db.execute('PRAGMA table_info(impact_stories)')}
         if 'share_token' not in story_columns:
             db.execute("ALTER TABLE impact_stories ADD COLUMN share_token TEXT")
+
+        campaign_columns = {row['name'] for row in db.execute('PRAGMA table_info(campaign_drafts)')}
+        if 'edited_at' not in campaign_columns:
+            db.execute("ALTER TABLE campaign_drafts ADD COLUMN edited_at TEXT")
 
         # All indexes applied after migration so columns are guaranteed to exist
         for idx_sql in _POST_MIGRATION_INDEXES:
@@ -401,7 +421,7 @@ get_asset = get_media_item
 
 
 
-def list_media(db, project_id: str | None = None, media_type: str | None = None,
+def list_media(db, project_id: str | None = None, site_id: str | None = None, media_type: str | None = None,
                permission_status: str | None = None, tag: str | None = None,
                signal: str | None = None, ai_status: str | None = None,
                limit: int = 50, offset: int = 0) -> list[dict]:
@@ -409,8 +429,11 @@ def list_media(db, project_id: str | None = None, media_type: str | None = None,
     query = 'SELECT * FROM assets WHERE 1=1'
     params = []
     if project_id:
-        query += ' AND (project_id=? OR site_id=? OR visit_id IN (SELECT id FROM visits WHERE site_id=?))'
-        params.extend([project_id, project_id, project_id])
+        query += ' AND project_id=?'
+        params.append(project_id)
+    if site_id:
+        query += ' AND (site_id=? OR visit_id IN (SELECT id FROM visits WHERE site_id=?))'
+        params.extend([site_id, site_id])
     if media_type:
         query += ' AND media_type=?'
         params.append(media_type.lower())
@@ -817,5 +840,3 @@ def get_impact_story_events(db, story_id: str) -> list[dict]:
         'SELECT * FROM impact_story_events WHERE story_id=? ORDER BY event_order ASC, timestamp_date ASC',
         (story_id,)
     )
-
-

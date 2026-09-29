@@ -1,0 +1,70 @@
+{
+  "purpose": "Small real-media collection for source attribution and AI evaluation only",
+  "pairing_rule": "These independent sources are not before/after evidence and must never be paired to claim change.",
+  "items": [
+    {
+      "id": "commons-river-plastic-2024",
+      "media_type": "image",
+      "title": "Plastic waste in river",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Plastic_waste_in_river.jpg",
+      "creator": "Goldenwabbit",
+      "source_description": "Own work",
+      "source_date": "2024-06-01",
+      "date_basis": "Date stated on Wikimedia Commons file page; not independently confirmed",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "attribution": "Goldenwabbit, Plastic waste in river, CC BY 4.0, via Wikimedia Commons",
+      "location": null,
+      "before_after_pair_id": null,
+      "usage": "independent media retrieval and visual-description evaluation"
+    },
+    {
+      "id": "commons-ghana-cleanup-2022",
+      "media_type": "image",
+      "title": "Beach plastic waste 3",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Beach_plastic_waste_3.jpg",
+      "creator": "Fquasie",
+      "source_description": "Own work",
+      "source_date": "2022-06-04",
+      "date_basis": "Date stated on Wikimedia Commons file page; not independently confirmed",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Fquasie, Beach plastic waste 3, CC BY-SA 4.0, via Wikimedia Commons",
+      "location": "Ghana (as described by creator; exact site unknown)",
+      "before_after_pair_id": null,
+      "usage": "independent media retrieval and visual-description evaluation"
+    },
+    {
+      "id": "commons-ocean-blue-cleanup-2022",
+      "media_type": "image",
+      "title": "Beach cleanup reusable bags",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Beach-cleanup-reusable-bags-no-plastic-bags-by-ocean-blue-project.jpg",
+      "creator": "Ocean Blue Project, Inc.",
+      "source_description": "Own work",
+      "source_date": "2022-03-29",
+      "date_basis": "Date stated on Wikimedia Commons file page; not independently confirmed",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Ocean Blue Project, Inc., Beach cleanup reusable bags, CC BY-SA 4.0, via Wikimedia Commons",
+      "location": "Oregon (per file categories; exact site unverified)",
+      "before_after_pair_id": null,
+      "usage": "independent media retrieval and visual-description evaluation"
+    },
+    {
+      "id": "commons-schiermonnikoog-cleanup-2019",
+      "media_type": "video",
+      "title": "Beach cleanup Schiermonnikoog after container loss MSC Zoe",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Beach_cleanup_Schiermonnikoog_after_container_loss_MSC_Zoe.webm",
+      "creator": "Dutch Ministry of Defence (individual creator not stated)",
+      "source_description": "Dutch Ministry of Defence video on Wikimedia Commons",
+      "source_date": "2019-01-05",
+      "date_basis": "Date stated on Wikimedia Commons file page; not independently confirmed",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Dutch Ministry of Defence, Beach cleanup Schiermonnikoog after container loss MSC Zoe, CC BY-SA 4.0, via Wikimedia Commons",
+      "location": "Schiermonnikoog, Netherlands (per source description)",
+      "before_after_pair_id": null,
+      "usage": "independent video retrieval and timestamp-evaluation sample"
+    }
+  ]
+}

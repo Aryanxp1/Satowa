@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     ENVIRONMENT: str = "development"
+    LOCAL_DEMO: bool = False
 
     # AI Service Settings
     USE_MOCK: bool = True

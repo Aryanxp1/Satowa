@@ -4,8 +4,12 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     session: null,
+    pilotToken: null,
+    accessMode: 'local',
     integrations: null,
     sites: [],
+    projects: [],
+    projectFilter: '',
     site: '',
     siteRecord: null,
     visits: [],
@@ -25,7 +29,7 @@
     workflowExecution: null,
     impactStory: null,
   };
-  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'media', 'evidence']);
+  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'discovery', 'campaign', 'media', 'evidence']);
 
 
   function element(tag, className = '', text = '') {
@@ -174,6 +178,7 @@
 
   async function request(path, options = {}) {
     const headers = { ...options.headers };
+    if (state.pilotToken) headers.Authorization = `Bearer ${state.pilotToken}`;
     if (options.json !== undefined) {
       headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(options.json);
@@ -200,21 +205,34 @@
 
   function renderStatus(status) {
     state.integrations = status;
+    const pilot = state.accessMode === 'pilot';
     for (const [name, ready, message] of [
-      ['cloudinary', status.cloudinary_ready, status.cloudinary_ready ? 'Ready for uploads' : 'Add keys for uploads'],
-      ['gemini', status.gemini_ready, status.gemini_ready ? 'Key present' : 'Optional for AI comparison'],
-      ['reviewer', status.reviewer_ready, status.reviewer_ready ? 'Local access ready' : 'Run ./run_local.sh'],
+      ['cloudinary', status.cloudinary_ready, status.cloudinary_ready ? 'Ready for uploads' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Add keys for uploads')],
+      ['gemini', status.gemini_ready, status.gemini_ready ? 'Key present' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Optional for AI comparison')],
+      ['reviewer', status.reviewer_ready, status.reviewer_ready ? (pilot ? 'Pilot access ready' : 'Local access ready') : (pilot ? 'Enter reviewer token below' : 'Run ./run_local.sh')],
     ]) {
       $(`${name}-dot`).classList.toggle('ready', ready);
       $(`${name}-status`).textContent = message;
     }
-    $('session-label').textContent = status.reviewer ? `${status.reviewer} / local` : 'Local workspace';
-    $('integration-status').textContent = `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · Gemini ${status.gemini_ready ? 'ready' : 'optional'}`;
+    $('session-label').textContent = status.reviewer ? `${status.reviewer} / ${pilot ? 'pilot' : 'local'}` : (pilot ? 'Pilot workspace' : 'Local workspace');
+    $('integration-status').textContent = !status.reviewer && pilot ? 'Connect to check integrations' :
+      `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · Gemini ${status.gemini_ready ? 'ready' : 'not configured'}`;
     $('nav-projects').hidden = !status.reviewer;
   }
 
   async function getStatus() {
-    const status = await request('/local/status');
+    const loopback = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    state.accessMode = loopback ? 'local' : 'pilot';
+    $('pilot-token-form').hidden = loopback;
+    $('credential-details').hidden = !loopback;
+    if (!loopback) {
+      $('setup-mode-label').textContent = 'INVITED PILOT';
+      $('setup-mode-title').textContent = 'Enter the evidence workspace.';
+      $('setup-mode-description').textContent = 'Use the reviewer token supplied by the project owner. It stays in this tab and clears when the page reloads.';
+    }
+    const status = loopback ? await request('/local/status')
+      : state.pilotToken ? await request('/pilot/session')
+        : { reviewer: null, reviewer_ready: false, cloudinary_ready: false, gemini_ready: false };
     renderStatus(status);
     state.session = status.reviewer;
     return status;
@@ -222,6 +240,19 @@
 
   async function connectLocal() {
     if (state.session) return;
+    if (state.accessMode === 'pilot') {
+      const token = $('pilot-token').value.trim();
+      if (!token) {
+        $('pilot-token').focus();
+        $('pilot-token').scrollIntoView({ block: 'center', behavior: 'smooth' });
+        throw new Error('Enter the reviewer token to connect.');
+      }
+      state.pilotToken = token;
+      try { await getStatus(); }
+      catch (error) { state.pilotToken = null; throw error; }
+      $('pilot-token').value = '';
+      return;
+    }
     const session = await request('/local/session', { method: 'POST' });
     state.session = session.reviewer;
     await getStatus();
@@ -240,7 +271,7 @@
     if (!tabs.has(active)) active = 'media-library';
     state.activeTab = active;
 
-    for (const tab of ['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact']) {
+    for (const tab of ['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'discovery', 'campaign']) {
       const el = $(`tab-${tab}`);
       if (el) el.hidden = tab !== active;
     }
@@ -268,6 +299,8 @@
       loadWorkflowsStudio();
     } else if (active === 'impact') {
       loadImpactStoryTab();
+    } else if (active === 'campaign') {
+      loadCampaignDrafts();
     } else if (active === 'compare') {
       renderPairChoices();
     } else if (active === 'review') {
@@ -285,11 +318,23 @@
   function goToTab(tab) { location.hash = projectHash(state.site, tab); }
 
   async function loadProjects() {
-    state.sites = await request('/sites');
+    [state.projects, state.sites] = await Promise.all([request('/projects'), request('/sites')]);
+    const projectFilter = $('library-project-select');
+    projectFilter.replaceChildren(new Option('All projects', ''));
+    for (const project of state.projects) {
+      projectFilter.add(new Option(project.name, project.project_id));
+    }
+    if (state.projectFilter && !state.projects.some(p => p.project_id === state.projectFilter)) state.projectFilter = '';
+    projectFilter.value = state.projectFilter;
+    const parentSelect = $('site-project-select');
+    parentSelect.replaceChildren();
+    for (const project of state.projects) parentSelect.add(new Option(project.name, project.project_id));
+    if (state.projectFilter) parentSelect.value = state.projectFilter;
     const list = $('project-list');
     list.replaceChildren();
-    if (!state.sites.length) list.append(element('p', 'empty-state', 'No projects yet. Create a site to begin.'));
-    const projects = await Promise.all(state.sites.map(async site => {
+    const visibleSites = state.sites.filter(site => !state.projectFilter || site.project_id === state.projectFilter);
+    if (!visibleSites.length) list.append(element('p', 'empty-state', 'No sites in this project yet. Create a site to begin.'));
+    const projects = await Promise.all(visibleSites.map(async site => {
       const [visits, observations] = await Promise.all([
         request(`/sites/${encodeURIComponent(site.id)}/visits`),
         request(`/sites/${encodeURIComponent(site.id)}/observations`),
@@ -304,14 +349,14 @@
       return a.site.name.localeCompare(b.site.name);
     });
 
-    const select = $('project-select');
-    if (select) {
+    for (const select of [$('topbar-site-select'), $('site-select')]) {
+      if (!select) continue;
       select.replaceChildren();
-      for (const p of projects) {
+      for (const site of state.sites) {
         const opt = document.createElement('option');
-        opt.value = p.site.id;
-        const tag = p.site.id === 'site_nyali_creek' ? ' ★ SHOWCASE' : (p.site.id === 'demo-riverbank' ? ' (Sample)' : '');
-        opt.textContent = `${p.site.name}${tag}`;
+        opt.value = site.id;
+        const tag = site.id === 'site_nyali_creek' ? ' (Unverified scenario)' : (site.id === 'demo-riverbank' ? ' (Synthetic sample)' : '');
+        opt.textContent = `${site.name}${tag}`;
         select.appendChild(opt);
       }
       if (state.site) select.value = state.site;
@@ -330,14 +375,16 @@
         card.append(photo);
       }
       const body = element('div', 'project-card-body');
-      const kickerText = isMombasa ? '★ CANONICAL SHOWCASE' : (sample ? 'GUIDED SAMPLE' : 'CLEANUP PROJECT');
+      const kickerText = isMombasa ? 'ILLUSTRATIVE SCENARIO · UNVERIFIED' : (sample ? 'GUIDED SAMPLE · SYNTHETIC' : 'CLEANUP SITE');
+      const parent = state.projects.find(p => p.project_id === site.project_id);
       body.append(element('p', 'kicker', kickerText),
         element('h2', '', site.name),
+        element('p', 'meta', `Project: ${parent ? parent.name : 'Unassigned'}`),
         element('p', 'project-description', site.description || 'A new site ready for visits and evidence.'));
       const meta = element('div', 'project-meta');
       meta.append(element('span', '', site.location || site.id),
         element('span', '', `${visits.length} visit${visits.length === 1 ? '' : 's'} · ${observations.length} observation${observations.length === 1 ? '' : 's'}`));
-      const link = element('a', 'button primary', isMombasa ? 'Open Showcase Workspace →' : (sample ? 'Try guided demo →' : 'Open project →'));
+      const link = element('a', 'button primary', isMombasa ? 'Open scenario →' : (sample ? 'Try guided demo →' : 'Open site →'));
       link.href = projectHash(site.id, 'media-library');
       body.append(meta, link);
       card.append(body);
@@ -353,7 +400,7 @@
       request(`/sites/${id}/observations`),
       request(`/sites/${id}/measurements`),
       request(`/sites/${id}/report`),
-      request(`/media?project_id=${id}`).catch(() => []),
+      request(`/media?site_id=${id}`).catch(() => []),
     ]);
     state.visits = visits;
     state.observations = observations;
@@ -408,14 +455,23 @@
       site = state.sites.find(item => item.id === id);
     }
     if (!site) { location.hash = '#projects'; throw new Error('Project not found.'); }
+    if (state.siteRecord?.project_id !== site.project_id) {
+      $('semantic-query').value = '';
+      $('semantic-search-results').replaceChildren();
+      $('semantic-search-status').textContent = 'Enter a question to explore this project’s evidence.';
+      $('semantic-search-more').hidden = true;
+    }
     state.site = id;
     state.siteRecord = site;
-    const select = $('project-select');
-    if (select) select.value = id;
+    for (const select of [$('topbar-site-select'), $('site-select')]) {
+      if (select) select.value = id;
+    }
+    const parent = state.projects.find(p => p.project_id === site.project_id);
+    $('project-kicker').textContent = parent ? `${parent.name} / SITE WORKSPACE` : 'SITE WORKSPACE';
     $('project-title').textContent = site.name;
     $('project-subtitle').textContent = site.location || 'Location not yet recorded';
     $('overview-description').textContent = site.description || 'Add a description to explain what this site is documenting.';
-    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : (id === 'site_nyali_creek' ? '★ VERIFIED SHOWCASE' : 'EVIDENCE RECORD');
+    $('project-badge').textContent = id === 'demo-riverbank' ? 'SYNTHETIC SAMPLE' : (id === 'site_nyali_creek' ? 'UNVERIFIED SCENARIO' : 'EVIDENCE RECORD');
     for (const key of ['name', 'location', 'description']) {
       const field = $('site-edit-form').elements.namedItem(key);
       if (field) field.value = site[key] || '';
@@ -432,10 +488,11 @@
     const hash = location.hash.replace(/^#/, '');
     const parts = hash.split('/');
     if (parts[0] === 'setup') { showPage('setup'); return; }
+    if (state.accessMode === 'pilot' && !state.session) { showPage('setup'); return; }
     await connectLocal();
     if (!hash || hash === '/') {
       if (!state.sites.length) await loadProjects();
-      const defaultSite = state.sites.find(s => s.id === 'site_nyali_creek') || state.sites[0];
+      const defaultSite = state.sites.find(s => s.id === 'demo-riverbank') || state.sites[0];
       if (defaultSite) {
         location.hash = `#project/${encodeURIComponent(defaultSite.id)}/media-library`;
         return;
@@ -535,11 +592,12 @@
           button.textContent = 'Uploading to Cloudinary...';
           try {
             const data = new FormData(form);
-            data.set('project_id', state.site);
+            data.set('project_id', state.siteRecord.project_id);
+            data.set('site_id', state.site);
             data.set('visit_id', visit.id);
             data.set('visit_date', visit.visited_on);
             await request('/media/images', { method: 'POST', body: data });
-            notice('Photo uploaded and verified.');
+            notice('Photo uploaded. Check permission and provenance before using it as evidence.');
             await refreshSite();
           } finally {
             button.disabled = false;
@@ -1578,7 +1636,7 @@
       const banner = element('div', 'card-banner');
       if (isApproved) {
         banner.append(
-          element('span', 'banner-badge', '✓ HUMAN VERIFIED RECORD'),
+          element('span', 'banner-badge', '✓ HUMAN-APPROVED RECORD'),
           element('span', '', 'INCLUDED IN OFFICIAL REPORT'),
           element('span', '', `Revision ${observation.version}`)
         );
@@ -1716,10 +1774,10 @@
       if (isApproved) {
         const verifiedDisplay = element('div', 'verified-display');
         verifiedDisplay.append(
-          element('h4', '', 'OFFICIAL VERIFIED OBSERVATION'),
+          element('h4', '', 'APPROVED OBSERVATION'),
           element('p', 'verified-text', observation.approved_text || observation.working_text),
           element('p', 'verification-trail',
-            `✓ Verified by ${observation.reviewed_by || 'Human Reviewer'} on ${observation.reviewed_at ? observation.reviewed_at.slice(0, 16).replace('T', ' ') : 'recently'} UTC`
+            `✓ Approved by ${observation.reviewed_by || 'Human Reviewer'} on ${observation.reviewed_at ? observation.reviewed_at.slice(0, 16).replace('T', ' ') : 'recently'} UTC`
           ),
           element('p', 'invalidation-note',
             'ℹ Any subsequent edit to this text or change of paired evidence will immediately invalidate this approval.'
@@ -1770,7 +1828,7 @@
             { method, json: { expected_version: observation.version, ...payload } });
           notice(
             method === 'PATCH' ? 'Edit saved. Approval invalidated; observation returned to pending.' :
-            payload.decision === 'approve' ? 'Observation approved and verified. Now included in official report.' :
+            payload.decision === 'approve' ? 'Observation approved. It is now eligible for the evidence report.' :
             'Observation rejected and excluded from report.'
           );
           await refreshSite();
@@ -1905,7 +1963,24 @@
   $('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   applyTheme((localStorage.getItem('setowa-theme') || localStorage.getItem('lex-theme')) === 'dark' ? 'dark' : 'light');
 
-  $('enter-workspace').addEventListener('click', () => run(async () => { await connectLocal(); location.hash = '#projects'; }));
+  $('enter-workspace').addEventListener('click', () => run(async () => {
+    await connectLocal();
+    if (location.hash === '#projects') await route();
+    else location.hash = '#projects';
+  }));
+
+  $('pilot-token-form').addEventListener('submit', event => {
+    event.preventDefault();
+    run(async () => {
+      const submit = $('pilot-token-form').querySelector('button');
+      submit.disabled = true;
+      try {
+        await connectLocal();
+        if (location.hash === '#projects') await route();
+        else location.hash = '#projects';
+      } finally { submit.disabled = false; }
+    });
+  });
 
   $('credential-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -1932,6 +2007,28 @@
     $('new-project-panel').hidden = !$('new-project-panel').hidden;
     if (!$('new-project-panel').hidden) $('site-form').elements.namedItem('name').focus();
   });
+  $('new-parent-project-button').addEventListener('click', () => {
+    $('new-parent-project-panel').hidden = !$('new-parent-project-panel').hidden;
+    if (!$('new-parent-project-panel').hidden) $('parent-project-form').elements.namedItem('name').focus();
+  });
+  $('library-project-select').addEventListener('change', event => {
+    state.projectFilter = event.target.value;
+    run(loadProjects);
+  });
+  $('parent-project-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    run(async () => {
+      const data = Object.fromEntries(new FormData(form));
+      await request('/projects', { method: 'POST', json: data });
+      state.projectFilter = data.id;
+      form.reset();
+      $('new-parent-project-panel').hidden = true;
+      await loadProjects();
+      $('new-project-panel').hidden = false;
+      notice('Project created. Add its first site.', 'success');
+    });
+  });
 
   $('site-form').addEventListener('submit', event => {
     event.preventDefault(); const form = event.currentTarget;
@@ -1941,7 +2038,7 @@
       try {
         const data = Object.fromEntries(new FormData(form));
         await request('/sites', { method: 'POST', json: data });
-        form.reset(); notice('Project created. Add its first visit.');
+        form.reset(); notice('Site created. Add its first visit.');
         await loadProjects(); location.hash = projectHash(data.id);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
@@ -2852,7 +2949,7 @@
 
     if ($('impact-narrative-text')) {
       $('impact-narrative-text').innerHTML = `
-        <p class="muted">No impact story generated for this project yet. Click <strong>Generate Story</strong> above to synthesize your persisted field media, before/after evidence comparisons, and human-verified outcomes.</p>
+        <p class="muted">No impact story generated for this project yet. Click <strong>Generate Story</strong> above to synthesize your persisted field media, before/after evidence comparisons, and human-approved observations.</p>
       `;
     }
     if ($('impact-uncertainty-callout')) $('impact-uncertainty-callout').hidden = true;
@@ -2876,8 +2973,8 @@
 
     if ($('impact-project-name')) $('impact-project-name').textContent = story.title || (state.siteRecord && state.siteRecord.name) || state.site;
     const dateRange = story.date_range && (story.date_range.start || story.date_range.start_date || story.date_range.end || story.date_range.end_date)
-      ? `${story.date_range.start || story.date_range.start_date || '2026-09-02'} → ${story.date_range.end || story.date_range.end_date || '2026-09-22'}`
-      : 'Evidence Period: 2026-09-02 → 2026-09-22';
+      ? `${story.date_range.start || story.date_range.start_date || 'date unknown'} → ${story.date_range.end || story.date_range.end_date || 'date unknown'}`
+      : 'dates not recorded';
     if ($('impact-date-range')) $('impact-date-range').textContent = `Evidence Period: ${dateRange}`;
 
     const metrics = story.metrics || {};
@@ -2888,10 +2985,10 @@
     const verifiedCount = metrics.approved_findings_count ?? cards.filter(c => c.verification_status === 'approved').length;
     const measurementCount = metrics.measurement_count ?? events.filter(e => e.event_type === 'measurement').length;
 
-    if ($('impact-metric-events')) $('impact-metric-events').textContent = eventCount || events.length || '5';
-    if ($('impact-metric-media')) $('impact-metric-media').textContent = mediaCount || '3';
-    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = verifiedCount || '1';
-    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = measurementCount || '1';
+    if ($('impact-metric-events')) $('impact-metric-events').textContent = String(eventCount);
+    if ($('impact-metric-media')) $('impact-metric-media').textContent = String(mediaCount);
+    if ($('impact-metric-verified')) $('impact-metric-verified').textContent = String(verifiedCount);
+    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = String(measurementCount);
 
     if ($('impact-status-pill')) {
       $('impact-status-pill').textContent = (story.status || 'draft').toUpperCase();
@@ -2983,7 +3080,7 @@
       }
 
       const footer = element('div', 'impact-card-footer');
-      const reviewer = card.reviewed_by ? `Verified by ${card.reviewed_by}` : 'AI Proposal (Unverified)';
+      const reviewer = card.reviewed_by ? `Approved by ${card.reviewed_by}` : 'AI Proposal (Unverified)';
       const dateStr = (card.reviewed_at || card.updated_at || '').slice(0, 10);
       footer.append(element('span', '', reviewer), element('span', '', dateStr));
 
@@ -3087,7 +3184,7 @@
       });
       state.impactStory = story;
       renderImpactStory(story);
-      notice('Impact story generated and verified successfully!', 'success');
+      notice('Impact story generated. Review evidence and approval states before sharing.', 'success');
     } catch (err) {
       console.error('Failed to generate impact story:', err);
       notice(`Story generation failed: ${sanitizeErrorMessage(err.message || String(err))}`, 'error');
@@ -3228,6 +3325,186 @@
     }
   }
 
+  function activeProjectId() {
+    return (state.siteRecord && state.siteRecord.project_id) || state.site;
+  }
+
+  function appendEvidenceLinks(container, evidence) {
+    for (const item of evidence || []) {
+      if (!item.url) continue;
+      let url;
+      try { url = new URL(item.url, location.origin); } catch (_) { continue; }
+      if (!['https:', 'http:'].includes(url.protocol)) continue;
+      const link = element('a', '', item.role ? `${item.role} photo` : 'View source media');
+      link.href = url.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      container.append(link, document.createTextNode('  '));
+    }
+  }
+
+  async function searchEvidence() {
+    const query = $('semantic-query').value.trim();
+    if (query.length < 3 || state.searchBusy) return;
+    const projectId = state.siteRecord?.project_id;
+    if (!projectId) {
+      $('semantic-search-status').textContent = 'Choose a site in a project before searching.';
+      return;
+    }
+    state.searchBusy = true;
+    const button = $('semantic-search-form').querySelector('button');
+    const more = $('semantic-search-more');
+    button.disabled = true;
+    more.hidden = true;
+    $('semantic-search-results').setAttribute('aria-busy', 'true');
+    $('semantic-search-status').textContent = 'Indexing the next evidence batch and searching by meaning…';
+    try {
+      const result = await request(`/projects/${encodeURIComponent(projectId)}/semantic-search`,
+        { method: 'POST', json: { query, limit: 8 } });
+      const box = $('semantic-search-results');
+      box.replaceChildren();
+      const coverage = `${result.indexed_count} of ${result.total_documents} project records indexed`;
+      $('semantic-search-status').textContent = result.total_documents
+        ? `${result.results.length} result(s) · ${coverage}${result.truncated ? ' · More records remain' : ' · Collection ready'}`
+        : 'No searchable records in this project yet. Add permissioned media, an approved observation, or a sourced measurement.';
+      more.hidden = !result.truncated;
+      more.textContent = `Index the next ${result.batch_size} records and search again`;
+      for (const hit of result.results) {
+        const card = element('article', 'paper-card discovery-result');
+        const heading = element('h3', '', hit.kind.replaceAll('_', ' '));
+        const status = element('span', `discovery-review ${hit.review_status === 'approved' ? 'is-approved' : ''}`,
+          hit.review_status.replaceAll('_', ' '));
+        const header = element('div', 'discovery-hit-header');
+        header.append(heading, status);
+        const source = element('div', 'discovery-hit-source');
+        source.append(element('span', '', `Match score ${hit.score.toFixed(2)} · ranking signal, not confidence`));
+        if (hit.site_id) {
+          const site = state.sites.find(item => item.id === hit.site_id);
+          const siteLink = element('a', '', `Open ${site?.name || 'site'}`);
+          siteLink.href = projectHash(hit.site_id, 'media-library');
+          source.append(siteLink);
+        }
+        const body = element('p', 'discovery-hit-text', hit.text);
+        card.append(header, source, body);
+        const links = element('div', 'discovery-hit-links');
+        appendEvidenceLinks(links, hit.evidence);
+        if (links.childNodes.length) card.append(links);
+        box.append(card);
+      }
+    } catch (error) {
+      $('semantic-search-status').textContent = sanitizeErrorMessage(error.message);
+      throw error;
+    } finally {
+      state.searchBusy = false;
+      button.disabled = false;
+      $('semantic-search-results').removeAttribute('aria-busy');
+    }
+  }
+
+  $('semantic-search-form').addEventListener('submit', event => {
+    event.preventDefault();
+    run(searchEvidence);
+  });
+  $('semantic-search-more').addEventListener('click', () => run(searchEvidence));
+  document.querySelectorAll('[data-search-example]').forEach(button => button.addEventListener('click', () => {
+    $('semantic-query').value = button.dataset.searchExample;
+    run(searchEvidence);
+  }));
+
+  function renderCampaignDrafts(drafts) {
+    const box = $('campaign-drafts');
+    box.replaceChildren();
+    if (!drafts.length) {
+      box.append(element('p', 'meta', 'No drafts yet. Approve an observation or record a sourced measurement first.'));
+      return;
+    }
+    for (const draft of drafts) {
+      const card = element('article', 'paper-card discovery-result');
+      card.append(element('h3', '', draft.title));
+      card.append(element('p', 'meta',
+        `${draft.channel.replaceAll('_', ' ')} · DRAFT${draft.demo_only ? ' · SYNTHETIC DEMO' : ''}${draft.edited_at ? ' · USER EDITED' : ''}${draft.stale ? ' · STALE: source records changed' : ''}`));
+      const copy = element('textarea', 'campaign-copy');
+      copy.value = draft.body;
+      copy.rows = 12;
+      copy.setAttribute('aria-label', `Edit ${draft.channel.replaceAll('_', ' ')} campaign draft`);
+      copy.readOnly = Boolean(draft.stale);
+      const saveButton = element('button', 'button secondary', 'Save edits');
+      saveButton.type = 'button';
+      saveButton.disabled = Boolean(draft.stale);
+      const copyButton = element('button', 'button secondary', 'Copy saved draft');
+      copyButton.type = 'button';
+      copyButton.disabled = Boolean(draft.stale);
+      if (draft.stale) {
+        const reason = 'Source records changed. Generate a new draft.';
+        saveButton.title = reason;
+        copyButton.title = reason;
+      }
+      copy.addEventListener('input', () => {
+        copyButton.disabled = draft.stale || copy.value !== draft.body;
+      });
+      saveButton.addEventListener('click', () => run(async () => {
+        saveButton.disabled = true;
+        try {
+          await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts/${encodeURIComponent(draft.id)}`,
+            { method: 'PUT', json: { body: copy.value } });
+          await loadCampaignDrafts();
+          notice('Edited draft saved. Claims in user edits still need human checking.', 'success');
+        } finally { saveButton.disabled = false; }
+      }));
+      copyButton.addEventListener('click', () => run(async () => {
+        await navigator.clipboard.writeText(draft.body);
+        notice('Draft copied. Check evidence before sharing.', 'success');
+      }));
+      const actions = element('div', 'actions');
+      actions.append(saveButton, copyButton);
+      const sourceList = element('div', 'campaign-sources');
+      sourceList.append(element('strong', '', 'Saved source records'));
+      for (const source of draft.sources || []) {
+        const sourceRow = element('div', 'campaign-source-row');
+        if (source.type === 'approved_observation') {
+          sourceRow.append(element('span', '', `Reviewer-approved observation ${source.id}: ${source.text}`));
+          appendEvidenceLinks(sourceRow, [
+            { url: source.before_url, role: 'Before' },
+            { url: source.after_url, role: 'After' },
+          ]);
+        } else {
+          sourceRow.append(element('span', '',
+            `Recorded measurement ${source.id}: ${source.text} · supplied source: ${source.source}`));
+        }
+        sourceList.append(sourceRow);
+      }
+      card.append(copy, actions, sourceList);
+      box.append(card);
+    }
+  }
+
+  async function loadCampaignDrafts() {
+    if (!state.site) return;
+    try {
+      const drafts = await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`);
+      $('campaign-status').textContent = `${drafts.length} saved draft(s). Nothing is published automatically.`;
+      renderCampaignDrafts(drafts);
+    } catch (error) {
+      $('campaign-status').textContent = sanitizeErrorMessage(error.message);
+    }
+  }
+
+  $('campaign-form').addEventListener('submit', (event) => run(async () => {
+    event.preventDefault();
+    const button = $('campaign-form').querySelector('button');
+    button.disabled = true;
+    $('campaign-status').textContent = 'Building a draft from approved and sourced records…';
+    try {
+      await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`,
+        { method: 'POST', json: { channel: $('campaign-channel').value } });
+      await loadCampaignDrafts();
+      notice('Evidence-linked draft saved. Review before sharing.', 'success');
+    } catch (error) {
+      $('campaign-status').textContent = sanitizeErrorMessage(error.message);
+      throw error;
+    } finally { button.disabled = false; }
+  }));
+
   // T017 / T018 Impact Story Event Listeners
   const generateImpactBtn = $('btn-generate-impact');
   if (generateImpactBtn) generateImpactBtn.addEventListener('click', generateImpactStoryAction);
@@ -3240,9 +3517,9 @@
     });
   }
 
-  const projectSelect = $('project-select');
-  if (projectSelect) {
-    projectSelect.addEventListener('change', (e) => {
+  for (const siteSelect of [$('topbar-site-select'), $('site-select')]) {
+    if (!siteSelect) continue;
+    siteSelect.addEventListener('change', (e) => {
       const selectedId = e.target.value;
       if (selectedId && selectedId !== state.site) {
         location.hash = `#project/${encodeURIComponent(selectedId)}/${state.activeTab || 'media-library'}`;
@@ -3253,4 +3530,3 @@
   window.addEventListener('hashchange', () => run(route));
   run(async () => { await getStatus(); await route(); });
 })();
-
