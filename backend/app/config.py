@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     USE_MOCK: bool = True
     AI_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3.8-flash"
 
     # Cloudinary uploads are independent of AI mock mode.
     CLOUDINARY_CLOUD_NAME: str = ""
