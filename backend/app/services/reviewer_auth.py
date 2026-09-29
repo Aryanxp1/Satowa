@@ -14,9 +14,12 @@ LOCAL_SESSIONS: dict[str, tuple[str, float]] = {}
 
 def local_request(request: Request) -> bool:
     """Only the loopback-bound desktop demo may use browser session auth."""
-    return (settings.ENVIRONMENT == 'development' and request.client is not None and
+    return (settings.ENVIRONMENT == 'development' and settings.LOCAL_DEMO and
+            request.client is not None and
             request.client.host in {'127.0.0.1', '::1'} and
-            request.url.hostname in {'127.0.0.1', 'localhost'}) or (
+            request.url.hostname in {'127.0.0.1', 'localhost'} and
+            not any(header in request.headers for header in
+                    ('x-forwarded-for', 'x-forwarded-host', 'forwarded'))) or (
                 settings.ENVIRONMENT == 'test' and request.client is not None and
                 request.client.host == 'testclient')
 

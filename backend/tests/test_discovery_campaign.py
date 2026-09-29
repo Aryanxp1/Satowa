@@ -175,9 +175,15 @@ def test_search_keeps_approved_records_in_large_local_collection(tmp_path, monke
     assert result.status_code == 200, result.text
     data = result.json()
     assert data["truncated"] is True
-    assert data["indexed"] == data["max_documents"] == 24
+    assert data["indexed"] == data["indexed_count"] == data["batch_size"] == 24
+    assert data["total_documents"] > data["indexed_count"]
     assert any(hit["kind"] == "approved_observation" for hit in data["results"])
     assert any(hit["kind"] == "video_frame" for hit in data["results"])
+    followup = client.post("/api/v1/projects/p-one/semantic-search", headers=HEADERS,
+                           json={"query": "litter near bridge", "limit": 20})
+    assert followup.status_code == 200, followup.text
+    assert followup.json()["truncated"] is False
+    assert followup.json()["indexed_count"] == followup.json()["total_documents"]
 
 
 def test_embedding_request_uses_document_and_query_prefixes(monkeypatch):

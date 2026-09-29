@@ -4,6 +4,8 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     session: null,
+    pilotToken: null,
+    accessMode: 'local',
     integrations: null,
     sites: [],
     projects: [],
@@ -176,6 +178,7 @@
 
   async function request(path, options = {}) {
     const headers = { ...options.headers };
+    if (state.pilotToken) headers.Authorization = `Bearer ${state.pilotToken}`;
     if (options.json !== undefined) {
       headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(options.json);
@@ -202,21 +205,34 @@
 
   function renderStatus(status) {
     state.integrations = status;
+    const pilot = state.accessMode === 'pilot';
     for (const [name, ready, message] of [
-      ['cloudinary', status.cloudinary_ready, status.cloudinary_ready ? 'Ready for uploads' : 'Add keys for uploads'],
-      ['gemini', status.gemini_ready, status.gemini_ready ? 'Key present' : 'Optional for AI comparison'],
-      ['reviewer', status.reviewer_ready, status.reviewer_ready ? 'Local access ready' : 'Run ./run_local.sh'],
+      ['cloudinary', status.cloudinary_ready, status.cloudinary_ready ? 'Ready for uploads' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Add keys for uploads')],
+      ['gemini', status.gemini_ready, status.gemini_ready ? 'Key present' : (pilot ? (status.reviewer ? 'Not configured on Render' : 'Connect to check') : 'Optional for AI comparison')],
+      ['reviewer', status.reviewer_ready, status.reviewer_ready ? (pilot ? 'Pilot access ready' : 'Local access ready') : (pilot ? 'Enter reviewer token below' : 'Run ./run_local.sh')],
     ]) {
       $(`${name}-dot`).classList.toggle('ready', ready);
       $(`${name}-status`).textContent = message;
     }
-    $('session-label').textContent = status.reviewer ? `${status.reviewer} / local` : 'Local workspace';
-    $('integration-status').textContent = `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · Gemini ${status.gemini_ready ? 'ready' : 'optional'}`;
+    $('session-label').textContent = status.reviewer ? `${status.reviewer} / ${pilot ? 'pilot' : 'local'}` : (pilot ? 'Pilot workspace' : 'Local workspace');
+    $('integration-status').textContent = !status.reviewer && pilot ? 'Connect to check integrations' :
+      `Cloudinary ${status.cloudinary_ready ? 'ready' : 'not configured'} · Gemini ${status.gemini_ready ? 'ready' : 'not configured'}`;
     $('nav-projects').hidden = !status.reviewer;
   }
 
   async function getStatus() {
-    const status = await request('/local/status');
+    const loopback = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    state.accessMode = loopback ? 'local' : 'pilot';
+    $('pilot-token-form').hidden = loopback;
+    $('credential-details').hidden = !loopback;
+    if (!loopback) {
+      $('setup-mode-label').textContent = 'INVITED PILOT';
+      $('setup-mode-title').textContent = 'Enter the evidence workspace.';
+      $('setup-mode-description').textContent = 'Use the reviewer token supplied by the project owner. It stays in this tab and clears when the page reloads.';
+    }
+    const status = loopback ? await request('/local/status')
+      : state.pilotToken ? await request('/pilot/session')
+        : { reviewer: null, reviewer_ready: false, cloudinary_ready: false, gemini_ready: false };
     renderStatus(status);
     state.session = status.reviewer;
     return status;
@@ -224,6 +240,19 @@
 
   async function connectLocal() {
     if (state.session) return;
+    if (state.accessMode === 'pilot') {
+      const token = $('pilot-token').value.trim();
+      if (!token) {
+        $('pilot-token').focus();
+        $('pilot-token').scrollIntoView({ block: 'center', behavior: 'smooth' });
+        throw new Error('Enter the reviewer token to connect.');
+      }
+      state.pilotToken = token;
+      try { await getStatus(); }
+      catch (error) { state.pilotToken = null; throw error; }
+      $('pilot-token').value = '';
+      return;
+    }
     const session = await request('/local/session', { method: 'POST' });
     state.session = session.reviewer;
     await getStatus();
@@ -426,6 +455,12 @@
       site = state.sites.find(item => item.id === id);
     }
     if (!site) { location.hash = '#projects'; throw new Error('Project not found.'); }
+    if (state.siteRecord?.project_id !== site.project_id) {
+      $('semantic-query').value = '';
+      $('semantic-search-results').replaceChildren();
+      $('semantic-search-status').textContent = 'Enter a question to explore this project’s evidence.';
+      $('semantic-search-more').hidden = true;
+    }
     state.site = id;
     state.siteRecord = site;
     for (const select of [$('topbar-site-select'), $('site-select')]) {
@@ -453,6 +488,7 @@
     const hash = location.hash.replace(/^#/, '');
     const parts = hash.split('/');
     if (parts[0] === 'setup') { showPage('setup'); return; }
+    if (state.accessMode === 'pilot' && !state.session) { showPage('setup'); return; }
     await connectLocal();
     if (!hash || hash === '/') {
       if (!state.sites.length) await loadProjects();
@@ -1927,7 +1963,24 @@
   $('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   applyTheme((localStorage.getItem('setowa-theme') || localStorage.getItem('lex-theme')) === 'dark' ? 'dark' : 'light');
 
-  $('enter-workspace').addEventListener('click', () => run(async () => { await connectLocal(); location.hash = '#projects'; }));
+  $('enter-workspace').addEventListener('click', () => run(async () => {
+    await connectLocal();
+    if (location.hash === '#projects') await route();
+    else location.hash = '#projects';
+  }));
+
+  $('pilot-token-form').addEventListener('submit', event => {
+    event.preventDefault();
+    run(async () => {
+      const submit = $('pilot-token-form').querySelector('button');
+      submit.disabled = true;
+      try {
+        await connectLocal();
+        if (location.hash === '#projects') await route();
+        else location.hash = '#projects';
+      } finally { submit.disabled = false; }
+    });
+  });
 
   $('credential-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -3290,34 +3343,72 @@
     }
   }
 
-  $('semantic-search-form').addEventListener('submit', (event) => run(async () => {
-    event.preventDefault();
+  async function searchEvidence() {
     const query = $('semantic-query').value.trim();
-    if (query.length < 3) return;
+    if (query.length < 3 || state.searchBusy) return;
+    const projectId = state.siteRecord?.project_id;
+    if (!projectId) {
+      $('semantic-search-status').textContent = 'Choose a site in a project before searching.';
+      return;
+    }
+    state.searchBusy = true;
     const button = $('semantic-search-form').querySelector('button');
+    const more = $('semantic-search-more');
     button.disabled = true;
-    $('semantic-search-status').textContent = 'Embedding current project records and searching…';
+    more.hidden = true;
+    $('semantic-search-results').setAttribute('aria-busy', 'true');
+    $('semantic-search-status').textContent = 'Indexing the next evidence batch and searching by meaning…';
     try {
-      const result = await request(`/projects/${encodeURIComponent(activeProjectId())}/semantic-search`,
+      const result = await request(`/projects/${encodeURIComponent(projectId)}/semantic-search`,
         { method: 'POST', json: { query, limit: 8 } });
       const box = $('semantic-search-results');
       box.replaceChildren();
-      $('semantic-search-status').textContent = result.results.length
-        ? `${result.results.length} result(s) · ${result.indexed} record(s) newly embedded${result.truncated ? ` · collection limit reached (${result.max_documents} records)` : ''}`
-        : 'No searchable records in this project yet.';
+      const coverage = `${result.indexed_count} of ${result.total_documents} project records indexed`;
+      $('semantic-search-status').textContent = result.total_documents
+        ? `${result.results.length} result(s) · ${coverage}${result.truncated ? ' · More records remain' : ' · Collection ready'}`
+        : 'No searchable records in this project yet. Add permissioned media, an approved observation, or a sourced measurement.';
+      more.hidden = !result.truncated;
+      more.textContent = `Index the next ${result.batch_size} records and search again`;
       for (const hit of result.results) {
         const card = element('article', 'paper-card discovery-result');
-        const heading = element('h3', '', `${hit.kind.replaceAll('_', ' ')} · ${hit.site_id || 'project'}`);
-        const status = element('p', 'meta', `Status: ${hit.review_status.replaceAll('_', ' ')} · similarity ${hit.score.toFixed(2)}`);
-        const body = element('p', '', hit.text);
-        card.append(heading, status, body);
-        appendEvidenceLinks(card, hit.evidence);
+        const heading = element('h3', '', hit.kind.replaceAll('_', ' '));
+        const status = element('span', `discovery-review ${hit.review_status === 'approved' ? 'is-approved' : ''}`,
+          hit.review_status.replaceAll('_', ' '));
+        const header = element('div', 'discovery-hit-header');
+        header.append(heading, status);
+        const source = element('div', 'discovery-hit-source');
+        source.append(element('span', '', `Match score ${hit.score.toFixed(2)} · ranking signal, not confidence`));
+        if (hit.site_id) {
+          const site = state.sites.find(item => item.id === hit.site_id);
+          const siteLink = element('a', '', `Open ${site?.name || 'site'}`);
+          siteLink.href = projectHash(hit.site_id, 'media-library');
+          source.append(siteLink);
+        }
+        const body = element('p', 'discovery-hit-text', hit.text);
+        card.append(header, source, body);
+        const links = element('div', 'discovery-hit-links');
+        appendEvidenceLinks(links, hit.evidence);
+        if (links.childNodes.length) card.append(links);
         box.append(card);
       }
     } catch (error) {
       $('semantic-search-status').textContent = sanitizeErrorMessage(error.message);
       throw error;
-    } finally { button.disabled = false; }
+    } finally {
+      state.searchBusy = false;
+      button.disabled = false;
+      $('semantic-search-results').removeAttribute('aria-busy');
+    }
+  }
+
+  $('semantic-search-form').addEventListener('submit', event => {
+    event.preventDefault();
+    run(searchEvidence);
+  });
+  $('semantic-search-more').addEventListener('click', () => run(searchEvidence));
+  document.querySelectorAll('[data-search-example]').forEach(button => button.addEventListener('click', () => {
+    $('semantic-query').value = button.dataset.searchExample;
+    run(searchEvidence);
   }));
 
   function renderCampaignDrafts(drafts) {
@@ -3357,7 +3448,7 @@
           await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts/${encodeURIComponent(draft.id)}`,
             { method: 'PUT', json: { body: copy.value } });
           await loadCampaignDrafts();
-          notice('Edited draft saved locally. Claims in user edits still need human checking.', 'success');
+          notice('Edited draft saved. Claims in user edits still need human checking.', 'success');
         } finally { saveButton.disabled = false; }
       }));
       copyButton.addEventListener('click', () => run(async () => {
@@ -3391,7 +3482,7 @@
     if (!state.site) return;
     try {
       const drafts = await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`);
-      $('campaign-status').textContent = `${drafts.length} saved local draft(s). Nothing is published automatically.`;
+      $('campaign-status').textContent = `${drafts.length} saved draft(s). Nothing is published automatically.`;
       renderCampaignDrafts(drafts);
     } catch (error) {
       $('campaign-status').textContent = sanitizeErrorMessage(error.message);
@@ -3407,7 +3498,7 @@
       await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`,
         { method: 'POST', json: { channel: $('campaign-channel').value } });
       await loadCampaignDrafts();
-      notice('Grounded local draft saved. Review before sharing.', 'success');
+      notice('Evidence-linked draft saved. Review before sharing.', 'success');
     } catch (error) {
       $('campaign-status').textContent = sanitizeErrorMessage(error.message);
       throw error;

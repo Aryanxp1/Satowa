@@ -7,8 +7,8 @@
   <meta name="description" content="Setowa helps teams turn cleanup media into reviewed, evidence-linked reports.">
   <title>Setowa — Evidence workspace</title>
   <link rel="icon" href="/demo/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/demo/styles.css?v=5">
-  <script src="/demo/app.js?v=5" defer></script>
+  <link rel="stylesheet" href="/demo/styles.css?v=6">
+  <script src="/demo/app.js?v=6" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -46,10 +46,11 @@
       </div>
 
       <div class="setup-lower">
-        <div class="setup-intro"><p class="kicker">LOCAL SETUP</p><h2>Connect the tools you already have.</h2><p>Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
+        <div class="setup-intro"><p id="setup-mode-label" class="kicker">LOCAL SETUP</p><h2 id="setup-mode-title">Connect the tools you already have.</h2><p id="setup-mode-description">Saved keys stay in <code>credential.json</code> on this local device. This page shows readiness only; it never displays stored keys.</p></div>
         <div class="setup-panel">
           <div class="service-status"><div><span id="cloudinary-dot" class="status-dot"></span><strong>Cloudinary</strong><small id="cloudinary-status">Checking…</small></div><div><span id="gemini-dot" class="status-dot"></span><strong>Gemini</strong><small id="gemini-status">Checking…</small></div><div><span id="reviewer-dot" class="status-dot"></span><strong>Reviewer access</strong><small id="reviewer-status">Checking…</small></div></div>
-          <details class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
+          <form id="pilot-token-form" class="pilot-token-form" autocomplete="off" hidden><label for="pilot-token">Reviewer token<input id="pilot-token" type="password" autocomplete="off" spellcheck="false" required placeholder="Enter your pilot reviewer token"></label><button class="button primary" type="submit">Connect to workspace →</button><p class="meta">The token stays in this tab's memory and clears on reload. Provider keys belong in the Render service configuration, never in this form.</p></form>
+          <details id="credential-details" class="credential-details"><summary>Add or update API credentials <span aria-hidden="true">+</span></summary>
             <form id="credential-form" autocomplete="off">
               <p>Leave a field blank to keep its saved value. Provider keys are never sent back to this page.</p>
               <div class="form-grid"><label>Cloud name<input name="cloud_name" autocomplete="off" placeholder="Your Cloudinary cloud name"></label><label>Cloudinary API key<input name="cloudinary_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label><label>Cloudinary API secret<input name="cloudinary_api_secret" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved secret"></label><label>Gemini API key <span class="optional">optional</span><input name="gemini_api_key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key"></label></div>
@@ -521,15 +522,18 @@
           </section>
           <section id="tab-discovery" class="tab-panel" hidden aria-labelledby="discovery-title">
             <div class="content-title"><p class="kicker">06 / DISCOVERY</p><h2 id="discovery-title">Find the evidence.</h2><p>Ask in plain language across this project's media descriptions, approved observations, and recorded measurements. AI descriptions are labelled as unreviewed. Search uses Gemini API quota only when you submit a query; results are leads to inspect, not verified answers.</p></div>
-            <form id="semantic-search-form" class="paper-card compact-form">
+            <form id="semantic-search-form" class="paper-card compact-form discovery-form">
               <label for="semantic-query">What are you looking for?<input id="semantic-query" type="search" minlength="3" maxlength="300" required placeholder="Where did the team document less visible litter?"></label>
               <button class="button primary" type="submit">Search evidence</button>
+              <p class="meta discovery-form-note">Search ranks source records by meaning. Every hit carries its review status and a route back to its evidence.</p>
             </form>
-            <p id="semantic-search-status" class="meta" role="status"></p>
+            <div class="discovery-suggestions" aria-label="Example searches"><span class="meta">Try:</span><button type="button" data-search-example="Where did volunteers document visible litter?">Visible litter</button><button type="button" data-search-example="Which visits recorded a measured cleanup quantity?">Measured cleanup</button><button type="button" data-search-example="Show reviewed before and after observations">Reviewed changes</button></div>
+            <p id="semantic-search-status" class="meta discovery-search-status" role="status">Enter a question to explore this project's evidence.</p>
+            <button id="semantic-search-more" class="button secondary" type="button" hidden>Index the next 24 records and search again</button>
             <div id="semantic-search-results" class="discovery-results" aria-live="polite"></div>
           </section>
           <section id="tab-campaign" class="tab-panel" hidden aria-labelledby="campaign-title">
-            <div class="content-title"><p class="kicker">07 / CAMPAIGN STUDIO</p><h2 id="campaign-title">Draft from the record.</h2><p>Generate local copy from reviewer-approved observations and sourced measurements. Numerical claims in observation text are omitted; quantities come from measurement records. Nothing is posted automatically. Check every source and media permission before sharing.</p></div>
+            <div class="content-title"><p class="kicker">07 / CAMPAIGN STUDIO</p><h2 id="campaign-title">Draft from the record.</h2><p>Generate copy from reviewer-approved observations and sourced measurements. Numerical claims in observation text are omitted; quantities come from measurement records. Nothing is posted automatically. Check every source and media permission before sharing.</p></div>
             <form id="campaign-form" class="paper-card compact-form">
               <label for="campaign-channel">Format<select id="campaign-channel"><option value="social">Social post</option><option value="newsletter">Newsletter</option><option value="volunteer_update">Volunteer update</option></select></label>
               <button class="button primary" type="submit">Generate draft</button>

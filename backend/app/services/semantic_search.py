@@ -1,7 +1,9 @@
 """On-demand, project-scoped semantic retrieval over saved evidence text.
 
 Only descriptions and reviewed records are embedded. Original media stays in Cloudinary.
-The SQLite cache is local and is refreshed when source content changes.
+The SQLite cache is local and is refreshed when source content changes. Each
+search indexes a bounded next batch; users can continue until the collection
+is fully searchable without triggering an unbounded provider bill.
 """
 
 import hashlib
@@ -16,7 +18,7 @@ from app.config import settings
 from app.services import evidence_store as store
 
 MODEL = "gemini-embedding-2"
-MAX_DOCUMENTS = 24
+INDEX_BATCH_SIZE = 24
 
 
 def _document(key: str, project_id: str, site_id: str, kind: str, entity_id: str,
@@ -114,23 +116,27 @@ def collect_documents(db, project_id: str) -> list[dict]:
     return documents
 
 
-def _balanced_documents(documents: list[dict]) -> tuple[list[dict], bool]:
-    """Keep approved records visible even when a project has many media files."""
+def _balanced_documents(documents: list[dict]) -> list[dict]:
+    """Index reviewed records early without permanently excluding other media."""
     kinds = ("approved_observation", "recorded_measurement", "video_frame", "media")
     groups = {kind: iter([doc for doc in documents if doc["kind"] == kind]) for kind in kinds}
     selected = []
-    while len(selected) < MAX_DOCUMENTS:
+    while True:
         added = False
         for kind in kinds:
             item = next(groups[kind], None)
             if item is not None:
                 selected.append(item)
                 added = True
-                if len(selected) == MAX_DOCUMENTS:
-                    break
         if not added:
             break
-    return selected, len(documents) > len(selected)
+    return selected
+
+
+def _digest(doc: dict) -> str:
+    return hashlib.sha256(json.dumps({
+        "content": doc["content"], "evidence": doc["evidence"],
+        "review_status": doc["review_status"]}, sort_keys=True).encode()).hexdigest()
 
 
 async def embed_text(text: str, task_type: str) -> list[float]:
@@ -151,7 +157,7 @@ async def embed_text(text: str, task_type: str) -> list[float]:
             raise ValueError("Invalid embedding vector")
         return [float(v) for v in values]
     except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-        raise HTTPException(502, "Gemini embedding request failed; search was not changed") from exc
+        raise HTTPException(502, "Gemini embedding request failed; retry the search") from exc
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -168,16 +174,24 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
         raise HTTPException(503, "Gemini API key is required for semantic search")
     if not store.get_project(db, project_id):
         raise HTTPException(404, "Project not found")
-    documents, truncated = _balanced_documents(collect_documents(db, project_id))
+    documents = _balanced_documents(collect_documents(db, project_id))
     existing = {r["doc_key"]: r for r in store.rows(db,
         "SELECT * FROM semantic_documents WHERE project_id=?", (project_id,))}
+    current = {d["doc_key"]: _digest(d) for d in documents}
+    active_keys = set(current)
+    for key in existing.keys() - active_keys:
+        db.execute("DELETE FROM semantic_documents WHERE doc_key=? AND project_id=?", (key, project_id))
+    # Never return a stale approval, revoked evidence, or edited description.
+    for key, row in existing.items():
+        if key in current and (row["content_hash"] != current[key] or row["model"] != MODEL):
+            db.execute("DELETE FROM semantic_documents WHERE doc_key=? AND project_id=?", (key, project_id))
     indexed = 0
     for doc in documents:
-        digest = hashlib.sha256(json.dumps({"content": doc["content"],
-            "evidence": doc["evidence"], "review_status": doc["review_status"]},
-            sort_keys=True).encode()).hexdigest()
+        digest = current[doc["doc_key"]]
         cached = existing.get(doc["doc_key"])
         if cached and cached["content_hash"] == digest and cached["model"] == MODEL:
+            continue
+        if indexed >= INDEX_BATCH_SIZE:
             continue
         vector = await embed_text(doc["content"], "RETRIEVAL_DOCUMENT")
         db.execute("""INSERT INTO semantic_documents
@@ -194,12 +208,12 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
              doc["content"], digest, MODEL, json.dumps(vector), json.dumps(doc["evidence"]),
              doc["review_status"], store.timestamp()))
         indexed += 1
-    active_keys = {d["doc_key"] for d in documents}
-    for key in existing.keys() - active_keys:
-        db.execute("DELETE FROM semantic_documents WHERE doc_key=? AND project_id=?", (key, project_id))
+    indexed_count = store.one(db,
+        "SELECT COUNT(*) AS count FROM semantic_documents WHERE project_id=?", (project_id,))["count"]
     if not documents:
-        return {"query": query, "results": [], "indexed": indexed, "truncated": False,
-                "max_documents": MAX_DOCUMENTS, "model": MODEL}
+        return {"query": query, "results": [], "indexed": indexed, "indexed_count": 0,
+                "total_documents": 0, "truncated": False, "batch_size": INDEX_BATCH_SIZE,
+                "model": MODEL}
     query_vector = await embed_text(query, "RETRIEVAL_QUERY")
     rows = store.rows(db, "SELECT * FROM semantic_documents WHERE project_id=?", (project_id,))
     ranked = []
@@ -211,4 +225,6 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
                        "evidence": json.loads(row["evidence_json"])})
     ranked.sort(key=lambda r: r["score"], reverse=True)
     return {"query": query, "results": ranked[:limit], "indexed": indexed,
-            "truncated": truncated, "max_documents": MAX_DOCUMENTS, "model": MODEL}
+            "indexed_count": indexed_count, "total_documents": len(documents),
+            "truncated": indexed_count < len(documents),
+            "batch_size": INDEX_BATCH_SIZE, "model": MODEL}
