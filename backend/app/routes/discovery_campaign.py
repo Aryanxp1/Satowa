@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.routes.media import require_upload_token
 from app.services import evidence_store as store
-from app.services.campaign import generate_draft, list_drafts
+from app.services.campaign import edit_draft, generate_draft, list_drafts
 from app.services.semantic_search import search_project
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Discovery and Campaigns"],
@@ -19,6 +19,10 @@ class SearchRequest(BaseModel):
 
 class CampaignRequest(BaseModel):
     channel: str = Field(pattern="^(social|newsletter|volunteer_update)$")
+
+
+class CampaignEditRequest(BaseModel):
+    body: str = Field(min_length=1, max_length=40000)
 
 
 @router.post("/{project_id}/semantic-search")
@@ -39,3 +43,9 @@ def create_campaign_draft(project_id: str, payload: CampaignRequest):
 def get_campaign_drafts(project_id: str):
     with store.connection() as db:
         return list_drafts(db, project_id)
+
+
+@router.put("/{project_id}/campaign-drafts/{draft_id}")
+def update_campaign_draft(project_id: str, draft_id: str, payload: CampaignEditRequest):
+    with store.connection() as db:
+        return edit_draft(db, project_id, draft_id, payload.body)

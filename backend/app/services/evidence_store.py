@@ -164,7 +164,8 @@ CREATE TABLE IF NOT EXISTS campaign_drafts (
  id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
  channel TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
  sources_json TEXT NOT NULL, source_fingerprint TEXT NOT NULL,
- demo_only INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+ demo_only INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
+ edited_at TEXT
 );
 """
 
@@ -269,6 +270,10 @@ def connection():
         story_columns = {row['name'] for row in db.execute('PRAGMA table_info(impact_stories)')}
         if 'share_token' not in story_columns:
             db.execute("ALTER TABLE impact_stories ADD COLUMN share_token TEXT")
+
+        campaign_columns = {row['name'] for row in db.execute('PRAGMA table_info(campaign_drafts)')}
+        if 'edited_at' not in campaign_columns:
+            db.execute("ALTER TABLE campaign_drafts ADD COLUMN edited_at TEXT")
 
         # All indexes applied after migration so columns are guaranteed to exist
         for idx_sql in _POST_MIGRATION_INDEXES:

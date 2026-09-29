@@ -3331,15 +3331,58 @@
       const card = element('article', 'paper-card discovery-result');
       card.append(element('h3', '', draft.title));
       card.append(element('p', 'meta',
-        `${draft.channel.replaceAll('_', ' ')} · DRAFT${draft.demo_only ? ' · SYNTHETIC DEMO' : ''}${draft.stale ? ' · STALE: source records changed' : ''}`));
-      const copy = element('div', 'campaign-copy', draft.body);
-      const button = element('button', 'button secondary', 'Copy draft');
-      button.type = 'button';
-      button.addEventListener('click', () => run(async () => {
+        `${draft.channel.replaceAll('_', ' ')} · DRAFT${draft.demo_only ? ' · SYNTHETIC DEMO' : ''}${draft.edited_at ? ' · USER EDITED' : ''}${draft.stale ? ' · STALE: source records changed' : ''}`));
+      const copy = element('textarea', 'campaign-copy');
+      copy.value = draft.body;
+      copy.rows = 12;
+      copy.setAttribute('aria-label', `Edit ${draft.channel.replaceAll('_', ' ')} campaign draft`);
+      copy.readOnly = Boolean(draft.stale);
+      const saveButton = element('button', 'button secondary', 'Save edits');
+      saveButton.type = 'button';
+      saveButton.disabled = Boolean(draft.stale);
+      const copyButton = element('button', 'button secondary', 'Copy saved draft');
+      copyButton.type = 'button';
+      copyButton.disabled = Boolean(draft.stale);
+      if (draft.stale) {
+        const reason = 'Source records changed. Generate a new draft.';
+        saveButton.title = reason;
+        copyButton.title = reason;
+      }
+      copy.addEventListener('input', () => {
+        copyButton.disabled = draft.stale || copy.value !== draft.body;
+      });
+      saveButton.addEventListener('click', () => run(async () => {
+        saveButton.disabled = true;
+        try {
+          await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts/${encodeURIComponent(draft.id)}`,
+            { method: 'PUT', json: { body: copy.value } });
+          await loadCampaignDrafts();
+          notice('Edited draft saved locally. Claims in user edits still need human checking.', 'success');
+        } finally { saveButton.disabled = false; }
+      }));
+      copyButton.addEventListener('click', () => run(async () => {
         await navigator.clipboard.writeText(draft.body);
         notice('Draft copied. Check evidence before sharing.', 'success');
       }));
-      card.append(copy, button);
+      const actions = element('div', 'actions');
+      actions.append(saveButton, copyButton);
+      const sourceList = element('div', 'campaign-sources');
+      sourceList.append(element('strong', '', 'Saved source records'));
+      for (const source of draft.sources || []) {
+        const sourceRow = element('div', 'campaign-source-row');
+        if (source.type === 'approved_observation') {
+          sourceRow.append(element('span', '', `Reviewer-approved observation ${source.id}: ${source.text}`));
+          appendEvidenceLinks(sourceRow, [
+            { url: source.before_url, role: 'Before' },
+            { url: source.after_url, role: 'After' },
+          ]);
+        } else {
+          sourceRow.append(element('span', '',
+            `Recorded measurement ${source.id}: ${source.text} · supplied source: ${source.source}`));
+        }
+        sourceList.append(sourceRow);
+      }
+      card.append(copy, actions, sourceList);
       box.append(card);
     }
   }

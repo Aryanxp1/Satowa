@@ -123,6 +123,23 @@ def list_drafts(db, project_id: str) -> list[dict]:
     return [{"id": row["id"], "project_id": project_id,
              "channel": row["channel"], "title": row["title"], "body": row["body"],
              "sources": json.loads(row["sources_json"]), "demo_only": bool(row["demo_only"]),
-             "created_at": row["created_at"], "status": "draft",
+             "created_at": row["created_at"], "edited_at": row["edited_at"],
+             "status": "draft",
              "stale": row["source_fingerprint"] != fingerprint}
             for row in records]
+
+
+def edit_draft(db, project_id: str, draft_id: str, body: str) -> dict:
+    """Save human copy edits while retaining the original evidence snapshot."""
+    if not body.strip():
+        raise HTTPException(422, "Draft body must not be blank")
+    draft = store.one(db, "SELECT * FROM campaign_drafts WHERE id=? AND project_id=?",
+                      (draft_id, project_id))
+    if not draft:
+        raise HTTPException(404, "Campaign draft not found")
+    project = store.get_project(db, project_id)
+    if draft["source_fingerprint"] != _fingerprint(project, source_records(db, project_id)):
+        raise HTTPException(409, "Source records changed; generate a new draft before editing")
+    db.execute("UPDATE campaign_drafts SET body=?, edited_at=? WHERE id=? AND project_id=?",
+               (body.strip(), store.timestamp(), draft_id, project_id))
+    return next(item for item in list_drafts(db, project_id) if item["id"] == draft_id)

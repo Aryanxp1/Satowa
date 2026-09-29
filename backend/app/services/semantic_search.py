@@ -114,6 +114,25 @@ def collect_documents(db, project_id: str) -> list[dict]:
     return documents
 
 
+def _balanced_documents(documents: list[dict]) -> tuple[list[dict], bool]:
+    """Keep approved records visible even when a project has many media files."""
+    kinds = ("approved_observation", "recorded_measurement", "video_frame", "media")
+    groups = {kind: iter([doc for doc in documents if doc["kind"] == kind]) for kind in kinds}
+    selected = []
+    while len(selected) < MAX_DOCUMENTS:
+        added = False
+        for kind in kinds:
+            item = next(groups[kind], None)
+            if item is not None:
+                selected.append(item)
+                added = True
+                if len(selected) == MAX_DOCUMENTS:
+                    break
+        if not added:
+            break
+    return selected, len(documents) > len(selected)
+
+
 async def embed_text(text: str, task_type: str) -> list[float]:
     if not settings.GEMINI_API_KEY:
         raise HTTPException(503, "Gemini API key is required for semantic search")
@@ -149,9 +168,7 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
         raise HTTPException(503, "Gemini API key is required for semantic search")
     if not store.get_project(db, project_id):
         raise HTTPException(404, "Project not found")
-    documents = collect_documents(db, project_id)
-    truncated = len(documents) > MAX_DOCUMENTS
-    documents = documents[:MAX_DOCUMENTS]
+    documents, truncated = _balanced_documents(collect_documents(db, project_id))
     existing = {r["doc_key"]: r for r in store.rows(db,
         "SELECT * FROM semantic_documents WHERE project_id=?", (project_id,))}
     indexed = 0
@@ -167,7 +184,9 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
             (doc_key,project_id,site_id,kind,entity_id,content,content_hash,model,
              embedding_json,evidence_json,review_status,updated_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-            ON CONFLICT(doc_key) DO UPDATE SET content=excluded.content,
+            ON CONFLICT(doc_key) DO UPDATE SET project_id=excluded.project_id,
+             site_id=excluded.site_id,kind=excluded.kind,entity_id=excluded.entity_id,
+             content=excluded.content,
              content_hash=excluded.content_hash,model=excluded.model,
              embedding_json=excluded.embedding_json,evidence_json=excluded.evidence_json,
              review_status=excluded.review_status,updated_at=excluded.updated_at""",

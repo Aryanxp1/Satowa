@@ -12,7 +12,7 @@
 - Approve, edit, or reject observations. Edits reset approval and stale review versions are rejected.
 - Export Markdown or JSON reports from saved approved observations, original evidence links, and measurements explicitly recorded with a source. Photos alone never establish a waste quantity.
 - Search a project's saved media and video-frame descriptions, reviewer-approved observations, and recorded measurements by meaning using on-demand Gemini embeddings. Results show their review status and evidence links; a Gemini key is required, and no keyword fallback is mislabeled semantic search.
-- Generate saved local social, newsletter, and volunteer-update drafts from approved observations and sourced measurements. Drafts show evidence references, never post automatically, and turn stale if source records change. Synthetic examples carry an explicit demo label.
+- Generate and edit saved local social, newsletter, and volunteer-update drafts from approved observations and sourced measurements. Drafts show evidence references, never post automatically, and turn stale if source records change; stale drafts cannot be copied from the workspace. Synthetic examples carry an explicit demo label.
 - Walk through a clearly labeled **synthetic** sample without Cloudinary or Gemini calls. It is a product demo, not proof of cleanup impact.
 
 ## Run locally

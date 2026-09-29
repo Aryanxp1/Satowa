@@ -386,7 +386,9 @@ h1,h2{font-weight:650}
 .discovery-result { overflow-wrap:anywhere; }
 .discovery-result p { white-space:pre-wrap; line-height:1.55; }
 .discovery-result a { color:var(--green); word-break:break-all; }
-.campaign-copy { white-space:pre-wrap; max-height:430px; overflow:auto; padding:14px; background:var(--surface-2); border:1px solid var(--line); font:0.82rem/1.6 ui-monospace,Menlo,monospace; }
+.campaign-copy { display:block; width:100%; min-height:260px; max-height:430px; overflow:auto; padding:14px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink); font:0.82rem/1.6 ui-monospace,Menlo,monospace; resize:vertical; }
+.campaign-sources { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; font-size:.78rem; }
+.campaign-source-row { display:flex; flex-wrap:wrap; gap:6px 12px; border-top:1px solid var(--line); margin-top:8px; padding-top:8px; overflow-wrap:anywhere; }
 
 .workspace-nav-btn {
   display: flex;

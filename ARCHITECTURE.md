@@ -26,7 +26,7 @@ flowchart LR
 | Media | `backend/app/services/media.py` | Validated, signed Cloudinary upload; original asset identifiers and URLs. |
 | Reviewer auth | `backend/app/services/reviewer_auth.py` | Named reviewer tokens and loopback-only demo sessions. |
 | Semantic discovery | `backend/app/services/semantic_search.py` | Builds project-scoped text records, caches Gemini embeddings in SQLite, ranks natural-language queries, and returns source links and review labels. |
-| Campaign drafts | `backend/app/services/campaign.py` | Saves three copy formats from approved observations and sourced measurements; marks drafts stale when sources change. |
+| Campaign drafts | `backend/app/services/campaign.py` | Saves and edits three copy formats from approved observations and sourced measurements; retains an immutable source snapshot and marks drafts stale when sources change. |
 
 ## Data and request flow
 
