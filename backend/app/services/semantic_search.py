@@ -1,9 +1,8 @@
-"""On-demand, project-scoped semantic retrieval over saved evidence text.
+"""Project-scoped retrieval over saved evidence text.
 
 Only descriptions and reviewed records are embedded. Original media stays in Cloudinary.
-The SQLite cache is local and is refreshed when source content changes. Each
-search indexes a bounded next batch; users can continue until the collection
-is fully searchable without triggering an unbounded provider bill.
+The SQLite cache is local and is refreshed when source content changes. Explicit index requests process at most 24 records. Queries never index the
+collection; unavailable embeddings fall back to clearly labeled FTS5 search.
 """
 
 import hashlib
@@ -11,13 +10,15 @@ import json
 import math
 from typing import Any
 
-import httpx
+import sqlite3
+import re
+from app.providers import nvidia
 from fastapi import HTTPException
 
 from app.config import settings
 from app.services import evidence_store as store
 
-MODEL = "gemini-embedding-2"
+MODEL = "nvidia:" + settings.NVIDIA_EMBED_MODEL
 INDEX_BATCH_SIZE = 24
 
 
@@ -34,7 +35,7 @@ def collect_documents(db, project_id: str) -> list[dict]:
     assets = store.rows(db, """
         SELECT a.*, v.visited_on, s.project_id,
           (SELECT description FROM media_intelligence i WHERE i.asset_id=a.asset_id
-           AND i.frame_id IS NULL ORDER BY i.created_at DESC LIMIT 1) AS ai_description
+           AND i.frame_id IS NULL AND i.status IN ('analyzed','uncertain') ORDER BY i.created_at DESC LIMIT 1) AS ai_description
         FROM assets a JOIN visits v ON v.id=a.visit_id
         JOIN sites s ON s.id=v.site_id
         WHERE s.project_id=? AND a.permission_status='granted'
@@ -58,7 +59,7 @@ def collect_documents(db, project_id: str) -> list[dict]:
         SELECT f.frame_id, f.asset_id, f.timestamp_seconds, f.frame_url,
           f.source_video_url, a.site_id, a.source,
           (SELECT i.description FROM media_intelligence i
-           WHERE i.frame_id=f.frame_id ORDER BY i.created_at DESC LIMIT 1) AS ai_description,
+           WHERE i.frame_id=f.frame_id AND i.status IN ('analyzed','uncertain') ORDER BY i.created_at DESC LIMIT 1) AS ai_description,
           (SELECT fa.observations_json FROM frame_analyses fa
            WHERE fa.frame_id=f.frame_id ORDER BY fa.created_at DESC LIMIT 1) AS observations_json
         FROM video_frames f JOIN assets a ON a.asset_id=f.asset_id
@@ -140,59 +141,11 @@ def _digest(doc: dict) -> str:
 
 
 async def embed_text(text: str, task_type: str) -> list[float]:
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(503, "Gemini API key is required for semantic search")
-    # Embedding 2 uses asymmetric text prefixes for retrieval, not taskType.
-    prepared = (f"task: search result | query: {text}" if task_type == "RETRIEVAL_QUERY"
-                else f"title: none | text: {text}")
-    payload = {"model": f"models/{MODEL}", "content": {"parts": [{"text": prepared}]}}
-    try:
-        async with httpx.AsyncClient(timeout=25) as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:embedContent",
-                headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=payload)
-        response.raise_for_status()
-        return _valid_vector(response.json()["embedding"]["values"])
-    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-        raise HTTPException(502, "Gemini embedding request failed; retry the search") from exc
-
-
-def _valid_vector(values) -> list[float]:
-    if not isinstance(values, list) or not values:
-        raise ValueError("Invalid embedding vector")
-    vector = [float(v) for v in values]
-    if not all(math.isfinite(v) for v in vector):
-        raise ValueError("Invalid embedding vector")
-    return vector
+    return (await nvidia.embeddings([text], input_type="query" if task_type == "RETRIEVAL_QUERY" else "passage"))[0]
 
 
 async def embed_documents(texts: list[str]) -> list[list[float]]:
-    """Use one documented batchEmbedContents request for the next index batch."""
-    if not texts:
-        return []
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(503, "Gemini API key is required for semantic search")
-    if len(texts) > INDEX_BATCH_SIZE:
-        raise ValueError("Embedding batch exceeds the per-search limit")
-    payload = {"requests": [{
-        "model": f"models/{MODEL}",
-        "content": {"parts": [{"text": f"title: none | text: {value}"}]},
-    } for value in texts]}
-    try:
-        async with httpx.AsyncClient(timeout=45) as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:batchEmbedContents",
-                headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=payload)
-        response.raise_for_status()
-        embeddings = response.json()["embeddings"]
-        if len(embeddings) != len(texts):
-            raise ValueError("Embedding count mismatch")
-        vectors = [_valid_vector(item["values"]) for item in embeddings]
-        if len({len(vector) for vector in vectors}) != 1:
-            raise ValueError("Embedding dimensions mismatch")
-        return vectors
-    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-        raise HTTPException(502, "Gemini batch embedding request failed; retry the search") from exc
+    return await nvidia.embeddings(texts, input_type="passage")
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -204,9 +157,7 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
 
 
-async def search_project(db, project_id: str, query: str, limit: int = 8) -> dict[str, Any]:
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(503, "Gemini API key is required for semantic search")
+async def search_project(db, project_id: str, query: str, limit: int = 8, *, index: bool = False) -> dict[str, Any]:
     if not store.get_project(db, project_id):
         raise HTTPException(404, "Project not found")
     documents = _balanced_documents(collect_documents(db, project_id))
@@ -229,7 +180,14 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
         pending.append((doc, digest))
         if len(pending) == INDEX_BATCH_SIZE:
             break
-    vectors = await embed_documents([doc["content"] for doc, _ in pending])
+    if not index:
+        pending = []
+    try:
+        vectors = await embed_documents([doc["content"] for doc, _ in pending]) if pending else []
+    except nvidia.ProviderUnavailable:
+        if index:
+            raise HTTPException(503, "Indexing unavailable; keyword search still works") from None
+        vectors = []
     for (doc, digest), vector in zip(pending, vectors):
         db.execute("""INSERT INTO semantic_documents
             (doc_key,project_id,site_id,kind,entity_id,content,content_hash,model,
@@ -251,7 +209,15 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
         return {"query": query, "results": [], "indexed": indexed, "indexed_count": 0,
                 "total_documents": 0, "truncated": False, "batch_size": INDEX_BATCH_SIZE,
                 "model": MODEL}
-    query_vector = await embed_text(query, "RETRIEVAL_QUERY")
+    if index:
+        return {"indexed": indexed, "indexed_count": indexed_count, "total_documents": len(documents),
+                "batch_size": INDEX_BATCH_SIZE, "model": MODEL, "truncated": indexed_count < len(documents)}
+    try:
+        if not indexed_count:
+            raise nvidia.ProviderUnavailable("No semantic index")
+        query_vector = await embed_text(query, "RETRIEVAL_QUERY")
+    except nvidia.ProviderUnavailable:
+        return keyword_search(documents, query, limit, indexed_count)
     rows = store.rows(db, "SELECT * FROM semantic_documents WHERE project_id=?", (project_id,))
     ranked = []
     for row in rows:
@@ -264,4 +230,27 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
     return {"query": query, "results": ranked[:limit], "indexed": indexed,
             "indexed_count": indexed_count, "total_documents": len(documents),
             "truncated": indexed_count < len(documents),
-            "batch_size": INDEX_BATCH_SIZE, "model": MODEL}
+            "batch_size": INDEX_BATCH_SIZE, "model": MODEL, "mode": "semantic"}
+
+
+def keyword_search(documents: list[dict], query: str, limit: int, indexed_count: int) -> dict:
+    """FTS5 over current permission-filtered records; never label lexical matches AI."""
+    terms = re.findall(r"\w+", query, flags=re.UNICODE)[:30]
+    hits = []
+    with sqlite3.connect(":memory:") as search_db:
+        search_db.execute("CREATE VIRTUAL TABLE evidence USING fts5(content)")
+        search_db.executemany("INSERT INTO evidence(rowid,content) VALUES(?,?)",
+                             ((i+1, d['content']) for i, d in enumerate(documents)))
+        if terms:
+            expression = " OR ".join('"' + term + '"' for term in terms)
+            for rowid, score in search_db.execute(
+                    "SELECT rowid,bm25(evidence) FROM evidence WHERE evidence MATCH ? ORDER BY bm25(evidence) LIMIT ?",
+                    (expression, limit)):
+                d = documents[rowid-1]
+                hits.append({"kind": d['kind'], "entity_id": d['entity_id'], "site_id": d['site_id'],
+                             "text": d['content'], "review_status": d['review_status'],
+                             "evidence": d['evidence'], "score": -score})
+    return {"query": query, "results": hits, "mode": "keyword", "model": "SQLite FTS5",
+            "notice": "Keyword search over saved text; semantic AI is unavailable or not indexed.",
+            "indexed": 0, "indexed_count": indexed_count, "total_documents": len(documents),
+            "truncated": indexed_count < len(documents), "batch_size": INDEX_BATCH_SIZE}

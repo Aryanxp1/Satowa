@@ -113,7 +113,7 @@ def test_required_env_detection(monkeypatch):
     env_report = validate_environment(settings)
     assert env_report["is_complete"] is False
     assert "CLOUDINARY_API_SECRET" in env_report["missing_variables"]
-    assert "GEMINI_API_KEY" in env_report["missing_variables"]
+    assert "GEMINI_API_KEY" not in env_report["missing_variables"]
     assert env_report["status"]["CLOUDINARY_API_SECRET"] == "missing"
     assert env_report["status"]["GEMINI_API_KEY"] == "missing"
 
@@ -389,8 +389,8 @@ def test_production_configuration_safety(monkeypatch):
     # 3. Safe production config
     monkeypatch.setattr(settings, "ALLOWED_ORIGINS", "https://app.setowa.org")
     is_ready, violations = validate_production_readiness(settings)
-    assert is_ready is True
-    assert len(violations) == 0
+    assert is_ready is False
+    assert any("DATABASE_URL" in v for v in violations)
 
 
 # -------------------------------------------------------------------------

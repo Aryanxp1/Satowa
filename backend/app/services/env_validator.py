@@ -31,12 +31,13 @@ def validate_environment(settings: Settings) -> Dict[str, Any]:
         "CLOUDINARY_API_KEY": check_var_status(settings.CLOUDINARY_API_KEY),
         "CLOUDINARY_API_SECRET": check_var_status(settings.CLOUDINARY_API_SECRET),
         "GEMINI_API_KEY": check_var_status(settings.GEMINI_API_KEY),
+        "NVIDIA_API_KEY": check_var_status(settings.NVIDIA_API_KEY),
         "ENVIRONMENT": settings.ENVIRONMENT,
         "USE_MOCK": settings.USE_MOCK,
     }
 
     missing = [
-        k for k in ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "GEMINI_API_KEY")
+        k for k in ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET")
         if vars_status[k] == "missing"
     ]
     cloudinary_ready = all(
@@ -53,8 +54,9 @@ def validate_environment(settings: Settings) -> Dict[str, Any]:
         "missing_variables": missing,
         "cloudinary_ready": cloudinary_ready,
         "gemini_ready": gemini_ready,
+        "nvidia_ready": vars_status["NVIDIA_API_KEY"] == "configured",
         "environment": settings.ENVIRONMENT,
-        "mode": "live" if (cloudinary_ready and gemini_ready and not settings.USE_MOCK) else "mock/fallback",
+        "mode": "mock" if settings.USE_MOCK else ("live" if (vars_status["NVIDIA_API_KEY"] == "configured" if settings.AI_PROVIDER == "nvidia" else gemini_ready) else "manual"),
     }
 
 
@@ -75,9 +77,7 @@ def validate_production_readiness(settings: Settings) -> Tuple[bool, List[str]]:
     if check_var_status(settings.CLOUDINARY_API_SECRET) == "missing":
         issues.append("CLOUDINARY_API_SECRET is not configured")
 
-    # Gemini checks
-    if check_var_status(settings.GEMINI_API_KEY) == "missing":
-        issues.append("GEMINI_API_KEY is not configured")
+    # External AI is optional: manual review and lexical search remain available.
 
     # Production-specific safety constraints
     if is_prod:
@@ -88,8 +88,9 @@ def validate_production_readiness(settings: Settings) -> Tuple[bool, List[str]]:
         if "*" in origins or any("localhost" in o for o in origins):
             issues.append("CORS allowed_origins must not contain '*' or localhost in production")
 
-        if not settings.LEX_DB_PATH or ":memory:" in settings.LEX_DB_PATH:
-            issues.append("In-memory database is not allowed in production")
+        if not settings.DATABASE_URL.get_secret_value():
+            issues.append("Production requires durable DATABASE_URL; ephemeral SQLite is pilot-only")
+        issues.append("Production account authorization and release verification are not enabled; use pilot mode")
 
     is_ready = len(issues) == 0
     return is_ready, issues

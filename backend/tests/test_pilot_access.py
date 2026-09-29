@@ -54,5 +54,6 @@ def test_pilot_readiness_reports_configured_services_without_values(monkeypatch)
     assert response.headers['cache-control'] == 'no-store'
     assert response.json()['status'] == 'ready'
     assert response.json()['reviewer_auth'] == 'configured'
-    assert response.json()['mode'] == 'live'
+    assert response.json()['mode'] == 'manual'
+    assert response.json()['nvidia'] == 'missing'
     assert 'secret' not in response.text

@@ -74,3 +74,9 @@ def test_analyze_live_mode_without_gemini_key_never_returns_mock(monkeypatch):
     assert response.status_code == 503
     assert "GEMINI_API_KEY" in response.json()["detail"]
     assert "mock-engine" not in response.text
+
+
+@pytest.fixture(autouse=True)
+def legacy_reasoning_provider(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "AI_PROVIDER", "gemini")

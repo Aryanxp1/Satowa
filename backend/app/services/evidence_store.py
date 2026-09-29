@@ -205,6 +205,11 @@ def new_id():
 
 @contextmanager
 def connection():
+    if settings.DATABASE_URL.get_secret_value():
+        from app.services.postgres_store import connection as postgres_connection
+        with postgres_connection(settings.DATABASE_URL.get_secret_value()) as db:
+            yield db
+        return
     raw_path = Path(settings.LEX_DB_PATH).expanduser()
     if not raw_path.is_absolute():
         backend_dir = Path(__file__).resolve().parents[2]

@@ -403,7 +403,7 @@ def test_grounded_narrative_summary_deterministic(test_db):
         assert "Yamuna Basin Restoration" in narrative
         assert "145.0 kg" in narrative
         assert "plastic debris collected" in narrative
-        assert "human verification and approval" in narrative
+        assert "not independently audited" in narrative
 
 
 # ==============================================================================

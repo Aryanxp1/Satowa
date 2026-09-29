@@ -1,52 +1,31 @@
 # Setowa architecture
 
-Setowa is a small FastAPI application with a browser UI. Its trust boundary is simple: the browser displays evidence and submits decisions; the server validates pairs, owns review state, and builds reports from persisted records.
+The FastAPI service serves the HTML/CSS/JavaScript workspace at `/demo/`, protected APIs under `/api/v1`, and read-only published story pages under `/share/`. Cloudinary stores original media and derives display/video-frame URLs. Application records store identity, version, source, permission, site, and visit references.
 
-```mermaid
-flowchart LR
-  Browser[Setowa browser UI] --> API[FastAPI routes]
-  API --> DB[(SQLite: workflow records)]
-  API --> Cloudinary[Cloudinary: uploaded originals]
-  API --> Gemini[Gemini: optional comparison]
-  API --> Embed[Gemini embeddings: on-demand discovery]
-  DB --> Campaign[Local campaign drafts]
-  API --> Report[JSON / Markdown report]
-  DB --> Report
-```
+## Evidence model
 
-## Components
+Project → Site → Visit → Asset. Observations link a dated before/after asset pair. Draft text, working text, approved text, review state, reviewer identity, timestamps, and optimistic version are separate records/fields. Measurements reference visits and explicitly supplied measurement sources. Reports query saved approved records and current media permission. Campaign templates use approved observations and sourced measurements; changed source fingerprints suppress stale draft contents.
 
-| Area | Location | Responsibility |
-| --- | --- | --- |
-| Showcase | `showcase/` | Product story and entry to the workspace; no analytical claims generated here. |
-| Workspace | `backend/app/demo/` | Setup, project navigation, visits, evidence selection, review, and report UI. |
-| API | `backend/app/routes/` | Local setup, media upload, evidence workflow, health, and legacy analysis routes. |
-| Workflow store | `backend/app/services/evidence_store.py` | SQLite schema, persisted records, and revision events. |
-| Comparison | `backend/app/services/image_comparison.py` | Optional Gemini image comparison and explicit unreliable results. |
-| Media | `backend/app/services/media.py` | Validated, signed Cloudinary upload; original asset identifiers and URLs. |
-| Reviewer auth | `backend/app/services/reviewer_auth.py` | Named reviewer tokens and loopback-only demo sessions. |
-| Semantic discovery | `backend/app/services/semantic_search.py` | Builds project-scoped text records, caches Gemini embeddings in SQLite, indexes in explicit 24-record Gemini batch requests until all records are covered, ranks natural-language queries, and returns source links and review labels. |
-| Campaign drafts | `backend/app/services/campaign.py` | Saves and edits three copy formats from approved observations and sourced measurements; retains an immutable source snapshot and marks drafts stale when sources change. |
+## Providers
 
-## Data and request flow
+`app/providers/nvidia.py` centralizes NVIDIA requests: server-side SecretStr key, fixed HTTPS host, bounded timeout, at most three attempts for 429/5xx, sanitized failures, strict vector/vision validation. No API key is delivered to the browser. Vision URLs are resolved from registered granted assets/frames, never accepted as arbitrary provider inputs.
 
-1. A site contains dated visits. Each uploaded asset belongs to a visit and keeps its Cloudinary public ID, version, secure URL, and source label.
-2. Pair creation checks that assets differ, belong to the same site, and have strictly ordered visit dates. A comparison may provide a draft or an explicit reliability reason.
-3. The AI draft, working text, approved text, evidence IDs, review state, reviewer, timestamps, version, and revisions remain separate. Editing text or evidence invalidates approval. An outdated `expected_version` cannot approve a newer revision.
-4. Report generation reads saved `approved` observations and their original evidence references. It does not ask the model to rewrite findings. Measurements are separate records with visit, quantity, unit, source, and recorder.
-5. The seeded riverbank project uses local synthetic images marked `synthetic_demo`; it does not upload media or invoke Gemini.
-6. Semantic search is user-triggered. The server embeds saved descriptions and records, never raw Cloudinary originals, and keeps a local vector cache keyed to current content and evidence. It fails clearly if Gemini is unavailable. AI descriptions are marked unreviewed.
-7. Campaign generation never promotes an AI proposal into a claim: it reads only approved text and separately recorded quantities with supplied sources. The generated copy stays a local draft; source edits or revoked approvals make earlier drafts stale.
+The primary visual path uses one image at a time. Automatic NVIDIA pair comparison is deliberately unavailable pending a live two-image contract test. The optional legacy Gemini implementation remains selectable. Neither external provider is required for manual review or readiness.
 
-## Security and operating limits
+## Retrieval
 
-- `credential.json`, `backend/.env`, virtual environments, and `backend/lex.sqlite3` are ignored local files. The setup API returns readiness flags, never provider secrets.
-- The convenient browser session is restricted to loopback and is **not** production user authentication. Named tokens are suitable for the private prototype, not a public multi-tenant service.
-- Uploaded photos are delivered through Cloudinary; only use media with permission for that delivery. Gemini receives selected images when configured.
-- SQLite must be on persistent storage. Public hosting needs accounts, authorization, rate limits, backups, migrations, and a deployment review before it is safe to expose.
-- The legacy `/api/v1/analyze` mock endpoint is separate from the cleanup-evidence workflow and must not be used as proof of a field comparison.
-- The current release is local only. No invited-user or public production authentication is claimed. A separate, unmerged pilot branch exists for later evaluation.
+The permission-filtered document set comprises media metadata, unreviewed visual descriptions, video frame observations, approved comparisons, and sourced measurements. Explicit index requests embed at most 24 documents in passage mode; queries embed only the query. Content/evidence/review fingerprints and the embedding model identify cache entries. Retrieval removes obsolete cache entries before ranking.
 
-## Validation
+If vectors or the provider are unavailable, an in-memory FTS5 index searches the current allowed text. This rebuild costs CPU proportional to collection size. It is not semantic search. Indexed/total coverage remains visible. Neither rank score nor model confidence is an accuracy estimate.
 
-`cd backend && python -m pytest -q` exercises the API and workflow without real provider calls. A live-pair evaluation needs permissioned before/after media and careful human labels; see [the evidence API guide](backend/EVIDENCE_WORKFLOW.md). Passing unit tests or completing the synthetic walkthrough does not establish comparison accuracy on real sites.
+## Persistence
+
+`evidence_store.connection()` defaults to SQLite and its existing local migrations. A nonempty `DATABASE_URL` uses the psycopg repository adapter. `scripts/migrate_postgres.py` applies version 1 under an advisory transaction lock. SQL translation is limited to audited repository syntax: positional/named parameters, INSERT OR IGNORE, identity columns, and review transaction locking. PostgreSQL review edits lock the observations table to preserve the current read-modify-write behavior; row-level optimization remains future work.
+
+Supabase connection, migration idempotence, reconnect persistence, rollback, and parameter handling have passed a disposable-schema integration test. Full API/browser parity and a PostgreSQL backup/restore drill are still release gates. No local private data is automatically copied to Supabase.
+
+## Access and operating modes
+
+The current remote pilot gates APIs with a named reviewer token held in tab memory. The local session/credential editor is loopback-only. Public health/readiness expose configuration states, not credentials. Public story pages project only eligible current evidence.
+
+Full account authentication, per-project roles, login rate limiting, and session CSRF verification are not implemented by this change. Production startup is blocked rather than presenting the pilot as multi-user production. CORS no longer falls back to a wildcard; workspace/story pages have CSP and response security headers.

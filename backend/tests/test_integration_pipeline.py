@@ -587,3 +587,10 @@ def test_live_cloudinary_and_gemini_pipeline():
     assert rep['observations'][0]['before_url'].startswith('https://res.cloudinary.com/')
     assert rep['observations'][0]['after_url'].startswith('https://res.cloudinary.com/')
 
+
+
+@pytest.fixture(autouse=True)
+def optional_gemini_provider_contract(monkeypatch):
+    """These legacy contract tests deliberately exercise the optional Gemini adapter."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "AI_PROVIDER", "gemini")

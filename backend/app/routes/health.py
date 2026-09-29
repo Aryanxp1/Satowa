@@ -21,6 +21,7 @@ def pilot_session(response: Response, authorization: str | None = Header(default
         'cloudinary_ready': bool(settings.CLOUDINARY_CLOUD_NAME and settings.CLOUDINARY_API_KEY
                                  and settings.CLOUDINARY_API_SECRET.get_secret_value()),
         'gemini_ready': bool(settings.GEMINI_API_KEY),
+        'nvidia_ready': bool(settings.NVIDIA_API_KEY.get_secret_value()),
     }
 
 
@@ -31,7 +32,7 @@ async def health_check():
         status="healthy",
         version=__version__,
         environment=settings.ENVIRONMENT,
-        mock_mode=settings.USE_MOCK or not bool(settings.GEMINI_API_KEY),
+        mock_mode=settings.USE_MOCK,
     )
 
 
@@ -54,7 +55,7 @@ async def readiness_check(response: Response):
 
     pilot = settings.ENVIRONMENT.lower() == 'pilot'
     overall_status = "ready" if db_status == "ready" and (
-        not pilot or (cloudinary_status == 'configured' and gemini_status == 'configured'
+        not pilot or (cloudinary_status == 'configured'
                       and reviewer_status == 'configured' and not settings.USE_MOCK)
     ) else "degraded"
     if overall_status == 'degraded':
@@ -67,6 +68,7 @@ async def readiness_check(response: Response):
         database=db_status,
         cloudinary=cloudinary_status,
         gemini=gemini_status,
+        nvidia="configured" if env_report["nvidia_ready"] else "missing",
         reviewer_auth=reviewer_status,
         environment=settings.ENVIRONMENT,
         mode=env_report["mode"],

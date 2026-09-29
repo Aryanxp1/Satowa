@@ -83,6 +83,13 @@ async def compare_images(before, after) -> Comparison:
             status=ComparisonStatus.INSUFFICIENT_EVIDENCE,
             uncertainty_reason='synthetic_walkthrough_evidence',
         )
+    if settings.AI_PROVIDER == 'nvidia':
+        # The selected vision model's two-image behavior has not been live-validated.
+        # Single-image intelligence is available separately; do not synthesize a pair verdict.
+        return unavailable(
+            'Automatic pair comparison is not enabled for NVIDIA. Analyze each photo in Intelligence, then write and review a manual comparison.',
+            uncertainty_reason='pair_model_not_validated',
+        )
     if not settings.GEMINI_API_KEY:
         return unavailable(
             'AI comparison is unavailable until GEMINI_API_KEY is configured. A reviewer may write an observation manually.',

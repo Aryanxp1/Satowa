@@ -141,6 +141,27 @@ class FieldFrameObservationSkill(BaseSkill):
                 },
             )
 
+        if settings.AI_PROVIDER == "nvidia":
+            from app.providers import nvidia
+            from app.services import evidence_store as store
+            try:
+                with store.connection() as db:
+                    frame = store.one(db, "SELECT frame_id FROM video_frames WHERE asset_id=? AND frame_url=?",
+                                      (source_asset_id, frame_url))
+                if not frame:
+                    raise nvidia.ProviderUnavailable("Registered frame not found")
+                value = await nvidia.describe_registered_media(source_asset_id, frame["frame_id"])
+                return SkillExecutionResult(skill_name=self.name, skill_version=self.version,
+                    status=SkillExecutionStatus.SUCCESS,
+                    outputs={"observations": value["observations"], "detected_signals": value["tags"],
+                             "status": value["status"], "confidence": None, "warnings": value["warnings"]},
+                    evidence=value["evidence"], metadata={"provider": "nvidia"})
+            except nvidia.ProviderUnavailable as error:
+                return SkillExecutionResult(skill_name=self.name, skill_version=self.version,
+                    status=SkillExecutionStatus.UNAVAILABLE,
+                    outputs={"observations": [], "detected_signals": [], "status": "insufficient_evidence",
+                             "confidence": None, "warnings": [str(error)]}, evidence=evidence_meta)
+
         # 2. Check Gemini credentials
         gemini_key = None
         if settings.GEMINI_API_KEY:

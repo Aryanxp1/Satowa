@@ -462,3 +462,9 @@ async def test_workflow_engine_frame_observation_compatibility():
     node_out = res.node_results["frame_analyzer"]
     assert node_out.status.value == "success"
     assert "riverbank" in node_out.outputs["detected_signals"]
+
+
+@pytest.fixture(autouse=True)
+def optional_gemini_contract(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "AI_PROVIDER", "gemini")

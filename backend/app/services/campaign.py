@@ -126,8 +126,8 @@ def list_drafts(db, project_id: str) -> list[dict]:
     records = store.rows(db, "SELECT * FROM campaign_drafts WHERE project_id=? "
                          "ORDER BY created_at DESC LIMIT 30", (project_id,))
     return [{"id": row["id"], "project_id": project_id,
-             "channel": row["channel"], "title": row["title"], "body": row["body"],
-             "sources": json.loads(row["sources_json"]), "demo_only": bool(row["demo_only"]),
+             "channel": row["channel"], "title": row["title"], "body": row["body"] if row["source_fingerprint"] == fingerprint else "Source records changed. Generate a new draft; previous content is withheld.",
+             "sources": json.loads(row["sources_json"]) if row["source_fingerprint"] == fingerprint else [], "demo_only": bool(row["demo_only"]),
              "created_at": row["created_at"], "edited_at": row["edited_at"],
              "status": "draft",
              "stale": row["source_fingerprint"] != fingerprint}

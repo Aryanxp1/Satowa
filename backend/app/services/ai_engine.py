@@ -27,6 +27,8 @@ class AIEngineService:
 
         if self.mock_mode:
             return self._generate_mock_response(request, start_time)
+        if settings.AI_PROVIDER != 'gemini':
+            raise HTTPException(503, "Legacy general reasoning is disabled; use registered media Intelligence or manual review")
         if not self.api_key:
             raise HTTPException(503, "GEMINI_API_KEY is required when USE_MOCK is false")
 

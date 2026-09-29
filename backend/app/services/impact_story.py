@@ -540,7 +540,7 @@ async def generate_grounded_impact_narrative(
         for m in measurements
     ]
 
-    has_gemini = bool(settings.GEMINI_API_KEY)
+    has_gemini = settings.AI_PROVIDER == "gemini" and bool(settings.GEMINI_API_KEY)
     if has_gemini:
         try:
             facts_payload = {
@@ -603,7 +603,7 @@ async def generate_grounded_impact_narrative(
     if total_cards > 0:
         p2_parts.append(
             f"Visual field monitoring includes {total_cards} before-and-after photographic comparisons. "
-            f"Of these, {len(approved_cards)} finding(s) have completed independent human verification and approval, "
+            f"Of these, {len(approved_cards)} finding(s) have been approved by a project reviewer (not independently audited), "
             f"while {len(pending_cards)} finding(s) remain pending auditor review."
         )
     else:
@@ -625,7 +625,7 @@ async def generate_grounded_impact_narrative(
 
     if pending_cards or any(c.reliability_reason for c in before_after_cards):
         p3_parts.append(
-            "Note: Unverified visual changes represent automated algorithmic proposals and do not constitute certified impact until approved by human reviewers."
+            "Note: Unverified visual changes represent automated algorithmic proposals and are not verified impact. Reviewer approval is not independent certification."
         )
     paragraphs.append(" ".join(p3_parts))
 
