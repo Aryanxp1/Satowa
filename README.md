@@ -27,7 +27,7 @@ Open the [workspace](http://127.0.0.1:8000/) or [showcase](http://127.0.0.1:8000
 
 The UI is served by FastAPI. SQLite holds Setowa's sites, visits, evidence references, observation revisions, reviews, and measurements. Cloudinary stores uploaded originals; Gemini is an optional comparison service. The [architecture](ARCHITECTURE.md) and [evidence API](backend/EVIDENCE_WORKFLOW.md) explain the flow and its limits.
 
-Semantic search indexes only after a user searches, caches text embeddings in SQLite, and indexes the next 24 records per request to bound provider calls. The UI shows indexed versus total records and offers an explicit continuation action. Gemini embedding calls may count toward the account's quota; Setowa does not initiate them automatically. Campaign copy is deliberately template-generated from saved records, with no extra model call or external publishing integration.
+Semantic search indexes only after a user searches, caches text embeddings in SQLite, and indexes the next 24 records with one Gemini batch request. The UI shows indexed versus total records and offers an explicit continuation action. Each embedded record may still count toward Gemini quota; Setowa does not initiate indexing automatically. Campaign copy is deliberately template-generated from saved records, with no extra model call or external publishing integration.
 
 [LEX_Milestone.md](LEX_Milestone.md) records Aryan's Milestone 1 acceptance criteria and current validation status. A [single-reviewer pilot setup](docs/RENDER_PILOT.md) is available for Render; it is not public account authentication or durable storage. Real permissioned field-pair evaluation remains to be completed. Do not present the synthetic sample as field evidence or a live provider evaluation.
 
