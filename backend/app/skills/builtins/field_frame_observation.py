@@ -121,7 +121,7 @@ class FieldFrameObservationSkill(BaseSkill):
         }
 
         # 1. Synthetic sample walkthrough handling
-        if frame_url.startswith("/demo/sample-media/") or "synthetic" in frame_url.lower():
+        if frame_url.startswith("/demo/sample-media/"):
             return SkillExecutionResult(
                 skill_name=self.name,
                 skill_version=self.version,

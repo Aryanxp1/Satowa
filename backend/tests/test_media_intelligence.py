@@ -60,6 +60,7 @@ from app.skills.builtins.media_intelligence import (
     CONTROLLED_TAGS,
     MediaIntelligenceSkill,
 )
+from app.skills.builtins.field_frame_observation import FieldFrameObservationSkill
 from app.workflows.engine import WorkflowEngine
 from app.workflows.models import (
     NodeExecutionStatus,
@@ -738,6 +739,24 @@ def test_skill_runtime_resolves_and_executes_media_intelligence():
     assert result.outputs["status"] == "analyzed"
     assert "debris" in result.outputs["tags"]
     assert "media-intelligence@1.0.0" in result.metadata["skill_id"]
+
+
+def test_cloudinary_synthetic_filename_does_not_trigger_demo_output(monkeypatch):
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "")
+    result = asyncio.run(MediaIntelligenceSkill().execute({
+        "media_url": "https://res.cloudinary.com/example/image/upload/pilot/synthetic-before.png",
+        "asset_id": "pilot-image",
+    }, {}))
+    assert result.status == SkillExecutionStatus.UNAVAILABLE
+    assert result.outputs["model_provider"] == "gemini"
+    assert result.outputs["model_name"] != "synthetic-demo"
+
+    frame = asyncio.run(FieldFrameObservationSkill().execute({
+        "frame_url": "https://res.cloudinary.com/example/video/upload/pilot/synthetic-frame.jpg",
+        "source_asset_id": "pilot-video",
+    }, {}))
+    assert frame.status == SkillExecutionStatus.UNAVAILABLE
+    assert frame.metadata["provider"] != "synthetic-demo"
 
 
 # ==============================================================================
