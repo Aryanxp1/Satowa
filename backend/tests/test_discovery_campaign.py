@@ -118,7 +118,11 @@ def test_semantic_search_scoped_cached_and_labeled(tmp_path, monkeypatch):
         calls.append((text, task_type))
         return [1.0, 0.0] if "litter" in text.lower() else [0.0, 1.0]
 
+    async def fake_documents(texts):
+        return [await fake_embedding(text, "RETRIEVAL_DOCUMENT") for text in texts]
+
     monkeypatch.setattr(semantic_search, "embed_text", fake_embedding)
+    monkeypatch.setattr(semantic_search, "embed_documents", fake_documents)
     url = "/api/v1/projects/p-one/semantic-search"
     first = client.post(url, headers=HEADERS, json={"query": "litter near bridge"})
     assert first.status_code == 200, first.text
@@ -169,7 +173,11 @@ def test_search_keeps_approved_records_in_large_local_collection(tmp_path, monke
     async def fake_embedding(text, task_type):
         return [1.0, 0.0] if "litter" in text.lower() else [0.0, 1.0]
 
+    async def fake_documents(texts):
+        return [await fake_embedding(text, "RETRIEVAL_DOCUMENT") for text in texts]
+
     monkeypatch.setattr(semantic_search, "embed_text", fake_embedding)
+    monkeypatch.setattr(semantic_search, "embed_documents", fake_documents)
     result = client.post("/api/v1/projects/p-one/semantic-search", headers=HEADERS,
                          json={"query": "litter near bridge", "limit": 20})
     assert result.status_code == 200, result.text
@@ -193,6 +201,9 @@ def test_embedding_request_uses_document_and_query_prefixes(monkeypatch):
     def handler(request):
         assert request.headers["x-goog-api-key"] == "dummy-key"
         requests.append(request.read().decode())
+        if request.url.path.endswith(':batchEmbedContents'):
+            return httpx.Response(200, json={"embeddings": [
+                {"values": [0.3, 0.4]}, {"values": [0.1, 0.2]}]})
         return httpx.Response(200, json={"embedding": {"values": [0.3, 0.4]}})
 
     transport = httpx.MockTransport(handler)
@@ -201,8 +212,11 @@ def test_embedding_request_uses_document_and_query_prefixes(monkeypatch):
                         lambda **kwargs: original_client(transport=transport, **kwargs))
     assert asyncio.run(semantic_search.embed_text("clean shoreline", "RETRIEVAL_DOCUMENT")) == [0.3, 0.4]
     assert asyncio.run(semantic_search.embed_text("where is litter?", "RETRIEVAL_QUERY")) == [0.3, 0.4]
+    assert asyncio.run(semantic_search.embed_documents(["clean shoreline", "litter near bridge"])) == [
+        [0.3, 0.4], [0.1, 0.2]]
     assert 'title: none | text: clean shoreline' in requests[0]
     assert 'task: search result | query: where is litter?' in requests[1]
+    assert 'title: none | text: litter near bridge' in requests[2]
 
 
 def test_existing_local_campaign_database_gets_edit_column(tmp_path, monkeypatch):

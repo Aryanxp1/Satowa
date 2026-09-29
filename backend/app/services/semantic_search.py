@@ -152,12 +152,47 @@ async def embed_text(text: str, task_type: str) -> list[float]:
                 f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:embedContent",
                 headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=payload)
         response.raise_for_status()
-        values = response.json()["embedding"]["values"]
-        if not values or not all(math.isfinite(float(v)) for v in values):
-            raise ValueError("Invalid embedding vector")
-        return [float(v) for v in values]
+        return _valid_vector(response.json()["embedding"]["values"])
     except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
         raise HTTPException(502, "Gemini embedding request failed; retry the search") from exc
+
+
+def _valid_vector(values) -> list[float]:
+    if not isinstance(values, list) or not values:
+        raise ValueError("Invalid embedding vector")
+    vector = [float(v) for v in values]
+    if not all(math.isfinite(v) for v in vector):
+        raise ValueError("Invalid embedding vector")
+    return vector
+
+
+async def embed_documents(texts: list[str]) -> list[list[float]]:
+    """Use one documented batchEmbedContents request for the next index batch."""
+    if not texts:
+        return []
+    if not settings.GEMINI_API_KEY:
+        raise HTTPException(503, "Gemini API key is required for semantic search")
+    if len(texts) > INDEX_BATCH_SIZE:
+        raise ValueError("Embedding batch exceeds the per-search limit")
+    payload = {"requests": [{
+        "model": f"models/{MODEL}",
+        "content": {"parts": [{"text": f"title: none | text: {value}"}]},
+    } for value in texts]}
+    try:
+        async with httpx.AsyncClient(timeout=45) as client:
+            response = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:batchEmbedContents",
+                headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=payload)
+        response.raise_for_status()
+        embeddings = response.json()["embeddings"]
+        if len(embeddings) != len(texts):
+            raise ValueError("Embedding count mismatch")
+        vectors = [_valid_vector(item["values"]) for item in embeddings]
+        if len({len(vector) for vector in vectors}) != 1:
+            raise ValueError("Embedding dimensions mismatch")
+        return vectors
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(502, "Gemini batch embedding request failed; retry the search") from exc
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -185,15 +220,17 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
     for key, row in existing.items():
         if key in current and (row["content_hash"] != current[key] or row["model"] != MODEL):
             db.execute("DELETE FROM semantic_documents WHERE doc_key=? AND project_id=?", (key, project_id))
-    indexed = 0
+    pending = []
     for doc in documents:
         digest = current[doc["doc_key"]]
         cached = existing.get(doc["doc_key"])
         if cached and cached["content_hash"] == digest and cached["model"] == MODEL:
             continue
-        if indexed >= INDEX_BATCH_SIZE:
-            continue
-        vector = await embed_text(doc["content"], "RETRIEVAL_DOCUMENT")
+        pending.append((doc, digest))
+        if len(pending) == INDEX_BATCH_SIZE:
+            break
+    vectors = await embed_documents([doc["content"] for doc, _ in pending])
+    for (doc, digest), vector in zip(pending, vectors):
         db.execute("""INSERT INTO semantic_documents
             (doc_key,project_id,site_id,kind,entity_id,content,content_hash,model,
              embedding_json,evidence_json,review_status,updated_at)
@@ -207,7 +244,7 @@ async def search_project(db, project_id: str, query: str, limit: int = 8) -> dic
             (doc["doc_key"], project_id, doc["site_id"], doc["kind"], doc["entity_id"],
              doc["content"], digest, MODEL, json.dumps(vector), json.dumps(doc["evidence"]),
              doc["review_status"], store.timestamp()))
-        indexed += 1
+    indexed = len(pending)
     indexed_count = store.one(db,
         "SELECT COUNT(*) AS count FROM semantic_documents WHERE project_id=?", (project_id,))["count"]
     if not documents:

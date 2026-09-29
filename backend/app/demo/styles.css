@@ -405,6 +405,7 @@ h1,h2{font-weight:650}
 .discovery-hit-links { border-top:1px solid var(--line); padding-top:12px; font-size:.8rem; font-weight:700; }
 .discovery-hit-links a { display:inline-flex; min-height:36px; align-items:center; border:1px solid var(--line); border-radius:4px; padding:6px 10px; text-decoration:none; }
 .discovery-hit-links a:hover,.discovery-hit-links a:focus-visible { border-color:var(--accent); background:var(--surface-2); }
+:where(button,a,summary):focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
 .pilot-token-form { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:10px 16px; padding:18px 0 8px; }
 .pilot-token-form[hidden] { display:none; }
 .pilot-token-form .meta { grid-column:1 / -1; margin:0; }
@@ -553,16 +554,24 @@ h1,h2{font-weight:650}
 }
 
 @media (max-width: 760px) {
+  .topbar { flex-wrap:wrap; padding-block:10px; }
+  .topbar>div { min-width:0; }
+  #topbar-project-container { min-width:0; }
+  #topbar-project-container select { min-width:0!important; width:min(52vw,300px); }
+  .top-actions { flex-wrap:wrap; }
   .pilot-token-form { grid-template-columns:1fr; }
   .workspace-main-nav {
     display: flex;
     overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
     padding-bottom: 8px;
     gap: 8px;
     scrollbar-width: thin;
   }
   .workspace-nav-btn {
     flex: 0 0 190px;
+    scroll-snap-align: start;
   }
   .evidence-subnav {
     flex-direction: column;
