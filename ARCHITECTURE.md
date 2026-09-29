@@ -29,3 +29,5 @@ Supabase connection, migration idempotence, reconnect persistence, rollback, and
 The current remote pilot gates APIs with a named reviewer token held in tab memory. The local session/credential editor is loopback-only. Public health/readiness expose configuration states, not credentials. Public story pages project only eligible current evidence.
 
 Full account authentication, per-project roles, login rate limiting, and session CSRF verification are not implemented by this change. Production startup is blocked rather than presenting the pilot as multi-user production. CORS no longer falls back to a wildcard; workspace/story pages have CSP and response security headers.
+
+PostgreSQL migration 2 enables row-level security on every Setowa table, with no public policies. Supabase anon/authenticated Data API roles must not bypass FastAPI authorization. Use the trusted server database connection only; never expose it in browser code.

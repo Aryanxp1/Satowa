@@ -68,12 +68,19 @@ def migrate(url: str):
     with connection(url) as db:
         db.execute('SELECT pg_advisory_xact_lock(739241)')
         db.execute('CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)')
-        if db.execute('SELECT version FROM schema_migrations WHERE version=1').fetchone():
-            return
-        db.executescript(SCHEMA)
-        db.executescript(WORKFLOW_SCHEMA)
-        for statement in _POST_MIGRATION_INDEXES:
-            db.execute(statement)
-        db.execute('INSERT OR IGNORE INTO projects(id,name,description,created_at) VALUES(?,?,?,?)',
-                   ('proj_default', 'Default Environmental Project', 'Workspace', timestamp()))
-        db.execute('INSERT INTO schema_migrations(version,applied_at) VALUES(?,?)', (1, timestamp()))
+        if not db.execute('SELECT version FROM schema_migrations WHERE version=1').fetchone():
+            db.executescript(SCHEMA)
+            db.executescript(WORKFLOW_SCHEMA)
+            for statement in _POST_MIGRATION_INDEXES:
+                db.execute(statement)
+            db.execute('INSERT OR IGNORE INTO projects(id,name,description,created_at) VALUES(?,?,?,?)',
+                       ('proj_default', 'Default Environmental Project', 'Workspace', timestamp()))
+            db.execute('INSERT INTO schema_migrations(version,applied_at) VALUES(?,?)', (1, timestamp()))
+        if not db.execute('SELECT version FROM schema_migrations WHERE version=2').fetchone():
+            # Supabase's Data API must not bypass FastAPI reviewer authorization.
+            # No public policies: anon/authenticated roles cannot read/write these tables.
+            # The server uses the trusted owner connection, never a browser database key.
+            names = re.findall(r'CREATE TABLE IF NOT EXISTS ([a-z_]+)', SCHEMA + WORKFLOW_SCHEMA)
+            for name in [*names, 'schema_migrations']:
+                db.execute('ALTER TABLE ' + name + ' ENABLE ROW LEVEL SECURITY')
+            db.execute('INSERT INTO schema_migrations(version,applied_at) VALUES(?,?)', (2, timestamp()))

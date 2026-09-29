@@ -31,7 +31,8 @@ def test_postgres_migration_named_parameters_and_persistence(monkeypatch):
         with store.connection() as db:
             assert store.one(db, 'SELECT label FROM visits WHERE id=?', ('test-visit',))['label'] == 'Synthetic'
             db.execute('BEGIN IMMEDIATE')
-            assert store.one(db, 'SELECT COUNT(*) AS n FROM schema_migrations')['n'] == 1
+            assert store.one(db, 'SELECT COUNT(*) AS n FROM schema_migrations')['n'] == 2
+            assert db.execute("SELECT relrowsecurity FROM pg_class WHERE oid='assets'::regclass").fetchone()['relrowsecurity'] is True
         with pytest.raises(RuntimeError, match='rollback-check'):
             with store.connection() as db:
                 db.execute('DELETE FROM visits WHERE id=?', ('test-visit',))
@@ -75,6 +76,12 @@ def test_postgres_migration_named_parameters_and_persistence(monkeypatch):
         drafts = client.get('/api/v1/projects/proj_default/campaign-drafts', headers=headers)
         assert drafts.json()[0]['stale'] is True
         assert drafts.json()[0]['sources'] == []
+        with psycopg.connect(scoped) as db:
+            if db.execute("SELECT 1 FROM pg_roles WHERE rolname='anon'").fetchone():
+                db.execute(sql.SQL('GRANT USAGE ON SCHEMA {} TO anon').format(sql.Identifier(schema)))
+                db.execute('GRANT SELECT ON projects TO anon')
+                db.execute('SET LOCAL ROLE anon')
+                assert db.execute('SELECT COUNT(*) FROM projects').fetchone()[0] == 0
     finally:
         with psycopg.connect(base, autocommit=True) as control:
             control.execute(sql.SQL('DROP SCHEMA {} CASCADE').format(sql.Identifier(schema)))

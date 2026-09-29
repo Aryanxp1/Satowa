@@ -23,3 +23,5 @@ Leave MEDIA_UPLOAD_TOKEN unset when named reviewers authorize uploads. Leave Gem
 Before switching storage, initialize the dedicated PostgreSQL database using `scripts/migrate_postgres.py`, then set the same DATABASE_URL in Render secret settings. The migration does not transfer old SQLite data. No paid disk is required. Do not commit or paste a connection string into logs/chat. PostgreSQL integration tests use `SETOWA_POSTGRES_TEST_URL` and create/drop only a uniquely named test schema.
 
 Without DATABASE_URL, SQLite remains ephemeral and this must be disclosed in the demo. Back up local SQLite with `scripts/backup_sqlite.py SOURCE NEW_DESTINATION`. A PostgreSQL backup/restore drill and complete hosted journey remain mandatory before claiming durable production readiness.
+
+PostgreSQL migration 2 enables row-level security on every Setowa table, with no public policies. Supabase anon/authenticated Data API roles must not bypass FastAPI authorization. Use the trusted server database connection only; never expose it in browser code.

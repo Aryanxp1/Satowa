@@ -17,7 +17,7 @@ This is an implementation checkpoint, not a declaration that the complete execut
 ## Verified
 
 - Baseline: 309 passed / 1 skipped. Updated suite: 318 passed / 2 opt-in live tests skipped; PostgreSQL integration separately passed.
-- PostgreSQL: empty public schema inspected, schema initialized; disposable-schema integration passed (migration repeat, parameters, reconnect persistence, rollback). The PostgreSQL API lifecycle also passed: visit, pair, manual approval, report, campaign and revoked-source suppression. No production records used for the test.
+- PostgreSQL: empty public schema inspected, schema initialized; disposable-schema integration passed (migration repeat, parameters, reconnect persistence, rollback). The PostgreSQL API lifecycle also passed: visit, pair, manual approval, report, campaign and revoked-source suppression. Anonymous Supabase-role read denial also passed with RLS enabled, even with table SELECT permission. No production records used for the test.
 - SQLite backup/restore integrity and table counts passed; original database unchanged.
 - Local browser: synthetic media workspace and no-key keyword discovery return source-linked results, visibly labeled as keyword mode.
 - Dependency audit of pinned requirements: no known vulnerabilities reported at execution time. This is not a security certification.
