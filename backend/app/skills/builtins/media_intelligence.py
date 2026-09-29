@@ -229,7 +229,7 @@ class MediaIntelligenceSkill(BaseSkill):
         }
 
         # 1. Synthetic sample walkthrough handling
-        if media_url.startswith("/demo/sample-media/") or "synthetic" in media_url.lower():
+        if media_url.startswith("/demo/sample-media/"):
             return SkillExecutionResult(
                 skill_name=self.name,
                 skill_version=self.version,
