@@ -19,6 +19,6 @@ The local synthetic sample demonstrates this workflow without provider calls. It
 
 ## Boundaries for this milestone
 
-Cloudinary owns original media and delivery; Setowa stores references and review state. Gemini is optional and can refuse. Setowa does not claim automatic impact scoring, field verification, general semantic search, video understanding, or a production-ready public auth system. MomentSearch and SentrySearch are design references, not integrated dependencies.
+Cloudinary owns original media and delivery; Setowa stores references and review state. Gemini comparison can refuse. A bounded, on-demand project-scoped semantic search now uses Gemini text embeddings; it has not been evaluated on a real field collection. Local campaign drafts use templates grounded in approved observations and sourced measurements, and require human checking before sharing. Setowa does not claim automatic impact scoring, independent field verification, validated search relevance, or production-ready public auth. MomentSearch and SentrySearch are design references, not integrated dependencies.
 
 Before submission, prioritize one permissioned real site with comparable before/after images, a labeled poor-comparison case, reviewer checks, and a report that can be traced back to its originals. Then rehearse the synthetic fallback for a provider outage. See [TIMELINE.md](TIMELINE.md), [ARCHITECTURE.md](ARCHITECTURE.md), and [the evidence workflow API](backend/EVIDENCE_WORKFLOW.md).

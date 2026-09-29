@@ -27,7 +27,7 @@
     workflowExecution: null,
     impactStory: null,
   };
-  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'media', 'evidence']);
+  const tabs = new Set(['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'discovery', 'campaign', 'media', 'evidence']);
 
 
   function element(tag, className = '', text = '') {
@@ -242,7 +242,7 @@
     if (!tabs.has(active)) active = 'media-library';
     state.activeTab = active;
 
-    for (const tab of ['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact']) {
+    for (const tab of ['overview', 'visits', 'media-library', 'skills', 'workflows', 'compare', 'review', 'report', 'impact', 'discovery', 'campaign']) {
       const el = $(`tab-${tab}`);
       if (el) el.hidden = tab !== active;
     }
@@ -270,6 +270,8 @@
       loadWorkflowsStudio();
     } else if (active === 'impact') {
       loadImpactStoryTab();
+    } else if (active === 'campaign') {
+      loadCampaignDrafts();
     } else if (active === 'compare') {
       renderPairChoices();
     } else if (active === 'review') {
@@ -2918,8 +2920,8 @@
 
     if ($('impact-project-name')) $('impact-project-name').textContent = story.title || (state.siteRecord && state.siteRecord.name) || state.site;
     const dateRange = story.date_range && (story.date_range.start || story.date_range.start_date || story.date_range.end || story.date_range.end_date)
-      ? `${story.date_range.start || story.date_range.start_date || '2026-09-02'} → ${story.date_range.end || story.date_range.end_date || '2026-09-22'}`
-      : 'Evidence Period: 2026-09-02 → 2026-09-22';
+      ? `${story.date_range.start || story.date_range.start_date || 'date unknown'} → ${story.date_range.end || story.date_range.end_date || 'date unknown'}`
+      : 'dates not recorded';
     if ($('impact-date-range')) $('impact-date-range').textContent = `Evidence Period: ${dateRange}`;
 
     const metrics = story.metrics || {};
@@ -2930,10 +2932,10 @@
     const verifiedCount = metrics.approved_findings_count ?? cards.filter(c => c.verification_status === 'approved').length;
     const measurementCount = metrics.measurement_count ?? events.filter(e => e.event_type === 'measurement').length;
 
-    if ($('impact-metric-events')) $('impact-metric-events').textContent = eventCount || events.length || '5';
-    if ($('impact-metric-media')) $('impact-metric-media').textContent = mediaCount || '3';
+    if ($('impact-metric-events')) $('impact-metric-events').textContent = String(eventCount);
+    if ($('impact-metric-media')) $('impact-metric-media').textContent = String(mediaCount);
     if ($('impact-metric-verified')) $('impact-metric-verified').textContent = String(verifiedCount);
-    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = measurementCount || '1';
+    if ($('impact-metric-measurements')) $('impact-metric-measurements').textContent = String(measurementCount);
 
     if ($('impact-status-pill')) {
       $('impact-status-pill').textContent = (story.status || 'draft').toUpperCase();
@@ -3269,6 +3271,105 @@
       notice(`Failed to revoke link: ${sanitizeErrorMessage(err)}`, true);
     }
   }
+
+  function activeProjectId() {
+    return (state.siteRecord && state.siteRecord.project_id) || state.site;
+  }
+
+  function appendEvidenceLinks(container, evidence) {
+    for (const item of evidence || []) {
+      if (!item.url) continue;
+      let url;
+      try { url = new URL(item.url, location.origin); } catch (_) { continue; }
+      if (!['https:', 'http:'].includes(url.protocol)) continue;
+      const link = element('a', '', item.role ? `${item.role} photo` : 'View source media');
+      link.href = url.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      container.append(link, document.createTextNode('  '));
+    }
+  }
+
+  $('semantic-search-form').addEventListener('submit', (event) => run(async () => {
+    event.preventDefault();
+    const query = $('semantic-query').value.trim();
+    if (query.length < 3) return;
+    const button = $('semantic-search-form').querySelector('button');
+    button.disabled = true;
+    $('semantic-search-status').textContent = 'Embedding current project records and searching…';
+    try {
+      const result = await request(`/projects/${encodeURIComponent(activeProjectId())}/semantic-search`,
+        { method: 'POST', json: { query, limit: 8 } });
+      const box = $('semantic-search-results');
+      box.replaceChildren();
+      $('semantic-search-status').textContent = result.results.length
+        ? `${result.results.length} result(s) · ${result.indexed} record(s) newly embedded${result.truncated ? ` · collection limit reached (${result.max_documents} records)` : ''}`
+        : 'No searchable records in this project yet.';
+      for (const hit of result.results) {
+        const card = element('article', 'paper-card discovery-result');
+        const heading = element('h3', '', `${hit.kind.replaceAll('_', ' ')} · ${hit.site_id || 'project'}`);
+        const status = element('p', 'meta', `Status: ${hit.review_status.replaceAll('_', ' ')} · similarity ${hit.score.toFixed(2)}`);
+        const body = element('p', '', hit.text);
+        card.append(heading, status, body);
+        appendEvidenceLinks(card, hit.evidence);
+        box.append(card);
+      }
+    } catch (error) {
+      $('semantic-search-status').textContent = sanitizeErrorMessage(error.message);
+      throw error;
+    } finally { button.disabled = false; }
+  }));
+
+  function renderCampaignDrafts(drafts) {
+    const box = $('campaign-drafts');
+    box.replaceChildren();
+    if (!drafts.length) {
+      box.append(element('p', 'meta', 'No drafts yet. Approve an observation or record a sourced measurement first.'));
+      return;
+    }
+    for (const draft of drafts) {
+      const card = element('article', 'paper-card discovery-result');
+      card.append(element('h3', '', draft.title));
+      card.append(element('p', 'meta',
+        `${draft.channel.replaceAll('_', ' ')} · DRAFT${draft.demo_only ? ' · SYNTHETIC DEMO' : ''}${draft.stale ? ' · STALE: source records changed' : ''}`));
+      const copy = element('div', 'campaign-copy', draft.body);
+      const button = element('button', 'button secondary', 'Copy draft');
+      button.type = 'button';
+      button.addEventListener('click', () => run(async () => {
+        await navigator.clipboard.writeText(draft.body);
+        notice('Draft copied. Check evidence before sharing.', 'success');
+      }));
+      card.append(copy, button);
+      box.append(card);
+    }
+  }
+
+  async function loadCampaignDrafts() {
+    if (!state.site) return;
+    try {
+      const drafts = await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`);
+      $('campaign-status').textContent = `${drafts.length} saved local draft(s). Nothing is published automatically.`;
+      renderCampaignDrafts(drafts);
+    } catch (error) {
+      $('campaign-status').textContent = sanitizeErrorMessage(error.message);
+    }
+  }
+
+  $('campaign-form').addEventListener('submit', (event) => run(async () => {
+    event.preventDefault();
+    const button = $('campaign-form').querySelector('button');
+    button.disabled = true;
+    $('campaign-status').textContent = 'Building a draft from approved and sourced records…';
+    try {
+      await request(`/projects/${encodeURIComponent(activeProjectId())}/campaign-drafts`,
+        { method: 'POST', json: { channel: $('campaign-channel').value } });
+      await loadCampaignDrafts();
+      notice('Grounded local draft saved. Review before sharing.', 'success');
+    } catch (error) {
+      $('campaign-status').textContent = sanitizeErrorMessage(error.message);
+      throw error;
+    } finally { button.disabled = false; }
+  }));
 
   // T017 / T018 Impact Story Event Listeners
   const generateImpactBtn = $('btn-generate-impact');

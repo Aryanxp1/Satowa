@@ -11,6 +11,8 @@
 - Request an optional Gemini comparison. If credentials or evidence are inadequate, the app explains the uncertainty; a reviewer can write their own observation.
 - Approve, edit, or reject observations. Edits reset approval and stale review versions are rejected.
 - Export Markdown or JSON reports from saved approved observations, original evidence links, and measurements explicitly recorded with a source. Photos alone never establish a waste quantity.
+- Search a project's saved media and video-frame descriptions, reviewer-approved observations, and recorded measurements by meaning using on-demand Gemini embeddings. Results show their review status and evidence links; a Gemini key is required, and no keyword fallback is mislabeled semantic search.
+- Generate saved local social, newsletter, and volunteer-update drafts from approved observations and sourced measurements. Drafts show evidence references, never post automatically, and turn stale if source records change. Synthetic examples carry an explicit demo label.
 - Walk through a clearly labeled **synthetic** sample without Cloudinary or Gemini calls. It is a product demo, not proof of cleanup impact.
 
 ## Run locally
@@ -25,7 +27,9 @@ Open the [workspace](http://127.0.0.1:8000/) or [showcase](http://127.0.0.1:8000
 
 The UI is served by FastAPI. SQLite holds Setowa's sites, visits, evidence references, observation revisions, reviews, and measurements. Cloudinary stores uploaded originals; Gemini is an optional comparison service. The [architecture](ARCHITECTURE.md) and [evidence API](backend/EVIDENCE_WORKFLOW.md) explain the flow and its limits.
 
-[LEX_Milestone.md](LEX_Milestone.md) records Aryan's Milestone 1 acceptance criteria and current validation status. The core local flow works and the test suite passes, but real permissioned field-pair evaluation and public deployment remain to be completed. Do not present the synthetic sample as field evidence or a live provider evaluation.
+Semantic search indexes only after a user searches, caches text embeddings in local SQLite, and currently scans up to 24 recent project records per request to bound provider calls. Gemini embedding calls may count toward the account's quota; Setowa does not initiate them automatically. Campaign copy is deliberately template-generated from saved records, with no extra model call or external publishing integration.
+
+[LEX_Milestone.md](LEX_Milestone.md) records Aryan's Milestone 1 acceptance criteria and current validation status. The current focus is **local use**; invited-user auth and deployment are deferred. Real permissioned field-pair evaluation remains to be completed. Do not present the synthetic sample as field evidence or a live provider evaluation.
 
 ## Team and collaboration
 

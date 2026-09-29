@@ -17,6 +17,7 @@ from app.routes.workflows import router as workflows_router
 from app.routes.projects import router as projects_router
 from app.routes.impact_stories import router as impact_stories_router
 from app.routes.public_impact import public_router
+from app.routes.discovery_campaign import router as discovery_campaign_router
 
 # Configure logging
 logging.basicConfig(
@@ -57,6 +58,7 @@ app.include_router(local_setup_router)
 app.include_router(skills_router)
 app.include_router(workflows_router)
 app.include_router(public_router)
+app.include_router(discovery_campaign_router)
 app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
 showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
 if showcase_dir.is_dir():

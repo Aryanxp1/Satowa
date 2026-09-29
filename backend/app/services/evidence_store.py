@@ -153,6 +153,19 @@ CREATE TABLE IF NOT EXISTS impact_story_events (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS semantic_documents (
+ doc_key TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
+ site_id TEXT, kind TEXT NOT NULL, entity_id TEXT NOT NULL,
+ content TEXT NOT NULL, content_hash TEXT NOT NULL, model TEXT NOT NULL,
+ embedding_json TEXT NOT NULL, evidence_json TEXT NOT NULL,
+ review_status TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS campaign_drafts (
+ id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
+ channel TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+ sources_json TEXT NOT NULL, source_fingerprint TEXT NOT NULL,
+ demo_only INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+);
 """
 
 # All indexes are applied post-migration to guarantee columns exist
@@ -175,6 +188,8 @@ _POST_MIGRATION_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_impact_story_events_type ON impact_story_events(event_type)',
     # T018 indexes
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_impact_stories_share_token ON impact_stories(share_token)',
+    'CREATE INDEX IF NOT EXISTS idx_semantic_documents_project ON semantic_documents(project_id)',
+    'CREATE INDEX IF NOT EXISTS idx_campaign_drafts_project ON campaign_drafts(project_id, created_at)',
 ]
 
 
@@ -820,4 +835,3 @@ def get_impact_story_events(db, story_id: str) -> list[dict]:
         'SELECT * FROM impact_story_events WHERE story_id=? ORDER BY event_order ASC, timestamp_date ASC',
         (story_id,)
     )
-

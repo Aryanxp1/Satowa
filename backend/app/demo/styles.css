@@ -373,15 +373,20 @@ h1,h2{font-weight:650}
   .impact-share-bar .share-actions-group{width:100%;flex-wrap:wrap}
 }
 
-/* SETOWA 5-Stage Primary Workspace Navigation */
+/* SETOWA workspace navigation */
 .workspace-main-nav {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
   gap: 10px;
   margin-top: 24px;
   border-top: 1px solid var(--line);
   padding-top: 18px;
 }
+.discovery-results { display:grid; gap:14px; margin-top:18px; }
+.discovery-result { overflow-wrap:anywhere; }
+.discovery-result p { white-space:pre-wrap; line-height:1.55; }
+.discovery-result a { color:var(--green); word-break:break-all; }
+.campaign-copy { white-space:pre-wrap; max-height:430px; overflow:auto; padding:14px; background:var(--surface-2); border:1px solid var(--line); font:0.82rem/1.6 ui-monospace,Menlo,monospace; }
 
 .workspace-nav-btn {
   display: flex;
