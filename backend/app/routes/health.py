@@ -5,7 +5,7 @@ from app.config import settings
 from app.schemas.api import HealthResponse, ReadinessResponse
 from app.services import evidence_store as store
 from app.services.env_validator import validate_environment
-from app.services.reviewer_auth import reviewer_for_authorization
+from app.services.reviewer_auth import reviewer_configuration_status, reviewer_for_authorization
 
 router = APIRouter(prefix="/api/v1", tags=["System Health"])
 
@@ -36,7 +36,7 @@ async def health_check():
 
 
 @router.get("/ready", response_model=ReadinessResponse)
-async def readiness_check():
+async def readiness_check(response: Response):
     """Returns readiness probe status checking database connectivity and provider configuration."""
     db_status = "ready"
     try:
@@ -50,15 +50,24 @@ async def readiness_check():
     env_report = validate_environment(settings)
     cloudinary_status = "configured" if env_report["cloudinary_ready"] else "missing"
     gemini_status = "configured" if env_report["gemini_ready"] else "missing"
+    reviewer_status = reviewer_configuration_status()
 
-    overall_status = "ready" if db_status == "ready" else "degraded"
+    pilot = settings.ENVIRONMENT.lower() == 'pilot'
+    overall_status = "ready" if db_status == "ready" and (
+        not pilot or (cloudinary_status == 'configured' and gemini_status == 'configured'
+                      and reviewer_status == 'configured' and not settings.USE_MOCK)
+    ) else "degraded"
+    if overall_status == 'degraded':
+        response.status_code = 503
+    response.headers['Cache-Control'] = 'no-store'
 
     return ReadinessResponse(
         status=overall_status,
-        application="ready",
+        application="ready" if db_status == 'ready' else 'degraded',
         database=db_status,
         cloudinary=cloudinary_status,
         gemini=gemini_status,
+        reviewer_auth=reviewer_status,
         environment=settings.ENVIRONMENT,
         mode=env_report["mode"],
     )

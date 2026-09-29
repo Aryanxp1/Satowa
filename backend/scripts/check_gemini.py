@@ -17,9 +17,9 @@ def main():
     if not api_key:
         raise SystemExit('GEMINI_API_KEY is required in credential.json or backend/.env')
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_VISION_MODEL}?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_VISION_MODEL}"
     try:
-        resp = httpx.get(url, timeout=10)
+        resp = httpx.get(url, headers={"x-goog-api-key": api_key}, timeout=10)
         if resp.status_code == 200:
             data = resp.json()
             display_name = data.get('displayName', settings.GEMINI_VISION_MODEL)

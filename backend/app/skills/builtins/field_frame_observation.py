@@ -233,9 +233,9 @@ class FieldFrameObservationSkill(BaseSkill):
                     if not model or model in seen_models:
                         continue
                     seen_models.add(model)
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                     try:
-                        r = await client.post(url, json=payload)
+                        r = await client.post(url, headers={"x-goog-api-key": gemini_key}, json=payload)
                         if r.status_code == 200:
                             gemini_resp = r
                             used_model = model
@@ -244,8 +244,8 @@ class FieldFrameObservationSkill(BaseSkill):
                             logger.info(f"Gemini model {model} returned HTTP {r.status_code}; trying next model.")
                             gemini_resp = r
                             continue
-                    except Exception as net_err:
-                        logger.warning(f"Error calling {model}: {net_err}")
+                    except Exception:
+                        logger.warning("Error calling Gemini model %s.", model)
                         continue
 
                 if not gemini_resp or gemini_resp.status_code != 200:

@@ -568,7 +568,7 @@ async def generate_grounded_impact_narrative(
                 f"FACTS:\n{json.dumps(facts_payload, indent=2)}"
             )
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_VISION_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_VISION_MODEL}:generateContent"
             body = {
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
@@ -578,7 +578,7 @@ async def generate_grounded_impact_narrative(
             }
 
             async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.post(url, json=body)
+                resp = await client.post(url, headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=body)
                 if resp.status_code == 200:
                     data = resp.json()
                     candidates = data.get("candidates", [])
@@ -589,8 +589,8 @@ async def generate_grounded_impact_narrative(
                         uncertainty_note = parsed.get("uncertainty_note")
                         if narrative and isinstance(narrative, str):
                             return narrative.strip(), (uncertainty_note.strip() if uncertainty_note else None)
-        except Exception as exc:
-            logger.warning("Gemini narrative generation failed or timed out; falling back to deterministic synthesis: %s", exc)
+        except Exception:
+            logger.warning("Gemini narrative generation failed or timed out; using deterministic synthesis.")
 
     # Deterministic Grounded Fallback
     paragraphs = []

@@ -2,6 +2,7 @@
 import time
 import httpx
 import logging
+from fastapi import HTTPException
 from typing import Tuple
 from app.config import settings
 from app.schemas.api import AnalyzeRequest, AnalyzeResponse
@@ -20,16 +21,20 @@ class AIEngineService:
     async def execute_reasoning(self, request: AnalyzeRequest) -> AnalyzeResponse:
         """Process an analysis request either via external model or mock engine."""
         start_time = time.perf_counter()
+        self.mock_mode = settings.USE_MOCK
+        self.api_key = settings.GEMINI_API_KEY
+        self.model = settings.GEMINI_MODEL
 
-        # If explicitly in mock mode or API key is not configured, use fallback mock
-        if self.mock_mode or not self.api_key:
+        if self.mock_mode:
             return self._generate_mock_response(request, start_time)
+        if not self.api_key:
+            raise HTTPException(503, "GEMINI_API_KEY is required when USE_MOCK is false")
 
         try:
             return await self._call_gemini_api(request, start_time)
-        except Exception as exc:
-            logger.warning("External AI API failed (%s); triggering resilient fallback mock.", exc)
-            return self._generate_mock_response(request, start_time, fallback_note=str(exc))
+        except Exception:
+            logger.warning("External AI API failed; no mock result was substituted.")
+            raise HTTPException(502, "Gemini request failed; retry later") from None
 
     def _generate_mock_response(
         self,
@@ -70,7 +75,7 @@ class AIEngineService:
         """Call Google Gemini REST endpoint."""
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:generateContent?key={self.api_key}"
+            f"{self.model}:generateContent"
         )
         payload = {
             "contents": [
@@ -83,7 +88,7 @@ class AIEngineService:
         }
 
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, headers={"x-goog-api-key": self.api_key}, json=payload)
             resp.raise_for_status()
             data = resp.json()
 
