@@ -1,6 +1,6 @@
 # Release candidate status — 2026-09-29
 
-This is an implementation checkpoint, not a declaration that the complete execution brief is finished. Base: main `49c50f8`; branch: `codex/setowa-release-candidate`.
+This is an implementation checkpoint, not a declaration that the complete execution brief is finished. Release candidate originated at main `49c50f8`; see the current Git history and PR for its merge status.
 
 ## Implemented in this branch
 
@@ -30,6 +30,6 @@ This is an implementation checkpoint, not a declaration that the complete execut
 - Real permissioned field-pair dataset and labeled real-world AI evaluation.
 - End-to-end campaign/share/revocation validation of this deployed revision, complete mobile/accessibility QA, video-format/abuse audit.
 - True collection/end-to-end concurrency benchmarks and hosted performance measurements.
-- Final secret/dependency/security gates, dev/main promotion and hosted smoke checks before any release tag.
+- Final secret/dependency/security gates and hosted smoke checks before any release tag.
 
 Existing token pilot behavior remains supported. Production mode refuses startup while production authorization is incomplete. No paid service was enabled.

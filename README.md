@@ -2,7 +2,7 @@
 
 Setowa turns field photos and videos into traceable sustainability evidence. Cloudinary stores originals, optional AI interprets visual signals, people review proposed observations, and saved approved evidence becomes reports, timelines, and campaign drafts.
 
-**Current release state: single-reviewer pilot, not a completed production release.** See [PROJECT_STATUS.md](PROJECT_STATUS.md) for verified results and outstanding gates. Synthetic walkthrough images are not real field impact.
+**Current release state: single-reviewer pilot.** The hosted app is at [setowa.onrender.com](https://setowa.onrender.com); deployment of this repository revision must be checked separately. Synthetic walkthrough images are not real field impact. See [PROJECT_STATUS.md](PROJECT_STATUS.md) for verified results.
 
 ## Run locally
 
@@ -30,6 +30,20 @@ Same site and valid before/after dates are required. Approval is never automatic
 SQLite remains the local default and is ephemeral on a free Render filesystem. Optional `DATABASE_URL` selects PostgreSQL; initialize it with `cd backend && .venv/bin/python scripts/migrate_postgres.py`. This creates schema, not an import of local/private data. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 The existing reviewer-token pilot is supported. Account/password authentication with admin/reviewer/viewer project permissions remains outstanding. Production mode is deliberately blocked until those release gates are implemented and verified.
+
+## Project TODO
+
+These items are **not complete**. They are future work, not claims about the submitted prototype.
+
+- [ ] Deploy this revision with the server-side NVIDIA and PostgreSQL settings, then verify the hosted browser flow, restart persistence, and a database backup/restore drill.
+- [ ] Confirm live NVIDIA embeddings and single-image analysis with permissioned media. Evaluate refusal behavior and validate a two-image model before enabling automatic comparison. Keyword search and manual comparison are available meanwhile.
+- [ ] Build account login, admin/reviewer/viewer roles, project permissions, secure sessions, CSRF checks, and login rate limiting before a public multi-user launch.
+- [ ] Collect permissioned field photos/videos with creator, license, capture date, site, and comparable viewpoint records. Obtain human labels and report real-world AI results and limitations.
+- [ ] Test the full collection and video pipeline at 100, 1,000, and 10,000 records, including hosted latency and concurrent users. The current numbers measure only local keyword search.
+- [ ] Finish mobile, keyboard, and accessibility QA; audit video formats and abuse cases; rehearse public share, revocation, and campaign behavior on the deployed revision.
+- [ ] Add optional AI-assisted campaign writing only after its drafts preserve source links and require human review. Current campaign drafts are working templates.
+
+The [demo guide](DEMO.md) gives a walkthrough that works without an AI key. Do not present the synthetic sample, a configured provider key, or a reviewer approval as verified real-world impact.
 
 ## Verification
 

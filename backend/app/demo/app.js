@@ -82,7 +82,7 @@
 
   function sanitizeErrorMessage(msg) {
     if (!msg) return 'The request could not be completed.';
-    if (msg.includes('503:')) return 'Service or credentials unavailable. Please check Cloudinary / Gemini configuration.';
+    if (msg.includes('503:')) return 'Service or provider unavailable. Check the server configuration, or continue with manual review and keyword search.';
     if (msg.includes('502:')) return 'Media or AI provider communication error. No partial or corrupt data was recorded.';
     if (msg.includes('409:')) return 'Observation version conflict. The record was modified and has been refreshed.';
     if (msg.includes('404:')) return 'Requested item not found. Please refresh the page.';
@@ -2210,8 +2210,8 @@
     const compareBtn = $('compare');
     const originalText = compareBtn.textContent;
     compareBtn.disabled = true;
-    compareBtn.textContent = 'Comparing with Gemini...';
-    notice('Analyzing evidence pair with Gemini vision model...');
+    compareBtn.textContent = 'Checking evidence pair...';
+    notice('Checking the pair. If automatic comparison is unavailable, review the two images and write an observation manually.');
     try {
       const result = await request('/pairs', { method: 'POST', json: { before_asset_id, after_asset_id } });
       if (result.comparison) {
@@ -2733,7 +2733,7 @@
         <strong>Media Type:</strong> ${(asset.media_type || 'image').toUpperCase()}<br>
         <strong>Dimensions:</strong> ${asset.width || '?'}×${asset.height || '?'} · ${asset.format ? asset.format.toUpperCase() : ''}<br>
         <strong>Source:</strong> ${asset.source || 'Unspecified'}<br>
-        <strong>Model:</strong> ${intel ? (intel.model_name || 'Gemini Vision') : 'Pending Analysis'}<br>
+        <strong>Model:</strong> ${intel ? (intel.model_name || 'Unspecified provider') : 'Pending analysis'}<br>
         <strong>Analyzed At:</strong> ${intel ? (intel.created_at || '').slice(0, 19).replace('T', ' ') : 'Not yet analyzed'}
       `;
     }
@@ -2823,7 +2823,7 @@
           <span class="meta">${(h.created_at || '').slice(0, 19).replace('T', ' ')}</span>
         </div>
         <p style="margin:2px 0;">${h.description || ''}</p>
-        <span class="meta">Model: ${h.model_name || 'gemini'} · Tags: ${(h.tags || []).join(', ') || 'none'}</span>
+        <span class="meta">Model: ${h.model_name || 'unavailable'} · Tags: ${(h.tags || []).join(', ') || 'none'}</span>
       `);
       list.append(item);
     }
@@ -2845,7 +2845,7 @@
       statusIndicator.textContent = forceReanalyze ? 'Re-analyzing...' : 'Analyzing...';
       statusIndicator.className = 'status-indicator loading';
     }
-    notice(forceReanalyze ? 'Re-analyzing media with Gemini vision intelligence...' : 'Analyzing media with Gemini vision intelligence...');
+    notice(forceReanalyze ? 'Re-analyzing registered media...' : 'Analyzing registered media...');
 
     try {
       const endpoint = forceReanalyze ? `/media/${assetId}/reanalyze` : `/media/${assetId}/analyze`;
@@ -3368,7 +3368,7 @@
       $('semantic-search-status').textContent = result.total_documents
         ? `${result.mode === 'keyword' ? 'Keyword search (not semantic AI)' : 'Semantic search'} · ${result.results.length} result(s) · ${coverage}${result.truncated ? ' · More records remain' : ' · Collection ready'}`
         : 'No searchable records in this project yet. Add permissioned media, an approved observation, or a sourced measurement.';
-      more.hidden = !result.truncated;
+      more.hidden = !result.truncated || !state.integrations?.nvidia_ready;
       more.textContent = `Index the next ${result.batch_size} records and search again`;
       for (const hit of result.results) {
         const card = element('article', 'paper-card discovery-result');
