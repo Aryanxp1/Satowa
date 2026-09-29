@@ -4,7 +4,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import HTTPException
 from app import __version__
 from app.config import settings
 from app.routes.evidence import router as evidence_router
@@ -17,6 +18,8 @@ from app.routes.workflows import router as workflows_router
 from app.routes.projects import router as projects_router
 from app.routes.impact_stories import router as impact_stories_router
 from app.routes.public_impact import public_router
+from app.routes.discovery_campaign import router as discovery_campaign_router
+from app.services.reviewer_auth import local_request, reviewer_for_authorization
 
 # Configure logging
 logging.basicConfig(
@@ -46,6 +49,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware('http')
+async def gate_remote_api(request: Request, call_next):
+    """The remote pilot shares a single reviewer secret and never exposes API writes anonymously.
+
+    Keep the guard even if a host accidentally leaves ENVIRONMENT=development.
+    Loopback tests and the local demo retain their existing session behavior.
+    """
+    path = request.url.path
+    test_client = (settings.ENVIRONMENT in {'development', 'test'} and
+                   request.client is not None and request.client.host == 'testclient')
+    if (path.startswith('/api/v1/') and path not in {'/api/v1/health', '/api/v1/ready'}
+            and not (local_request(request) or test_client)):
+        try:
+            reviewer_for_authorization(request.headers.get('authorization'))
+        except HTTPException as exc:
+            return JSONResponse({'detail': exc.detail}, status_code=exc.status_code,
+                                headers={'Cache-Control': 'no-store'})
+    return await call_next(request)
+
 # Register route modules
 app.include_router(media_router)
 app.include_router(projects_router)
@@ -57,6 +80,7 @@ app.include_router(local_setup_router)
 app.include_router(skills_router)
 app.include_router(workflows_router)
 app.include_router(public_router)
+app.include_router(discovery_campaign_router)
 app.mount('/demo', StaticFiles(directory=Path(__file__).parent / 'demo', html=True), name='demo')
 showcase_dir = Path(__file__).resolve().parents[2] / 'showcase'
 if showcase_dir.is_dir():

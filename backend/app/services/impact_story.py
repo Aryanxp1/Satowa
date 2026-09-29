@@ -220,7 +220,7 @@ def build_project_timeline_events(
         if before_id and before_id not in emitted_assets:
             b_asset = asset_map.get(before_id, {})
             b_intel = intel_by_asset.get(before_id, {})
-            b_date = o.get("before_date") or b_asset.get("captured_at") or b_asset.get("created_at") or "2026-09-01"
+            b_date = o.get("before_date") or b_asset.get("captured_at") or b_asset.get("created_at") or "undated"
             b_tags = safe_json_loads(b_intel.get("tags_json"), [])
             b_signals = safe_json_loads(b_intel.get("signals_json"), [])
             b_warnings = safe_json_loads(b_intel.get("warnings_json"), [])
@@ -254,7 +254,7 @@ def build_project_timeline_events(
         if after_id and after_id not in emitted_assets:
             a_asset = asset_map.get(after_id, {})
             a_intel = intel_by_asset.get(after_id, {})
-            a_date = o.get("after_date") or a_asset.get("captured_at") or a_asset.get("created_at") or "2026-09-02"
+            a_date = o.get("after_date") or a_asset.get("captured_at") or a_asset.get("created_at") or "undated"
             a_tags = safe_json_loads(a_intel.get("tags_json"), [])
             a_signals = safe_json_loads(a_intel.get("signals_json"), [])
             a_warnings = safe_json_loads(a_intel.get("warnings_json"), [])
@@ -296,9 +296,9 @@ def build_project_timeline_events(
             or o.get("after_date")
             or o.get("updated_at")
             or o.get("created_at")
-            or "2026-09-03"
+            or "undated"
         )
-        title_prefix = "Verified Finding" if rev_status == "approved" else "Field Observation"
+        title_prefix = "Reviewer-approved observation" if rev_status == "approved" else "Field Observation"
         description_text = (
             o.get("approved_text")
             if rev_status == "approved"
@@ -341,7 +341,7 @@ def build_project_timeline_events(
         if a.get("media_type") == "video" and a["asset_id"] not in emitted_assets:
             site_name = a.get("site_name") or site_map.get(a.get("site_id"), "Field Site")
             v_intel = intel_by_asset.get(a["asset_id"], {})
-            v_date = a.get("visited_on") or a.get("captured_at") or a.get("created_at") or "2026-09-02"
+            v_date = a.get("visited_on") or a.get("captured_at") or a.get("created_at") or "undated"
             v_tags = safe_json_loads(v_intel.get("tags_json"), ["cleanup", "activity"])
             v_signals = safe_json_loads(v_intel.get("signals_json"), ["active_cleanup"])
             duration_str = f" ({a['duration']:.1f}s)" if a.get("duration") else ""
@@ -374,14 +374,14 @@ def build_project_timeline_events(
     # Measurement events
     for m in measurements:
         site_name = m.get("site_name") or site_map.get(m.get("site_id"), "Field Site")
-        m_date = m.get("recorded_at") or m.get("visited_on") or "2026-09-02"
+        m_date = m.get("recorded_at") or m.get("visited_on") or "undated"
         events.append({
             "id": f"evt_meas_{m['id']}",
             "story_id": story_id,
             "timestamp_date": m_date[:10],
             "event_type": TimelineEventType.MEASUREMENT.value,
             "title": f"Measured Impact: {m['quantity']} {m['unit']} ({m['label']})",
-            "description": f"Verified field metric of {m['quantity']} {m['unit']} for {m['label']} at {site_name}. Recorded by {m.get('recorded_by', 'Field Reviewer')} from source: {m.get('source', 'Field Scales')}.",
+            "description": f"Recorded measurement of {m['quantity']} {m['unit']} for {m['label']} at {site_name}. Recorder: {m.get('recorded_by') or 'not recorded'}. Supplied source: {m.get('source') or 'not recorded'}.",
             "site_id": m.get("site_id"),
             "site_name": site_name,
             "asset_ids_json": json.dumps([]),
@@ -392,7 +392,7 @@ def build_project_timeline_events(
             "observation_id": None,
             "measurement_id": m["id"],
             "intelligence_id": None,
-            "verification_status": VerificationStatus.APPROVED.value,
+            "verification_status": VerificationStatus.UNVERIFIED.value,
             "tags_json": json.dumps(["measurement", m["label"]]),
             "signals_json": json.dumps(["quantified_impact"]),
             "warnings_json": json.dumps([]),
@@ -412,7 +412,7 @@ def build_project_timeline_events(
         if a["asset_id"] not in emitted_assets:
             site_name = a.get("site_name") or site_map.get(a.get("site_id"), "Field Site")
             a_intel = intel_by_asset.get(a["asset_id"], {})
-            a_date = a.get("visited_on") or a.get("captured_at") or a.get("created_at") or "2026-09-02"
+            a_date = a.get("visited_on") or a.get("captured_at") or a.get("created_at") or "undated"
             a_tags = safe_json_loads(a_intel.get("tags_json"), ["survey"])
             a_signals = safe_json_loads(a_intel.get("signals_json"), [])
             events.append({
@@ -678,13 +678,15 @@ async def generate_impact_story(
                 approved_findings = len([c for c in cards if c.verification_status == "approved"])
                 metrics = {
                     "event_count": len(events_models),
-                    "media_count": len(media_ids) or 3,
-                    "approved_findings_count": approved_findings or 1,
-                    "measurement_count": meas_count or 1,
+                    "media_count": len(media_ids),
+                    "approved_findings_count": approved_findings,
+                    "measurement_count": meas_count,
                 }
+            actual_dates = [e["timestamp_date"][:10] for e in stored_events
+                            if e.get("timestamp_date") and e["timestamp_date"][:4].isdigit()]
             date_range = meta.get("date_range") or {
-                "start": meta.get("date_start", "2026-09-02"),
-                "end": meta.get("date_end", "2026-09-22"),
+                "start_date": min(actual_dates) if actual_dates else None,
+                "end_date": max(actual_dates) if actual_dates else None,
             }
             return ImpactStoryResponse(
                 id=existing_story["id"],
@@ -730,7 +732,7 @@ async def generate_impact_story(
 
     # Generate grounded narrative
     story_title = title or f"{project['name']} — Impact Story"
-    story_desc = description or project.get("description") or "Chronological field evidence and verified environmental findings."
+    story_desc = description or project.get("description") or "Chronological field evidence and reviewer-approved observations."
 
     summary_narrative, uncertainty_note = "", None
     if include_ai_summary:

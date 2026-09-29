@@ -1,12 +1,27 @@
 """Health and readiness check endpoints."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, Response
 from app import __version__
 from app.config import settings
 from app.schemas.api import HealthResponse, ReadinessResponse
 from app.services import evidence_store as store
 from app.services.env_validator import validate_environment
+from app.services.reviewer_auth import reviewer_for_authorization
 
 router = APIRouter(prefix="/api/v1", tags=["System Health"])
+
+
+@router.get("/pilot/session")
+def pilot_session(response: Response, authorization: str | None = Header(default=None)):
+    """Validate a named reviewer token without echoing it or persisting it in the browser."""
+    actor = reviewer_for_authorization(authorization)
+    response.headers['Cache-Control'] = 'no-store'
+    return {
+        'reviewer': actor,
+        'reviewer_ready': True,
+        'cloudinary_ready': bool(settings.CLOUDINARY_CLOUD_NAME and settings.CLOUDINARY_API_KEY
+                                 and settings.CLOUDINARY_API_SECRET.get_secret_value()),
+        'gemini_ready': bool(settings.GEMINI_API_KEY),
+    }
 
 
 @router.get("/health", response_model=HealthResponse)

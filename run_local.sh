@@ -2,6 +2,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/backend"
+export ENVIRONMENT=development
+export LOCAL_DEMO=true
 
 if [ ! -d .venv ] && [ ! -d venv ]; then
   if command -v python3 >/dev/null 2>&1; then
