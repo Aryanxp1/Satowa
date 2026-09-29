@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
 # Last Updated: 2026-09-30 by AGY
 
-## Current Status: T021 FULL JUDGE-FLOW + PRODUCT POLISH COMPLETE
+## Current Status: T022-A README + DOCUMENTATION + LOGO COMPLETE
 
 ## Repository State
 
@@ -170,12 +170,15 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Media intelligence audit trail HTML escaping & rendering fix | ✅ Verified in workspace modal |
 | Workflow continuity & forward navigation across 7-stage evidence pipeline | ✅ Verified across all tabs |
 | End-to-end judge journey walk-through via Playwright automation | ✅ Verified: Showcase → Workspace → Project/Site → Media Library → Search → AI Intelligence → Timeline → Before/After → AI Proposal → Human Review → Approval → Report → Campaign → Public Story |
+| Judge-ready root README (`README.md`) with trust model, architecture, and .ai/ navigation | ✅ Complete & verified |
+| Crisp vector logo (`showcase/setowa_logo.svg` & `/demo/setowa_logo.svg`) across apps & README | ✅ Complete & verified |
+| Documentation consistency across all 6 `.ai/` documents | ✅ Verified |
 
 ## Current Active Milestone
 
-**T021 — FULL JUDGE-FLOW + PRODUCT POLISH** — COMPLETE
+**T022-A — README + DOCUMENTATION + LOGO** — COMPLETE
 
 ## Next Milestone
 
-All current milestones through T021 completed. Ready for judge evaluations and live demonstration.
+All hackathon development milestones (T001 through T022-A) complete and verified against test baseline. Ready for rehearsal, video submission, and live judge evaluation.
 

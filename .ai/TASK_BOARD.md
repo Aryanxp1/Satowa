@@ -724,6 +724,44 @@
    - Smoke test: All 9/9 stages pass.
    - Zero browser console errors or API errors.
 
+## [x] T022-A — README + DOCUMENTATION + LOGO
+**Owner:** AGY
+**Status:** COMPLETE (2026-09-30)
 
+### Deliverables
 
+1. **README.md (root)** — Fully rewritten as a judge-ready document:
+   - Problem statement, what Setowa does, trust model diagram
+   - Key features (all verified, no invented metrics)
+   - End-to-end workflow table (14 stages)
+   - Architecture overview (ASCII diagram + narrative)
+   - Tech stack table
+   - Cloudinary integration table (upload, delivery, video, AI vision, provenance, permission gate)
+   - Gemini integration table (media intelligence, frame observation, before/after comparison, impact narrative, confidence, hallucination guard)
+   - Evidence / AI / human-review model (6 numbered rules)
+   - Demo instructions (Linux/macOS and Windows)
+   - Environment variables reference
+   - Testing commands (full suite, JS check, E2E smoke, benchmark)
+   - Project structure tree
+   - Security and trust principles
+   - Known limitations (accurate, no invented metrics)
+   - Navigation table linking all 6 `.ai/` documents
+   - References
+
+2. **`.ai/` Documentation** — No rewrites needed; all documents accurate with current implementation.
+
+3. **Logo** — `setowa_logo.svg` (high-fidelity vector logo featuring cloud, field camera icon, and Setowa brand identity):
+   - Deployed to `showcase/setowa_logo.svg` and `backend/app/demo/setowa_logo.svg`
+   - `showcase/index.html`: SVG geometry arc replaced with `<img class="brand-logo" src="/showcase/setowa_logo.svg" alt="" width="54" height="36">`
+   - `backend/app/demo/index.html`: SVG geometry arc replaced with `<img class="brand-logo" src="/demo/setowa_logo.svg" alt="" width="54" height="36">`
+   - `README.md`: Added centered logo banner `<img src="showcase/setowa_logo.svg" alt="Setowa Logo" width="160" />`
+   - `showcase/styles.css` & `backend/app/demo/styles.css`: Defined `.brand-logo` rule (height 36px, `object-fit: contain`)
+   - Crisp rendering at all display resolutions; served directly by existing FastAPI static mounts without backend changes.
+
+### Acceptance Criteria
+- [x] README is accurate, complete, judge-ready with `.ai/` navigation links
+- [x] Logo displayed in Showcase and Workspace (no SVG placeholder)
+- [x] No invented capabilities or metrics
+- [x] No core backend code modified
+- [x] Test suite baseline unaffected (317 passed)
 

@@ -4,6 +4,22 @@
 ## [Unreleased]
 
 ### 2026-09-30
+- **AGY**: Completed T022-A (README + Documentation + Logo Presentation):
+  - Root README (`README.md`):
+    - Completely rewritten as a polished, judge-ready project README.
+    - Integrated centered vector brand logo (`showcase/setowa_logo.svg`).
+    - Clarified relationship between Team LEX (Local Evidence eXchange framework) and Setowa (reference evidence platform).
+    - Detailed problem statement, 7-stage workflow, and trust model (`AI PROPOSES → EVIDENCE SUPPORTS → HUMAN VERIFIES → APPROVED RECORD → TRACEABLE REPORT`).
+    - Comprehensive technical specifications: architecture diagram, tech stack, Cloudinary programmable media capabilities, Gemini multimodal AI integration, evidence-review trust model, and testing instructions.
+    - Added structured `.ai/` documentation navigation table linking ARCHITECTURE, DECISIONS, PROJECT_STATE, TASK_BOARD, HANDOFF, and CHANGELOG.
+  - Brand Logo Vectorization (`setowa_logo.svg`):
+    - Deployed crisp SVG logo to `showcase/setowa_logo.svg` and `backend/app/demo/setowa_logo.svg`.
+    - Updated `showcase/index.html` and `backend/app/demo/index.html` with `.brand-logo` image tag.
+    - Verified proper static file serving with `image/svg+xml` Content-Type over FastAPI mounts.
+  - Documentation Consistency (`.ai/`):
+    - Cross-referenced all `.ai/` docs against current codebase and 317-test verified baseline.
+    - Updated `TASK_BOARD.md`, `PROJECT_STATE.md`, `DECISIONS.md`, and `HANDOFF.md` without unnecessary churn.
+
 - **AGY**: Completed T021 (Full Judge-Flow + Product Polish):
   - End-to-End Judge Flow Audit & Browser Verification:
     - Executed complete 14-stage judge journey via Playwright: `SHOWCASE → WORKSPACE → PROJECT/SITE → MEDIA LIBRARY → SEARCH → AI INTELLIGENCE → TIMELINE → BEFORE/AFTER → AI PROPOSAL → HUMAN REVIEW → APPROVAL → REPORT → CAMPAIGN → PUBLIC IMPACT STORY`.

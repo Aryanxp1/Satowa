@@ -352,14 +352,35 @@
    - Tested `"plastic debris in mangroves"`, `"fishing nets near shoreline"`, `"cleanup activity"`.
    - Verified that unapproved AI proposals never leak into reports or public stories.
 
+## What Was Completed in T022-A (README + Documentation + Logo)
+
+1. **Root README.md**:
+   - Re-written as a judge-ready, comprehensive document.
+   - Explains LEX (Local Evidence eXchange framework by Team LEX) and Setowa (reference platform).
+   - Problem statement, 7-stage workflow, and trust model (`AI PROPOSES → EVIDENCE SUPPORTS → HUMAN VERIFIES → APPROVED RECORD → TRACEABLE REPORT`).
+   - Cloudinary programmable media integration table (upload, delivery, poster frames, derived offset frame extraction, AI vision).
+   - Gemini multimodal integration table (intelligence, frame observations, before/after comparison, grounded narrative).
+   - End-to-end evidence/review model (6 strict verification rules).
+   - Demo instructions (Linux/macOS & Windows), environment variables, testing commands, project tree, security principles, known limitations, and references.
+   - Clear navigation table linking all 6 `.ai/*.md` documents.
+
+2. **Official Vector Logo Integration**:
+   - Integrated `setowa_logo.svg` across `showcase/setowa_logo.svg`, `backend/app/demo/setowa_logo.svg`, and `README.md`.
+   - Replaced previous geometric SVG placeholder in Showcase and Workspace demo with `.brand-logo` `<img>` pointing to vector SVG.
+   - Clean rendering verified across browsers with `image/svg+xml` Content-Type.
+
+3. **Documentation Consistency (.ai/)**:
+   - Verified and synchronized all 6 `.ai/` documents (`ARCHITECTURE.md`, `DECISIONS.md`, `PROJECT_STATE.md`, `TASK_BOARD.md`, `HANDOFF.md`, `CHANGELOG.md`) against current code.
+   - All links verified and functional.
+
 ## What Is Ready Next
 
-- Milestone **T021 — FULL JUDGE-FLOW + PRODUCT POLISH** is **COMPLETE**.
-- Ready for live evaluation and hackathon presentation.
+- Milestone **T022-A — README + DOCUMENTATION + LOGO** is **COMPLETE**.
+- Repository is clean, polished, and ready for live rehearsal, demo recording, and judge evaluation.
 
 ## Open Questions for User
 
-None. T021 is fully verified and ready.
+None. All T022-A objectives and user requests have been fulfilled and verified.
 
 
 
