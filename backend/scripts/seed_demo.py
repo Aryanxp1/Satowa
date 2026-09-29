@@ -43,6 +43,20 @@ def seed_demo_dataset():
         db.execute("DELETE FROM observation_revisions WHERE observation_id = 'ea905f2ba32146ada699bafc09721682'")
         db.execute("DELETE FROM observations WHERE id = 'ea905f2ba32146ada699bafc09721682'")
 
+        # Clean rogue/test sites, visits, and assets outside official demo sites
+        demo_site_ids = ("site_nyali_creek", "site_tudor_creek", "demo-riverbank", "site_watamu_beach")
+        placeholders = ",".join("?" for _ in demo_site_ids)
+        db.execute(f"DELETE FROM impact_story_events WHERE site_id NOT IN ({placeholders})", demo_site_ids)
+        db.execute(f"DELETE FROM measurements WHERE site_id NOT IN ({placeholders})", demo_site_ids)
+        db.execute(f"DELETE FROM observation_revisions WHERE observation_id IN (SELECT id FROM observations WHERE site_id NOT IN ({placeholders}))", demo_site_ids)
+        db.execute(f"DELETE FROM observations WHERE site_id NOT IN ({placeholders})", demo_site_ids)
+        db.execute(f"DELETE FROM frame_analyses WHERE asset_id IN (SELECT asset_id FROM assets WHERE site_id NOT IN ({placeholders}))", demo_site_ids)
+        db.execute(f"DELETE FROM video_frames WHERE asset_id IN (SELECT asset_id FROM assets WHERE site_id NOT IN ({placeholders}))", demo_site_ids)
+        db.execute(f"DELETE FROM media_intelligence WHERE asset_id IN (SELECT asset_id FROM assets WHERE site_id NOT IN ({placeholders}))", demo_site_ids)
+        db.execute(f"DELETE FROM assets WHERE site_id NOT IN ({placeholders})", demo_site_ids)
+        db.execute(f"DELETE FROM visits WHERE site_id NOT IN ({placeholders})", demo_site_ids)
+        db.execute(f"DELETE FROM sites WHERE id NOT IN ({placeholders})", demo_site_ids)
+
         # -------------------------------------------------------------
         # 1. Projects
         # -------------------------------------------------------------

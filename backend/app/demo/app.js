@@ -39,6 +39,16 @@
     return item;
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let noticeTimer = null;
   function notice(message, type = 'info') {
     const item = $('notice');
@@ -2817,14 +2827,15 @@
 
     const list = element('div', 'intel-history-list');
     for (const h of history) {
-      const item = element('div', 'intel-history-item', `
+      const item = element('div', 'intel-history-item');
+      item.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <strong>${(h.status || 'analyzed').toUpperCase()}</strong>
-          <span class="meta">${(h.created_at || '').slice(0, 19).replace('T', ' ')}</span>
+          <strong>${escapeHtml((h.status || 'analyzed').toUpperCase())}</strong>
+          <span class="meta">${escapeHtml((h.created_at || '').slice(0, 19).replace('T', ' '))}</span>
         </div>
-        <p style="margin:2px 0;">${h.description || ''}</p>
-        <span class="meta">Model: ${h.model_name || 'unavailable'} · Tags: ${(h.tags || []).join(', ') || 'none'}</span>
-      `);
+        <p style="margin:2px 0;">${escapeHtml(h.description || '')}</p>
+        <span class="meta">Model: ${escapeHtml(h.model_name || 'unavailable')} · Tags: ${escapeHtml((h.tags || []).join(', ') || 'none')}</span>
+      `;
       list.append(item);
     }
     histContainer.append(list);
@@ -3527,6 +3538,24 @@
       }
     });
   }
+
+  document.addEventListener('click', (e) => {
+    const routeBtn = e.target.closest('[data-route-tab]');
+    if (routeBtn) {
+      const tab = routeBtn.getAttribute('data-route-tab');
+      if (tab && location.hash) {
+        location.hash = location.hash.replace(/\/[a-z-]+$/, `/${tab}`);
+      }
+      return;
+    }
+    const subBtn = e.target.closest('.evidence-subnav-btn[data-sub]');
+    if (subBtn) {
+      const sub = subBtn.getAttribute('data-sub');
+      if (sub && location.hash) {
+        location.hash = location.hash.replace(/\/[a-z-]+$/, `/${sub}`);
+      }
+    }
+  });
 
   window.addEventListener('hashchange', () => run(route));
   run(async () => { await getStatus(); await route(); });

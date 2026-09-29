@@ -4,6 +4,29 @@
 ## [Unreleased]
 
 ### 2026-09-30
+- **AGY**: Completed T021 (Full Judge-Flow + Product Polish):
+  - End-to-End Judge Flow Audit & Browser Verification:
+    - Executed complete 14-stage judge journey via Playwright: `SHOWCASE → WORKSPACE → PROJECT/SITE → MEDIA LIBRARY → SEARCH → AI INTELLIGENCE → TIMELINE → BEFORE/AFTER → AI PROPOSAL → HUMAN REVIEW → APPROVAL → REPORT → CAMPAIGN → PUBLIC IMPACT STORY`.
+    - Verified all stages render correctly with clean UI, correct data provenance, and 0 console errors/warnings.
+  - Database Cleanliness & Seed Hygiene (`backend/scripts/seed_demo.py`):
+    - Added cascade cleanup in Step 0 for legacy dummy test sites (`g`, `river`, `river-delta`, `test-wf-site`, `proj_mombasa_marine`), visits, assets, frames, and observations.
+    - Verified that active site selector and Project Library display exclusively the 4 authentic Kenyan coastal restoration sites under `proj_mombasa_marine`.
+  - Content Security Policy (CSP) Hardening (`backend/app/demo/index.html`, `backend/app/demo/app.js`):
+    - Discovered and eliminated inline `onclick` attributes across evidence subnav and stage navigation buttons that triggered CSP violations under `script-src 'self'`.
+    - Added declarative `data-route-tab` and `data-sub` attributes with centralized delegated click listener in `app.js`.
+    - Verified zero CSP errors across all workspace views.
+  - UI Bug Fix & Formatting:
+    - Fixed unescaped HTML string rendering in Media Intelligence history drawer: implemented `escapeHtml()` and DOM `innerHTML` in `intel-history-item`.
+    - Integrated `.stage-footer-nav` step guides at the bottom of core panels to clearly communicate the 7-stage evidence pipeline (`Field Media → Organize → AI Understanding → Compare → Human Verify → Report → Impact Story`).
+  - AI Proposal vs. Verified Record UX:
+    - Confirmed visual hierarchy between amber `AI PROPOSAL · HUMAN VERIFICATION REQUIRED` and green `✓ HUMAN-APPROVED RECORD`.
+    - Validated that unapproved proposals never leak into official reports or public impact stories.
+  - Semantic Search Verification:
+    - Tested queries `"plastic debris in mangroves"`, `"fishing nets near shoreline"`, `"cleanup activity"`; verified ranked results with explicit confidence disclaimers.
+  - Test Suite & Regression Checks:
+    - Ran full pytest suite: 317 passed, 1 expected Windows NTFS chmod failure (documented), 2 skipped, 2 warnings, 0 functional regressions.
+    - Ran smoke test: 9/9 stages pass.
+
 - **AGY**: Completed T020-A (Showcase Repair + Mass Media Demo Expansion):
   - Fixed Showcase "View Public Story" 404 route:
     - `public_story.py`: Removed upstream synthetic demo blocker in `get_public_impact_story()` that returned 404 on demo projects.

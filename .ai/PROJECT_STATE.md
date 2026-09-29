@@ -1,7 +1,7 @@
 # PROJECT_STATE.md — Setowa / LEX
-# Last Updated: 2026-09-27 by AGY
+# Last Updated: 2026-09-30 by AGY
 
-## Current Status: T019 HACKATHON DEMO + PRODUCTION HARDENING COMPLETE
+## Current Status: T021 FULL JUDGE-FLOW + PRODUCT POLISH COMPLETE
 
 ## Repository State
 
@@ -10,16 +10,16 @@
 - **Python:** 3.14.6
 - **pytest:** 9.1.1
 
-## Verified Test Baseline Post-T019 (2026-09-27)
+## Verified Test Baseline Post-T021 (2026-09-30)
 
 ```
-Command: .\venv\Scripts\python.exe -m pytest tests/ -q
-Runtime: ~54 seconds
-Collected: 298 items
+Command: .\backend\venv\Scripts\python.exe -m pytest backend/tests
+Runtime: ~26 seconds
+Collected: 320 items
 
-PASSED: 296 (+18 new T019 Demo & Production Hardening tests, 0 regressions)
-SKIPPED: 1  ← test_live_cloudinary_and_gemini_pipeline (skips cleanly without RUN_LIVE_INTEGRATION=1 or live creds)
-FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Windows chmod)
+PASSED: 317 (0 regressions across entire test suite)
+SKIPPED: 2  ← test_live_cloudinary_and_gemini_pipeline, test_postgres_live (skip cleanly without live credentials)
+FAILED: 1   ← test_local_setup.py::test_local_session_and_credential_update (Known Windows chmod 0o600 OS limitation)
 WARNINGS: 2 ← StarletteDeprecationWarning (non-blocking)
 ```
 
@@ -165,12 +165,17 @@ These are **non-blocking deprecation warnings** from the installed library versi
 | Deterministic Mass Media Expansion: 51 assets (48 images + 3 videos) across 4 sites and 13 visits | ✅ Seeded & verified |
 | Video frame analytics derivations (7 Cloudinary offset frames + analyses) | ✅ Verified in workspace modal |
 | Full smoke test suite (9/9 stages pass) | ✅ Verified |
+| Database hygiene & rogue test site cleanup in seed script | ✅ Verified in SQLite & demo app |
+| CSP compliance: elimination of inline onclick event handlers via delegated navigation | ✅ Verified with zero console violations |
+| Media intelligence audit trail HTML escaping & rendering fix | ✅ Verified in workspace modal |
+| Workflow continuity & forward navigation across 7-stage evidence pipeline | ✅ Verified across all tabs |
+| End-to-end judge journey walk-through via Playwright automation | ✅ Verified: Showcase → Workspace → Project/Site → Media Library → Search → AI Intelligence → Timeline → Before/After → AI Proposal → Human Review → Approval → Report → Campaign → Public Story |
 
 ## Current Active Milestone
 
-**T020-A — SHOWCASE REPAIR + MASS MEDIA DEMO EXPANSION** — COMPLETE
+**T021 — FULL JUDGE-FLOW + PRODUCT POLISH** — COMPLETE
 
 ## Next Milestone
 
-**T020-B / Subsequent Milestone as directed by user**
+All current milestones through T021 completed. Ready for judge evaluations and live demonstration.
 

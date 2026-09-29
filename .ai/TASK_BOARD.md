@@ -690,6 +690,40 @@
    - 9/9 `smoke_test.py` end-to-end stages passing.
    - Playwright browser testing: Showcase loads, CTA navigates to `/share/pst_demo_mombasa_coastal_2026` returning HTTP 200, public dossier renders with Cloudinary hero media, before/after evidence cards, verified findings, zero secrets, and zero console errors. Workspace UI verified for media gallery (50+ assets), video player & frame analytics modal, search by text ("canopy"), filter by tag ("plastic"), timeline visits, and semantic evidence discovery.
 
+---
+
+## [x] T021 — Full Judge-Flow + Product Polish
+**Owner:** AGY + Aryan  
+**Dependencies:** T020-A ✅  
+**Status:** COMPLETE (2026-09-30)  
+**Goal:** Audit and polish the end-to-end judge experience across the full 7-stage evidence pipeline (`SHOWCASE → WORKSPACE → PROJECT/SITE → MEDIA LIBRARY → SEARCH → AI INTELLIGENCE → TIMELINE → BEFORE/AFTER → AI PROPOSAL → HUMAN REVIEW → APPROVAL → REPORT → CAMPAIGN → PUBLIC IMPACT STORY`).
+
+**Scope Completed:**
+1. **End-to-End Judge Journey Walkthrough:**
+   - Exercised all 14 stops via Playwright browser automation without error.
+   - Verified Showcase (`/showcase/`), topbar navigation, active session (`Farhan / local`), All Sites directory (`#projects`), media library, search & tag filtering, structured AI intelligence drawer, chronological visits timeline, before/after comparison slider, AI proposal creation & invalidation, reviewer approval, report generation with receipts, grounded campaign generation, and public impact story.
+2. **Database Cleanliness & Seed Hygiene:**
+   - Enhanced `seed_demo.py` Step 0 to cascade delete legacy dummy test sites (`'g'`, `'river'`, `'river-delta'`, `'test-wf-site'`, `'proj_mombasa_marine'`) and all orphaned child records.
+   - Cleaned site dropdown combobox and Project Library gallery so judges view only authentic Kenyan coastal conservation sites under `proj_mombasa_marine`.
+3. **Strict Content Security Policy (CSP) Compliance:**
+   - Discovered and eliminated inline `onclick` handlers on subnav and footer buttons that violated Setowa's `script-src 'self'` policy.
+   - Replaced all inline handlers with declarative attributes (`data-route-tab` and `data-sub`) and established centralized click event delegation in `app.js`.
+   - Verified zero console errors across all workspace views.
+4. **Visual Hierarchy (AI Proposal vs. Approved Record):**
+   - Verified clear visual distinction:
+     - `AI PROPOSAL`: Prominent amber warning banner, `⚠ HUMAN VERIFICATION REQUIRED`, `NOT IN OFFICIAL REPORT`, explicit model confidence disclaimer, and reject/approve action controls.
+     - `HUMAN-APPROVED RECORD`: Crisp green banner, `✓ HUMAN-APPROVED RECORD`, `INCLUDED IN OFFICIAL REPORT`, revision counter, reviewer timestamp attribution, and explicit note that subsequent edits invalidate approval.
+5. **UI & Rendering Polish:**
+   - Fixed unescaped HTML string rendering in Media Intelligence audit trail (`escapeHtml` + DOM innerHTML) in `intel-history-item`.
+   - Added `.stage-footer-nav` step guides at the bottom of core workspace tabs (`Media Library → Compare → Review → Report → Timeline / Public Story`), allowing judges to seamlessly traverse the evidence lifecycle.
+6. **Semantic Search & Grounded Reporting:**
+   - Validated queries: `"plastic debris in mangroves"`, `"fishing nets near shoreline"`, `"cleanup activity"`.
+   - Verified that unapproved AI proposals are strictly excluded from reports and public impact stories, preserving complete provenance integrity.
+7. **Verification & Testing:**
+   - Full test suite: **317 passed**, 1 expected/documented Windows chmod failure, 2 skipped, 2 non-blocking warnings.
+   - Smoke test: All 9/9 stages pass.
+   - Zero browser console errors or API errors.
+
 
 
 

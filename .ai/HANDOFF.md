@@ -317,56 +317,49 @@
   - Verified full test suite: 296 passed, 1 skipped, 1 pre-existing Windows NTFS chmod failure (`test_local_setup.py:62`), 0 functional regressions (+18 new tests).
 - Added ADR D021 in `DECISIONS.md`.
 
-## Test Summary Post-T019
+## Test Summary Post-T021
 
 | Metric | Value |
 |:---|:---|
-| **Command** | `.\venv\Scripts\python.exe -m pytest tests/ -q` |
+| **Command** | `.\backend\venv\Scripts\python.exe -m pytest backend/tests` |
 | **Python** | 3.14.6 |
 | **pytest** | 9.1.1 |
-| **Total Collected** | 298 |
-| **Passed** | 296 (+18 new T019 tests, 0 functional regressions) |
-| **Skipped** | 1 (live integration test gated by RUN_LIVE_INTEGRATION=1) |
-| **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py:62`) |
+| **Total Collected** | 320 |
+| **Passed** | 317 (0 functional regressions) |
+| **Skipped** | 2 (`test_live_cloudinary_and_gemini_pipeline`, `test_postgres_live`) |
+| **Failed** | 1 (pre-existing Windows chmod test in `test_local_setup.py:62` — documented NTFS OS limitation) |
 | **Warnings** | 2 (httpx/starlette deprecation, non-blocking) |
-| **Smoke Test** | 9/9 phases passed (`python scripts/smoke_test.py`) |
+| **Smoke Test** | 9/9 phases passed (`python backend/scripts/smoke_test.py`) |
+| **Browser Console** | 0 errors, 0 warnings across all views |
 
-## Operational Quickstart for Demonstrations
+## T021 Polish Completed
 
-```bash
-# 1. Start Demo Server (with automatic environment check, seeding, and ASCII banner)
-cd backend
-.\venv\Scripts\python.exe scripts/start_demo.py
-
-# 2. Run Automated 9-Phase Smoke Test
-cd backend
-.\venv\Scripts\python.exe scripts/smoke_test.py
-
-# 3. CLI Inspection
-cd backend
-.\venv\Scripts\python.exe setowa_cli.py skill list
-.\venv\Scripts\python.exe setowa_cli.py workflow list
-.\venv\Scripts\python.exe setowa_cli.py story show proj_mombasa_marine
-```
-
-## Hackathon Pitch & Showcase Links
-- **Demo Script**: [DEMO_SCRIPT.md](file:///C:/Users/aryan/.gemini/antigravity-ide/scratch/LEX/docs/DEMO_SCRIPT.md)
-- **Demo Runbook**: [DEMO_RUNBOOK.md](file:///C:/Users/aryan/.gemini/antigravity-ide/scratch/LEX/docs/DEMO_RUNBOOK.md)
-- **Setowa Workspace**: `http://localhost:8000/demo/`
-- **Public Impact Story**: `http://localhost:8000/share/pst_demo_mombasa_coastal_2026`
-- **Readiness Probe**: `http://localhost:8000/api/v1/ready`
-- **Liveness Probe**: `http://localhost:8000/api/v1/health`
+1. **End-to-End Judge Journey Verified**:
+   - `SHOWCASE` → `WORKSPACE` → `PROJECT/SITE` → `MEDIA LIBRARY` → `SEARCH` → `AI INTELLIGENCE` → `TIMELINE` → `BEFORE/AFTER` → `AI PROPOSAL` → `HUMAN REVIEW` → `APPROVAL` → `REPORT` → `CAMPAIGN` → `PUBLIC IMPACT STORY`
+2. **Database Cleanliness & Seed Hygiene**:
+   - Deterministic seed script cleans legacy test sites (`g`, `river`, `river-delta`, `test-wf-site`, `proj_mombasa_marine`).
+   - Active site combobox and Project Library show strictly the 4 authentic coastal demo sites.
+3. **Strict Content Security Policy (CSP) Compliance**:
+   - Replaced all inline `onclick` handlers with `data-route-tab` and `data-sub`.
+   - Added centralized delegated click handling in `app.js`. Zero CSP violations.
+4. **Media Intelligence History Rendering**:
+   - Fixed unescaped HTML strings using `escapeHtml()` and DOM `innerHTML`.
+5. **Workflow Stage Continuity**:
+   - Added `.stage-footer-nav` step guides across tabs to guide judges naturally across the 7-stage evidence pipeline.
+6. **AI Proposal vs. Approved Record Distinction**:
+   - Clear visual distinction with amber proposal badge vs. green verified record badge.
+7. **Semantic Search & Grounded Reporting**:
+   - Tested `"plastic debris in mangroves"`, `"fishing nets near shoreline"`, `"cleanup activity"`.
+   - Verified that unapproved AI proposals never leak into reports or public stories.
 
 ## What Is Ready Next
 
-- Milestone **T020-A — SHOWCASE REPAIR + MASS MEDIA DEMO EXPANSION** is **COMPLETE**.
-- Showcase "View Public Story" CTA correctly navigates to `/share/pst_demo_mombasa_coastal_2026` returning HTTP 200 with Cloudinary hero media, before/after evidence cards, and verified auditor outcomes.
-- Deterministic demo dataset expanded to 51 assets (48 images + 3 videos) across 4 sites and 13 visits with structured intelligence, derived frames, weigh-in measurements, and comparative findings.
-- Zero credential leaks; zero console errors; all 9/9 smoke test stages passed; full test suite verified.
+- Milestone **T021 — FULL JUDGE-FLOW + PRODUCT POLISH** is **COMPLETE**.
+- Ready for live evaluation and hackathon presentation.
 
 ## Open Questions for User
 
-None. T020-A is complete and ready for review.
+None. T021 is fully verified and ready.
 
 
 

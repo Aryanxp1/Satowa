@@ -638,3 +638,23 @@ h1,h2{font-weight:650}
 .notice-close-btn:hover {
   opacity: 1;
 }
+
+/* Stage Workflow Navigation Bar */
+.stage-footer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.stage-footer-nav .meta {
+  font: 700 0.72rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}

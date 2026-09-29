@@ -234,6 +234,10 @@
             </details>
 
             <div id="media-library-grid" class="media-library-grid empty">No media assets found.</div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 1: Field Media</span>
+              <button type="button" class="button secondary button-small" data-route-tab="compare">Next Stage: Compare Before/After Pairs →</button>
+            </div>
           </section>
 
           <section id="tab-skills" class="tab-panel" hidden aria-labelledby="skills-title">
@@ -376,9 +380,9 @@
 
           <section id="tab-compare" class="tab-panel" hidden aria-labelledby="pair-title">
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
-              <button type="button" class="evidence-subnav-btn active" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="compare">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04A / VISUAL COMPARISON</p><h2 id="pair-title">Put two moments side by side.</h2><p>Choose photos from different visits to the same site. The AI may refuse an unreliable comparison.</p></div>
             <div class="pair-grid">
@@ -401,23 +405,31 @@
             <div class="stage-toggle-row"><span>Comparison display:</span><button id="toggle-stage-view" class="button button-small secondary" type="button">Switch to Reveal Slider</button></div>
             <div id="comparison-stage" class="comparison-stage" hidden><img id="comparison-after" alt="Selected after image"><img id="comparison-before" alt="Selected before image"><span class="comparison-label before-label">Before</span><span class="comparison-label after-label">After</span><label class="comparison-control">Drag to reveal<input id="comparison-range" type="range" min="0" max="100" value="50" aria-label="Reveal before versus after image"></label></div>
             <div class="compare-actions"><button id="compare" class="button primary" type="button">Compare and draft observation</button><p id="compare-hint">A valid pair needs two dated photos.</p></div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 2: Visual Comparison</span>
+              <button type="button" class="button secondary button-small" data-route-tab="review">Next Stage: Human Review &amp; Approval →</button>
+            </div>
           </section>
 
           <section id="tab-review" class="tab-panel" hidden aria-labelledby="review-title">
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
-              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
-              <button type="button" class="evidence-subnav-btn active" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="compare">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="review">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="report">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04B / HUMAN REVIEW</p><h2 id="review-title">Decide what the evidence supports.</h2><p>AI drafts are proposals only. Only human-approved text enters the official report.</p></div>
             <div id="observations" class="observation-list empty">No observations yet.</div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 3: Human Verification</span>
+              <button type="button" class="button secondary button-small" data-route-tab="report">Next Stage: Reviewed Report &amp; Records →</button>
+            </div>
           </section>
 
           <section id="tab-report" class="tab-panel" hidden aria-labelledby="report-title">
             <div class="evidence-subnav" aria-label="Review and evidence sub-sections">
-              <button type="button" class="evidence-subnav-btn" data-sub="compare" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/compare')">⇄ 01 Compare Pairs &amp; AI Draft</button>
-              <button type="button" class="evidence-subnav-btn" data-sub="review" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/review')">✓ 02 Human Review &amp; Approval</button>
-              <button type="button" class="evidence-subnav-btn active" data-sub="report" onclick="location.hash=location.hash.replace(/\/[a-z-]+$/, '/report')">📄 03 Reviewed Report &amp; Records</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="compare">⇄ 01 Compare Pairs &amp; AI Draft</button>
+              <button type="button" class="evidence-subnav-btn" data-sub="review">✓ 02 Human Review &amp; Approval</button>
+              <button type="button" class="evidence-subnav-btn active" data-sub="report">📄 03 Reviewed Report &amp; Records</button>
             </div>
             <div class="content-title"><p class="kicker">04C / FINAL OUTPUT</p><h2 id="report-title">A report with receipts.</h2><p>Only reviewed observations and measurements you explicitly record appear in the export.</p></div>
             <div class="paper-card report-card"><p class="kicker">REPORT STATUS</p><strong id="report-count">No approved observations yet.</strong><p class="report-rule-note">ℹ Trust Rule: Unapproved AI observations are strictly excluded from all report outputs.</p><div class="report-button-row"><button id="export" class="button primary" type="button">Download Markdown report (.md)</button><button id="toggle-json-report" class="button secondary" type="button">View Raw JSON</button></div></div>
@@ -425,6 +437,10 @@
             <pre id="report-json-view" class="report-json-view" hidden></pre>
             <div class="content-title smaller"><h3>Record a measured outcome</h3><p>Optional. Photos cannot establish weight or other quantities on their own.</p></div>
             <form id="measurement-form" class="paper-card measurement-form"><div class="form-grid"><label>Visit<select id="measurement-visit" name="visit_id" required></select></label><label>What was measured<input name="label" maxlength="120" required placeholder="Collected litter"></label><label>Quantity<input name="quantity" type="number" min="0.01" step="any" required placeholder="12"></label><label>Unit<select name="unit"><option value="kg">kg</option><option value="bags">bags</option><option value="items">items</option></select></label><label class="full-width">Source or record<input name="source" maxlength="200" required placeholder="Scale log / signed field note"></label></div><button class="button secondary" type="submit">Save measurement</button></form><div id="measurements" class="measurement-list"></div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 4: Official Output</span>
+              <button type="button" class="button secondary button-small" data-route-tab="impact">Next Stage: Sustainability Timeline &amp; Story →</button>
+            </div>
           </section>
 
           <section id="tab-impact" class="tab-panel" hidden aria-labelledby="impact-title">
@@ -519,6 +535,10 @@
             <div id="impact-timeline-container" class="impact-timeline-spine">
               <div class="empty-state">No timeline events recorded yet.</div>
             </div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 5: Sustainability Dossier</span>
+              <a href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" class="button primary button-small">View Public Impact Story ↗</a>
+            </div>
           </section>
           <section id="tab-discovery" class="tab-panel" hidden aria-labelledby="discovery-title">
             <div class="content-title"><p class="kicker">06 / DISCOVERY</p><h2 id="discovery-title">Find the evidence.</h2><p>Ask in plain language across this project's media descriptions, approved observations, and recorded measurements. AI descriptions are labelled as unreviewed. Semantic indexing uses NVIDIA only when requested. Without AI access, keyword search remains available. Results are leads to inspect, not verified answers.</p></div>
@@ -540,6 +560,10 @@
             </form>
             <p id="campaign-status" class="meta" role="status"></p>
             <div id="campaign-drafts" class="discovery-results" aria-live="polite"></div>
+            <div class="stage-footer-nav">
+              <span class="meta">Evidence Pipeline · Step 6: Grounded Campaign Studio</span>
+              <a href="/share/pst_demo_mombasa_coastal_2026" target="_blank" rel="noopener" class="button primary button-small">View Public Impact Story ↗</a>
+            </div>
           </section>
         </div>
       </div>
