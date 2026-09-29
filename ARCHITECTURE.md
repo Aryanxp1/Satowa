@@ -25,7 +25,7 @@ flowchart LR
 | Comparison | `backend/app/services/image_comparison.py` | Optional Gemini image comparison and explicit unreliable results. |
 | Media | `backend/app/services/media.py` | Validated, signed Cloudinary upload; original asset identifiers and URLs. |
 | Reviewer auth | `backend/app/services/reviewer_auth.py` | Named reviewer tokens and loopback-only demo sessions. |
-| Semantic discovery | `backend/app/services/semantic_search.py` | Builds project-scoped text records, caches Gemini embeddings in SQLite, indexes in explicit 24-record batches until all records are covered, ranks natural-language queries, and returns source links and review labels. |
+| Semantic discovery | `backend/app/services/semantic_search.py` | Builds project-scoped text records, caches Gemini embeddings in SQLite, indexes in explicit 24-record Gemini batch requests until all records are covered, ranks natural-language queries, and returns source links and review labels. |
 | Campaign drafts | `backend/app/services/campaign.py` | Saves and edits three copy formats from approved observations and sourced measurements; retains an immutable source snapshot and marks drafts stale when sources change. |
 
 ## Data and request flow
