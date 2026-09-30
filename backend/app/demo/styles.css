@@ -659,3 +659,190 @@ h1,h2{font-weight:650}
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* ===================================================
+   T023 — FINAL UX/UI POLISH
+   =================================================== */
+
+/* 1. Modern system font stack — no external network call */
+body,
+button,
+input,
+select,
+textarea,
+.tab-button,
+.workspace-nav-btn .nav-text strong,
+.workspace-nav-btn .nav-text small,
+label {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Headings — tighter tracking with the same system stack */
+h1, h2, h3 {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.045em;
+}
+h1, h2 { font-weight: 700; }
+h3 { font-weight: 650; }
+
+/* Data-density cards use the same stack for consistency */
+.paper-card h3,
+.observation-card h3,
+.summary-grid strong,
+.report-card strong,
+.impact-header-top h3,
+.impact-section-heading h3 {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* 2. Improved empty states — centered, icon-hinted */
+.visit-grid.empty,
+.observation-list.empty,
+.media-library-grid.empty,
+.impact-cards-grid.empty,
+.empty-state {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 160px;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 36px 24px;
+}
+.visit-grid.empty::before    { content: "📅"; font-size: 1.8rem; opacity: 0.45; }
+.observation-list.empty::before { content: "🔍"; font-size: 1.8rem; opacity: 0.45; }
+.media-library-grid.empty::before { content: "🖼"; font-size: 1.8rem; opacity: 0.45; }
+.frames-timeline-container.empty { text-align: center; padding: 40px 20px; }
+.frames-timeline-container.empty::before { content: "🎞"; font-size: 1.8rem; opacity: 0.45; display: block; margin-bottom: 10px; }
+
+/* 3. Topbar nav links — subtle hover underline for discoverability */
+.top-action-link,
+.top-actions a {
+  position: relative;
+  text-decoration: none;
+  padding-bottom: 2px;
+}
+.top-action-link::after,
+.top-actions a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--green);
+  transition: width 0.2s ease;
+  border-radius: 2px;
+}
+.top-action-link:hover::after,
+.top-actions a:hover::after {
+  width: 100%;
+}
+
+/* 4. Session label — improved pill appearance */
+.session-label {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* 5. Workspace nav: stronger active step — left accent + glow */
+.workspace-nav-btn.active {
+  background: var(--green-soft);
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green), 0 3px 10px rgba(69, 95, 73, 0.14);
+  position: relative;
+}
+.workspace-nav-btn.active .nav-step {
+  background: var(--green);
+  color: #fff;
+}
+:root[data-theme=dark] .workspace-nav-btn.active .nav-step {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* 6. Evidence subnav — active step gets underline bar */
+.evidence-subnav-btn.active {
+  color: var(--green);
+  font-weight: 700;
+  border-bottom: 2px solid var(--green);
+  border-radius: 4px 4px 0 0;
+}
+:root[data-theme=dark] .evidence-subnav-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* 7. Observation card hover — subtle lift */
+.observation-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.18s ease;
+}
+
+/* 8. Impact share bar — cleaner base using CSS vars */
+.impact-share-bar {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* 9. Synthetic banner — tighter, less alarming */
+.synthetic-banner {
+  border-radius: 4px;
+  font-size: 0.78rem;
+  opacity: 0.92;
+}
+
+/* 10. content-title h2 — tighten leading for large headings */
+.content-title h2 {
+  line-height: 1.04;
+  margin-bottom: 10px;
+}
+
+/* 11. Project badge — green tint for published/active sites */
+.project-badge {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: var(--green);
+}
+
+/* 12. Better link hover for discovery results */
+.discovery-hit-links a:hover {
+  color: var(--green);
+}
+
+/* 13. Report JSON view — slightly softer dark */
+.report-json-view {
+  background: #1a2620;
+  color: #b3dbb8;
+  font-size: 0.80rem;
+  line-height: 1.5;
+  border-radius: 6px;
+}
+
+/* 14. Button gap fix — tighten icon-free buttons */
+.button { gap: 10px; }
+
+/* 15. Back link arrow gets more breathing room */
+.back-link { letter-spacing: 0.01em; }
+
+/* 16. Top-bar brand uses same system stack */
+.brand span {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
