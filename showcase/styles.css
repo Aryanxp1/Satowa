@@ -13,3 +13,55 @@
 @media(max-width:500px){.nav-actions{gap:8px}.theme-toggle{padding:7px 8px;font-size:.68rem}.button-small{font-size:.68rem;padding:7px 10px}.hero h1{font-size:clamp(3rem,12vw,4rem)}.hero-actions{gap:18px;flex-wrap:wrap}.hero-lede{font-size:1rem}.frame-title>span{display:none}.frame-metrics>div{padding:9px}.frame-metrics b{font-size:1.1rem}.frame-evidence{gap:5px}.frame-image{height:115px}.frame-review{display:block}.frame-review>span{display:block;margin-top:10px}.workflow-list article{grid-template-columns:1fr}.workflow-list article p{grid-column:1}.report-preview{padding:22px}.report-label{font-size:.5rem}.report-sources{grid-template-columns:1fr}.report-sources>div{border-bottom:1px solid var(--line);padding-bottom:10px}.team-list>div{flex-direction:column;gap:3px}.team-list span{text-align:left}.footer-inner{display:grid}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button{transition:none}}
 .brand-logo{height:36px;width:auto;object-fit:contain}
+
+/* From Uiverse.io by Creatlydev */
+.btn-github {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  text-decoration: none;
+
+  transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+  border-radius: 100px;
+  font-weight: 800;
+  place-content: center;
+
+  padding: 0.62rem 0.95rem;
+  font-size: 0.825rem;
+  line-height: 1rem;
+
+  background-color: #24292f;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+:root[data-theme=dark] .btn-github {
+  background-color: rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.btn-github:hover {
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(252, 232, 3, 0.08);
+  color: #fce803;
+  transform: translate(0, -0.25rem);
+  background-color: #1a1e22;
+}
+
+:root[data-theme=dark] .btn-github:hover {
+  background-color: rgba(0, 0, 0, 0.65);
+}
+
+@media(max-width:500px){
+  .btn-github {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.72rem;
+  }
+}
