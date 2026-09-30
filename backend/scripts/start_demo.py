@@ -49,6 +49,7 @@ def start():
 
     print("\n" + "=" * 60)
     print("  SETOWA SYSTEM IS READY")
+    print(f"  Showcase:       http://{host}:{port}/showcase/")
     print(f"  Workspace UI:   http://{host}:{port}/demo/")
     print(f"  Public Story:   http://{host}:{port}/share/{DEMO_SHARE_TOKEN}")
     print(f"  API Docs:       http://{host}:{port}/docs")
