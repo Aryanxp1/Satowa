@@ -230,6 +230,8 @@
     $('nav-projects').hidden = !status.reviewer;
   }
 
+  const DEFAULT_PILOT_TOKEN = 'ptMAR0cW8MYHQda3CgG3uli7HMJ5r8R_WQS_MOyFTsuARg0Lwto6gXwogc-S2rrO';
+
   async function getStatus() {
     const loopback = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
     state.accessMode = loopback ? 'local' : 'pilot';
@@ -238,7 +240,16 @@
     if (!loopback) {
       $('setup-mode-label').textContent = 'INVITED PILOT';
       $('setup-mode-title').textContent = 'Enter the evidence workspace.';
-      $('setup-mode-description').textContent = 'Use the reviewer token supplied by the project owner. It stays in this tab and clears when the page reloads.';
+      $('setup-mode-description').textContent = 'Reviewer token is pre-filled for hackathon evaluation. Click "Connect to workspace →" for 1-click access.';
+      if ($('pilot-token') && !$('pilot-token').value) {
+        $('pilot-token').value = DEFAULT_PILOT_TOKEN;
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+      if (urlToken && !state.pilotToken) {
+        state.pilotToken = urlToken;
+        if ($('pilot-token')) $('pilot-token').value = urlToken;
+      }
     }
     const status = loopback ? await request('/local/status')
       : state.pilotToken ? await request('/pilot/session')
@@ -251,7 +262,7 @@
   async function connectLocal() {
     if (state.session) return;
     if (state.accessMode === 'pilot') {
-      const token = $('pilot-token').value.trim();
+      const token = $('pilot-token').value.trim() || DEFAULT_PILOT_TOKEN;
       if (!token) {
         $('pilot-token').focus();
         $('pilot-token').scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -260,7 +271,6 @@
       state.pilotToken = token;
       try { await getStatus(); }
       catch (error) { state.pilotToken = null; throw error; }
-      $('pilot-token').value = '';
       return;
     }
     const session = await request('/local/session', { method: 'POST' });

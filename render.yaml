@@ -15,7 +15,7 @@ services:
       - key: AI_PROVIDER
         value: nvidia
       - key: REVIEWER_TOKENS
-        sync: false
+        value: '{"Aryan":"ptMAR0cW8MYHQda3CgG3uli7HMJ5r8R_WQS_MOyFTsuARg0Lwto6gXwogc-S2rrO"}'
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

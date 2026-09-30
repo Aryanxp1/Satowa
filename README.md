@@ -29,7 +29,14 @@
 
 Coordinators upload photos and videos from field visits; AI proposes visual observations and video frame analytics; human reviewers verify them; only human-verified evidence reaches official reports and public impact stories.
 
+> [!TIP]
+> **Evaluator / Judge Access on Render**:
+> When opening the live workspace (`/demo/`), the Reviewer Token is pre-configured and pre-filled:
+> `ptMAR0cW8MYHQda3CgG3uli7HMJ5r8R_WQS_MOyFTsuARg0Lwto6gXwogc-S2rrO`
+> Simply click **Connect to workspace →** for 1-click access to Aryan's pilot session.
+
 ---
+
 
 ## The problem
 
