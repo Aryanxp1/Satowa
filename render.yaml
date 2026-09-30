@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: satowa
+    runtime: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: pilot
+      - key: LOCAL_DEMO
+        value: "false"
+      - key: USE_MOCK
+        value: "false"
+      - key: AI_PROVIDER
+        value: nvidia
+      - key: REVIEWER_TOKENS
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

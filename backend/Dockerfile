@@ -26,5 +26,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -fsS "http://localhost:${PORT:-8000}/api/v1/health" >/dev/null || exit 1
 
-# Start Uvicorn server
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Seed demo dataset and start Uvicorn server
+CMD ["sh", "-c", "python scripts/seed_demo.py || true; exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
