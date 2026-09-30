@@ -2,8 +2,7 @@ services:
   - type: web
     name: satowa
     runtime: docker
-    dockerContext: backend
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: Dockerfile
     plan: free
     healthCheckPath: /api/v1/health
     envVars:
