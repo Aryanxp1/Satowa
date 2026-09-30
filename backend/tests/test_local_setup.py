@@ -15,7 +15,7 @@ def test_local_session_and_credential_update(tmp_path, monkeypatch):
     path = tmp_path / 'credential.json'
     monkeypatch.setattr(settings, 'ENVIRONMENT', 'test')
     monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path / 'demo.sqlite3'))
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"test-reviewer-secret"}'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"test-reviewer-secret"}'))
     monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('different-upload-secret'))
     monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', '')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', '')
@@ -33,7 +33,7 @@ def test_local_session_and_credential_update(tmp_path, monkeypatch):
         assert wrong_origin.status_code == 403
         session = client.post('/api/v1/local/session', headers=origin)
         assert session.status_code == 200
-        assert session.json() == {'reviewer': 'Farhan'}
+        assert session.json() == {'reviewer': 'Aryan'}
         assert 'httponly' in session.headers['set-cookie'].lower()
         assert 'test-reviewer-secret' not in session.text + session.headers['set-cookie']
         assert client.get('/api/v1/sites').status_code == 200

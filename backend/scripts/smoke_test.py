@@ -117,7 +117,7 @@ def run_smoke_test():
         obs = store.one(db, "SELECT * FROM observations WHERE id='obs_mombasa_creek'")
         assert obs, "Observation obs_mombasa_creek missing"
         assert obs["review_status"] == "approved"
-        assert obs["reviewed_by"] == "Farhan (Field Lead)"
+        assert obs["reviewed_by"] == "Aryan (Field Lead)"
         assert obs["approved_text"] is not None
     print(f"  [OK] Human Verification: status={obs['review_status']}, reviewer='{obs['reviewed_by']}'")
 

@@ -40,7 +40,7 @@ def setup_test_env(tmp_path, monkeypatch):
     """Ensure tests run against an isolated SQLite database and deterministic tokens."""
     monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path / 'demo_ui.sqlite3'))
     monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('upload-token'))
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"reviewer-token"}'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"reviewer-token"}'))
     monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'test-cloud')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', 'test-key')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_SECRET', SecretStr('test-secret'))
@@ -238,7 +238,7 @@ class TestCriticalBehavior:
         approved = rev_resp.json()
         assert approved['review_status'] == 'approved'
         assert approved['approved_text'] == 'Human reviewer verified: No visible litter.'
-        assert approved['reviewed_by'] == 'Farhan'
+        assert approved['reviewed_by'] == 'Aryan'
         assert approved['reviewed_at'] is not None
 
     def test_behavior_7_unapproved_result_cannot_appear_as_verified(self, monkeypatch):

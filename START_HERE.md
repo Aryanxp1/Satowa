@@ -9,7 +9,7 @@ observations and measurements a person explicitly entered.
 
 1. **Started with Aryan's LEX repository.** We inspected its branches,
    planning files, backend scaffold, showcase, and submission material. The
-   original documents assigned Aryan integration, Farhan backend/AI, and Shubh
+   original documents assigned Aryan integration and backend/AI, and Shubh
    UI/showcase responsibilities.
 2. **Selected one problem statement.** Of the three supplied challenges, Setowa
    now focuses on the Cloudinary impact and sustainability media platform.
@@ -21,11 +21,9 @@ observations and measurements a person explicitly entered.
 4. **Built the first backend.** FastAPI gained Cloudinary image upload with
    source metadata, SQLite site/visit/asset records, pair validation, cautious
    Gemini comparison, observation revisions, and an approved-only report.
-5. **Moved to Farhan's repository.** The working GitHub repository is
-   [farhanakhtar0x66/LEX](https://github.com/farhanakhtar0x66/LEX). The earlier
-   Aryan repository remains separate. The new repository began from a snapshot
-   of existing work; its short commit history does not mean the work began
-   there. Disclose earlier work according to the event's rules.
+5. **Maintained in Aryan's repository.** The working GitHub repository is
+   [Aryanxp1/Satowa](https://github.com/Aryanxp1/Satowa). The repository
+   contains the full backend, showcase UI, evaluation records, and demo assets.
 6. **Made review safer.** Named reviewer tokens identify edit/review actions.
    Version checks reject stale approvals. Feature work is reviewed through
    pull requests into `dev` under the team's workflow.

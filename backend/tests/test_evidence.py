@@ -19,7 +19,7 @@ HEADERS = {'Authorization': 'Bearer reviewer-token'}
 def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path/'lex.sqlite3'))
     monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('demo-token'))
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"reviewer-token"}'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"reviewer-token"}'))
     monkeypatch.setattr(settings, 'GEMINI_API_KEY', '')
     monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'demo-cloud')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', 'dummy')
@@ -190,9 +190,9 @@ def test_stale_review_rejected_and_actor_comes_from_token(monkeypatch):
     assert master.status_code == 403
     current = review(observation['id'], 'approve')
     assert current.status_code == 200
-    assert current.json()['reviewed_by'] == 'Farhan'
+    assert current.json()['reviewed_by'] == 'Aryan'
     assert current.json()['version'] == old_version + 2
-    assert client.get(f"/api/v1/observations/{observation['id']}", headers=HEADERS).json()['revisions'][-1]['actor'] == 'Farhan'
+    assert client.get(f"/api/v1/observations/{observation['id']}", headers=HEADERS).json()['revisions'][-1]['actor'] == 'Aryan'
     stale_edit = client.patch(f"/api/v1/observations/{observation['id']}", headers=HEADERS,
                               json={'expected_version': old_version, 'working_text': 'Old edit'})
     assert stale_edit.status_code == 409
@@ -205,9 +205,9 @@ def test_request_cannot_impersonate_reviewer(monkeypatch):
         json={'before_asset_id': before, 'after_asset_id': after}).json()
     response = client.post(f"/api/v1/observations/{observation['id']}/review", headers=HEADERS,
         json={'decision': 'approve', 'expected_version': observation['version'],
-              'reviewer': 'Aryan'})
+              'reviewer': 'Attacker'})
     assert response.status_code == 200
-    assert response.json()['reviewed_by'] == 'Farhan'
+    assert response.json()['reviewed_by'] == 'Aryan'
 
 
 def test_existing_database_adds_version_column(tmp_path, monkeypatch):
@@ -275,7 +275,7 @@ def test_measurements_need_named_reviewer_and_explicit_source():
     assert negative.status_code == 422
     saved = client.post('/api/v1/sites/river/measurements', headers=HEADERS, json=payload)
     assert saved.status_code == 201
-    assert saved.json()['recorded_by'] == 'Farhan'
+    assert saved.json()['recorded_by'] == 'Aryan'
     report = client.get('/api/v1/sites/river/report', headers=HEADERS).json()
     assert report['observations'] == []
     assert report['recorded_measurements'][0]['quantity'] == 12.5

@@ -10,6 +10,6 @@ Build a concise deck around the actual workflow. Use screenshots from the curren
 6. **Architecture** — Browser UI, FastAPI, SQLite workflow records, Cloudinary originals, optional Gemini comparison. Use [ARCHITECTURE.md](../ARCHITECTURE.md).
 7. **Live demonstration** — Show the exact approved wording and original links in an exported report.
 8. **Validation and limits** — State what was tested locally and what still needs real field-pair evaluation or deployment hardening.
-9. **Team and next step** — Aryan, Farhan, Shubh; permissioned field pilot and organizer feedback.
+9. **Team and next step** — Aryan, Shubh; permissioned field pilot and organizer feedback.
 
 Avoid unverified impact metrics, broad media intelligence claims, fabricated users, and generic stack slides. If a real comparison is unreliable, showing Setowa's refusal is a product strength when explained honestly.

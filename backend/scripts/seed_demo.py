@@ -456,7 +456,7 @@ def seed_demo_dataset():
                 "msr_mombasa_weigh", DEMO_SITE_ID, "v_mombasa_action",
                 "Recovered marine debris & plastic waste", 320.0, "kg",
                 "Digital hanging crane scale at Nyali Creek staging station",
-                "Farhan (Field Lead)", "2026-08-28T14:30:00Z"
+                "Aryan (Field Lead)", "2026-08-28T14:30:00Z"
             ),
             (
                 "msr_sabaki_weigh", "demo-riverbank", "v_sabaki_action",
@@ -486,7 +486,7 @@ def seed_demo_dataset():
                 "approved_text": "DEMO DATASET · Verified demonstration finding: 45-meter intertidal mangrove fringe cleared of macro-plastic bottles, single-use bags, and entangled synthetic lines with documented re-aeration of pneumatophores.",
                 "review_status": "approved",
                 "reliability_reason": "DEMO DATASET · Auditor confirmed: fixed-point coordinates match within 1.2m tolerance with identical tide-height benchmarks.",
-                "reviewed_by": "Farhan (Field Lead)",
+                "reviewed_by": "Aryan (Field Lead)",
                 "reviewed_at": "2026-09-19T10:00:00Z",
                 "created_at": now,
                 "updated_at": now,
@@ -653,7 +653,7 @@ def seed_demo_dataset():
             (
                 "evt_mombasa_5_observation", DEMO_STORY_ID, 5, "2026-09-19", "observation",
                 "Auditor Verified Environmental Finding",
-                "Field Lead Farhan formally approved the before/after finding confirming 45m mangrove fringe cleared of macro-plastic bottles and restoration of unimpeded tidal flushing.",
+                "Field Lead Aryan formally approved the before/after finding confirming 45m mangrove fringe cleared of macro-plastic bottles and restoration of unimpeded tidal flushing.",
                 DEMO_SITE_ID, "Nyali Creek Mangrove Fringe · DEMO DATASET",
                 json.dumps(["ast_mombasa_before", "ast_mombasa_after"]),
                 f"https://res.cloudinary.com/{cloud}/image/upload/f_auto,q_auto/v1/setowa/creek_post_cleanup.jpg",

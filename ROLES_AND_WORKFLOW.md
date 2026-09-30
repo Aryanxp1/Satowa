@@ -1,6 +1,6 @@
 # Team LEX — Setowa workflow
 
-**Aryan Vishwakarma** leads integration, architecture, review, and release coordination. **Farhan Akhtar** owns the backend, evidence rules, Cloudinary/Gemini integration, and API validation. **Shubh Gunjan** owns the frontend experience, responsive presentation, and showcase/pitch assets. Responsibilities can overlap; a PR should identify its author and reviewers.
+**Aryan Vishwakarma** leads integration, architecture, backend, evidence rules, Cloudinary/Gemini integration, API validation, review, and release coordination. **Shubh Gunjan** owns the frontend experience, responsive presentation, and showcase/pitch assets. Responsibilities can overlap; a PR should identify its author and reviewers.
 
 ## Branches
 
@@ -12,4 +12,4 @@ For a Setowa change, check the affected browser flow and run `cd backend && pyth
 
 ## Before release or submission
 
-Aryan confirms the integrated demo and relevant PR. Farhan verifies the backend and exported report. Shubh verifies presentation and responsive views. The team records what was built before the event, what was built during it, and which media is synthetic or permissioned. Repository privacy is a development setting; change it only after checking the organizer's access/submission rules.
+Aryan confirms the integrated demo and relevant PR, and verifies the backend and exported report. Shubh verifies presentation and responsive views. The team records what was built before the event, what was built during it, and which media is synthetic or permissioned. Repository privacy is a development setting; change it only after checking the organizer's access/submission rules.

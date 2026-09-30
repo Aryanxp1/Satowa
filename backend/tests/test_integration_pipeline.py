@@ -36,7 +36,7 @@ def setup_test_env(tmp_path, monkeypatch):
     """Ensure tests run against an isolated SQLite database and deterministic tokens."""
     monkeypatch.setattr(settings, 'LEX_DB_PATH', str(tmp_path / 'integration.sqlite3'))
     monkeypatch.setattr(settings, 'MEDIA_UPLOAD_TOKEN', SecretStr('upload-token'))
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"reviewer-token"}'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"reviewer-token"}'))
     if os.getenv('RUN_LIVE_INTEGRATION') != '1':
         monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'test-cloud')
         monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', 'test-key')
@@ -450,7 +450,7 @@ class TestEndToEndPipeline:
         approved_obs = rev_resp.json()
         assert approved_obs['review_status'] == 'approved'
         assert approved_obs['approved_text'] == 'Verified clean bank by human reviewer.'
-        assert approved_obs['reviewed_by'] == 'Farhan'
+        assert approved_obs['reviewed_by'] == 'Aryan'
         assert approved_obs['reviewed_at'] is not None
 
         # Phase 5: Report Generation with Traceability
@@ -465,7 +465,7 @@ class TestEndToEndPipeline:
         assert item['after_url'] == after_asset['secure_url']
         assert item['before_date'] == '2026-09-01'
         assert item['after_date'] == '2026-09-20'
-        assert item['reviewed_by'] == 'Farhan'
+        assert item['reviewed_by'] == 'Aryan'
 
         # Markdown format export
         md_resp = client.get('/api/v1/sites/river-e2e/report?format=markdown', headers=AUTH_HEADERS)

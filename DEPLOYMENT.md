@@ -10,7 +10,7 @@ Render Docker root: `backend`; Dockerfile relative to that root: `Dockerfile`. R
 | LOCAL_DEMO | false |
 | USE_MOCK | false |
 | AI_PROVIDER | nvidia |
-| REVIEWER_TOKENS | `{"Farhan":"<at-least-32-random-characters>"}` |
+| REVIEWER_TOKENS | `{"Aryan":"<at-least-32-random-characters>"}` |
 | CLOUDINARY_CLOUD_NAME | `<cloud-name>` |
 | CLOUDINARY_API_KEY | `<server-key>` |
 | CLOUDINARY_API_SECRET | `<server-secret>` |

@@ -6,7 +6,7 @@
   const PROMPT_LABEL = "PS C:\\Users\\lex\\Setowa> ";
 
   const commands = [
-    "git clone https://github.com/farhanakhtar0x66/LEX.git Setowa && cd Setowa",
+    "git clone https://github.com/Aryanxp1/Satowa.git Satowa && cd Satowa",
     ".\\run_local.bat",
     "python -m app.cli run-dag --dag mombasa_restoration"
   ];
@@ -27,7 +27,7 @@
       "✓ Visual DAG loaded: mombasa_restoration (5 nodes, 0 cycles)",
       "✓ [Skill: video_frames] 12 keyframes extracted in 0.38s",
       "✓ [Skill: debris_diff] -68.4% surface marine plastic verified",
-      "✓ [Human Gate] Signed & approved by Farhan (Field Lead)",
+      "✓ [Human Gate] Signed & approved by Aryan (Field Lead)",
       "✓ Cryptographic audit spine sealed: sha256:8f2a...49e0"
     ]
   };

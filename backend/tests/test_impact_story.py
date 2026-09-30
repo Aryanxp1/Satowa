@@ -170,7 +170,7 @@ def test_db(tmp_path, monkeypatch):
                 "Verified clear gravel shoreline. All solid waste removed across 50m riparian buffer.",
                 "approved",
                 None,
-                "Auditor Farhan",
+                "Auditor Aryan",
                 "2026-08-26T10:00:00Z",
                 "2026-08-25T12:00:00Z",
                 "2026-08-26T10:00:00Z",
@@ -291,7 +291,7 @@ def test_evidence_to_event_relationship(test_db):
         fe = finding_events[0]
         assert fe["observation_id"] == "obs_north_01"
         ev_data = json.loads(fe["evidence_json"])
-        assert ev_data["reviewed_by"] == "Auditor Farhan"
+        assert ev_data["reviewed_by"] == "Auditor Aryan"
 
 
 # ==============================================================================
@@ -345,7 +345,7 @@ def test_before_after_card_generation(test_db):
         assert card.verification_status == "approved"
         assert "north_before.jpg" in card.before_media_url
         assert "north_after.jpg" in card.after_media_url
-        assert card.reviewed_by == "Auditor Farhan"
+        assert card.reviewed_by == "Auditor Aryan"
         assert "50m riparian buffer" in card.approved_text
 
 
@@ -604,7 +604,7 @@ def test_project_with_approved_evidence(test_db):
         assert story.metrics["approved_findings_count"] >= 1
         approved = [c for c in story.before_after_cards if c.verification_status == "approved"]
         assert len(approved) >= 1
-        assert approved[0].reviewed_by == "Auditor Farhan"
+        assert approved[0].reviewed_by == "Auditor Aryan"
 
 
 # ==============================================================================

@@ -179,7 +179,7 @@ IMPACT STORY →  PUBLIC SHARE
 - Show the side-by-side comparative inspection with the split-reveal slider.
 - Review the observation:
   - State: **Approved** (or demonstrate editing/rejecting).
-  - Reviewer: **Farhan (Field Lead)** with timestamp audit.
+  - Reviewer: **Aryan (Field Lead)** with timestamp audit.
   - Explicit uncertainty notes: visual boundaries, lighting caveats.
 
 ### Step 8: Impact Story & Sustainability Timeline

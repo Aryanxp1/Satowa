@@ -43,7 +43,7 @@ def start_session(request: Request, response: Response):
     reviewers = reviewer_tokens()
     if not reviewers:
         raise HTTPException(503, 'No local reviewer is configured')
-    actor = 'Farhan' if 'Farhan' in reviewers else next(iter(reviewers))
+    actor = 'Aryan' if 'Aryan' in reviewers else next(iter(reviewers))
     response.set_cookie(LOCAL_COOKIE, new_local_session(actor), httponly=True,
                         samesite='strict', secure=False, path='/api/v1', max_age=8 * 60 * 60)
     response.headers['Cache-Control'] = 'no-store'

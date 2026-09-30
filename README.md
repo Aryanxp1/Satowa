@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="http://127.0.0.1:8000/demo/"><img src="https://img.shields.io/badge/Live%20Demo-Local%20%7C%20Render%20Pilot-758465?style=flat-square&logo=render" alt="Live Demo" /></a>
-  <a href="https://github.com/farhanakhtar0x66/LEX"><img src="https://img.shields.io/badge/GitHub-farhanakhtar0x66%2FLEX-181717?style=flat-square&logo=github" alt="GitHub" /></a>
+  <a href="https://github.com/Aryanxp1/Satowa"><img src="https://img.shields.io/badge/GitHub-Aryanxp1%2FSatowa-181717?style=flat-square&logo=github" alt="GitHub" /></a>
   <img src="https://img.shields.io/badge/Version-0.1.0-007ec6?style=flat-square" alt="Version 0.1.0" />
   <img src="https://img.shields.io/badge/Python-3.12%20%7C%203.14-3776ab?style=flat-square&logo=python" alt="Python 3.12 | 3.14" />
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi" alt="FastAPI 0.115" />
@@ -253,8 +253,8 @@ No AI output reaches a report or public story without passing through this human
 
 Clone the repository:
 ```bash
-git clone https://github.com/farhanakhtar0x66/LEX.git
-cd LEX
+git clone https://github.com/Aryanxp1/Satowa.git
+cd Satowa
 ```
 
 ### Option A: Universal (Recommended for All Platforms — Windows, macOS, Linux)

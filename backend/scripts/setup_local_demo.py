@@ -13,7 +13,7 @@ def ensure_local_env():
         token = secrets.token_urlsafe(32)
         prefix = '' if not existing or existing.endswith('\n') else '\n'
         with env_path.open('a') as stream:
-            stream.write(prefix + 'REVIEWER_TOKENS=' + json.dumps({'Farhan': token}) + '\n')
+            stream.write(prefix + 'REVIEWER_TOKENS=' + json.dumps({'Aryan': token}) + '\n')
         try:
             env_path.chmod(0o600)
         except OSError:

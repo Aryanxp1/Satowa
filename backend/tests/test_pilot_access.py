@@ -10,7 +10,7 @@ from app.main import app
 def test_remote_pilot_gates_entire_api_and_uses_named_reviewer(monkeypatch):
     monkeypatch.setattr(settings, 'ENVIRONMENT', 'pilot')
     token = 'pilot-test-token-with-at-least-32-characters'
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"' + token + '"}'))
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"' + token + '"}'))
     client = TestClient(app)
     assert client.get('/api/v1/health').status_code == 200
     for path in ('/api/v1/projects', '/api/v1/skills', '/api/v1/workflows',
@@ -19,7 +19,7 @@ def test_remote_pilot_gates_entire_api_and_uses_named_reviewer(monkeypatch):
     headers = {'Authorization': 'Bearer ' + token}
     session = client.get('/api/v1/pilot/session', headers=headers)
     assert session.status_code == 200
-    assert session.json()['reviewer'] == 'Farhan'
+    assert session.json()['reviewer'] == 'Aryan'
     assert token not in session.text
     assert client.get('/api/v1/projects', headers=headers).status_code == 200
     assert client.get('/api/v1/local/status', headers=headers).status_code == 403
@@ -44,7 +44,8 @@ def test_pilot_readiness_reports_missing_and_malformed_auth_without_secrets(monk
 def test_pilot_readiness_reports_configured_services_without_values(monkeypatch):
     monkeypatch.setattr(settings, 'ENVIRONMENT', 'pilot')
     monkeypatch.setattr(settings, 'USE_MOCK', False)
-    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Farhan":"a-long-random-demo-token-with-32-chars"}'))
+    monkeypatch.setattr(settings, 'AI_PROVIDER', 'nvidia')
+    monkeypatch.setattr(settings, 'REVIEWER_TOKENS', SecretStr('{"Aryan":"a-long-random-demo-token-with-32-chars"}'))
     monkeypatch.setattr(settings, 'GEMINI_API_KEY', 'gemini-test-secret')
     monkeypatch.setattr(settings, 'CLOUDINARY_CLOUD_NAME', 'test-cloud')
     monkeypatch.setattr(settings, 'CLOUDINARY_API_KEY', 'cloudinary-test-secret')
