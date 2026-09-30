@@ -243,7 +243,7 @@ No AI output reaches a report or public story without passing through this human
 
 ---
 
-## Demo instructions
+## Quick start
 
 ### Prerequisites
 
@@ -251,27 +251,67 @@ No AI output reaches a report or public story without passing through this human
 - A Cloudinary account (optional — pre-seeded media URLs work locally)
 - A Gemini API key (optional — all manual review workflows function without it)
 
-### 1. Clone and start (Linux / macOS)
-
+Clone the repository:
 ```bash
 git clone https://github.com/farhanakhtar0x66/LEX.git
 cd LEX
+```
+
+### Option A: Universal (Recommended for All Platforms — Windows, macOS, Linux)
+
+Run one command from the repository root:
+```bash
+python run_local.py
+```
+*`run_local.py` automatically detects or creates the virtual environment in `backend/venv`, installs dependencies from `requirements.txt` if needed, sets the working directory and environment variables, creates local reviewer credentials, seeds deterministic demo data across 4 sites, and launches FastAPI with the interactive banner.*
+
+### Option B: Windows Native (PowerShell / CMD)
+
+From the repository root:
+
+- **PowerShell**:
+  ```powershell
+  .\run_local.ps1
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  run_local.bat
+  ```
+- **Direct Python Virtualenv**:
+  ```powershell
+  .\backend\venv\Scripts\python.exe backend\scripts\start_demo.py
+  ```
+
+> [!NOTE]
+> If running `uvicorn` directly from the repository root instead of the launcher scripts, you **must** supply `--app-dir backend` (otherwise Python cannot locate `app.main` because `app/` resides in `backend/`):
+> ```powershell
+> .\backend\venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+> ```
+> Or change directory to `backend` first:
+> ```powershell
+> cd backend
+> .\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+> ```
+
+### Option C: Linux / macOS / Git Bash
+
+From the repository root:
+```bash
 ./run_local.sh
 ```
 
-Open **http://127.0.0.1:8000/demo/**
+### URLs after launch
 
-### 2. Windows
+| Interface | URL | Description |
+|---|---|---|
+| **Showcase Landing** | `http://127.0.0.1:8000/showcase/` | Project landing page, live architecture, and workflow directory |
+| **Workspace UI** | `http://127.0.0.1:8000/demo/` | 8-stage interactive evidence review workspace |
+| **Public Impact Story** | `http://127.0.0.1:8000/share/pst_demo_mombasa_coastal_2026` | Published tokenized impact story |
+| **Interactive API Docs** | `http://127.0.0.1:8000/docs` | OpenAPI / Swagger interactive documentation |
+| **Health Check** | `http://127.0.0.1:8000/api/v1/health` | Liveness probe (returns `{"status":"ok"}`) |
+| **Readiness Check** | `http://127.0.0.1:8000/api/v1/ready` | Readiness probe (verifies database, Cloudinary & Gemini status) |
 
-```powershell
-cd backend
-python -m venv venv
-.\venv\Scripts\pip install -r requirements.txt
-python scripts\seed_demo.py
-python scripts\start_demo.py
-```
-
-### 3. Demo walkthrough
+### Demo walkthrough
 
 The demo workspace is pre-loaded with synthetic data across 4 sites. No AI key is required to walk the full evidence pipeline using the pre-seeded comparison pairs.
 
@@ -346,8 +386,10 @@ LEX/
 ├── DEPLOYMENT.md                ← Render / PostgreSQL deployment guide
 ├── DEMO.md                      ← quick demo reference
 ├── EVALUATION.md                ← AI evaluation methodology
-├── SECURITY.md                  ← security principles
-├── run_local.sh                 ← one-command local startup (Linux/macOS)
+├── run_local.py                 ← universal cross-platform local runner (Windows/macOS/Linux)
+├── run_local.ps1                ← native Windows PowerShell launcher
+├── run_local.bat                ← native Windows CMD launcher
+├── run_local.sh                 ← one-command local startup (Linux/macOS/Git Bash)
 │
 ├── .ai/                         ← team documentation
 │   ├── ARCHITECTURE.md          ← core invariants and trust model

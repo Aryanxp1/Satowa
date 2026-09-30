@@ -61,28 +61,44 @@ This populates:
 
 ## 4. One-Command Startup
 
-### Standard Single-Command Launch (Linux / macOS / Git Bash)
-From repository root:
+### Universal Launch (Windows / macOS / Linux — Recommended)
+From repository root (`LEX`):
+```bash
+python run_local.py
+```
+*Automatically detects/creates `backend/venv`, installs packages if needed, sets environment, seeds data, and starts the server.*
+
+### Native Windows Launch
+From repository root (`LEX`):
+
+- **PowerShell**:
+  ```powershell
+  .\run_local.ps1
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  run_local.bat
+  ```
+- **Direct Virtualenv Python**:
+  ```powershell
+  .\backend\venv\Scripts\python.exe backend\scripts\start_demo.py
+  ```
+- **Direct Uvicorn (Note: require `--app-dir backend`)**:
+  ```powershell
+  .\backend\venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+  ```
+
+### Linux / macOS / Git Bash Launch
+From repository root (`LEX`):
 ```bash
 ./run_local.sh
 ```
 
-### Windows / Cross-Platform Launch (Python / PowerShell)
-From repository root (`LEX`):
-```powershell
-.\backend\venv\Scripts\python.exe backend\scripts\start_demo.py
-```
-Or from `backend/`:
-```powershell
-cd backend
-.\venv\Scripts\python.exe scripts\start_demo.py
-```
-
-The startup script will:
+The startup runner will:
 - Safely audit environment variables without exposing secret values
-- Ensure reviewer authorization credentials exist
-- Seed the deterministic demo dataset
-- Print the live workspace and public URLs
+- Ensure reviewer authorization credentials exist (`backend/.env`)
+- Seed the deterministic demo dataset across 4 sites
+- Print the live workspace, showcase, and public URLs
 - Start FastAPI on `http://127.0.0.1:8000`
 
 ---
