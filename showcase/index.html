@@ -6,9 +6,241 @@
   <meta name="description" content="Setowa connects cleanup media, human review, and evidence-linked reporting. Built by Team LEX.">
   <meta name="referrer" content="no-referrer">
   <title>Setowa — Evidence for work that matters</title>
-  <link rel="stylesheet" href="/showcase/styles.css?v=8">
+  <link rel="stylesheet" href="/showcase/styles.css?v=11">
   <script src="/showcase/theme.js?v=3" defer></script>
   <script src="/showcase/ripple.js?v=1" defer></script>
+  <script src="/showcase/terminal.js?v=4" defer></script>
+  <style id="aceternity-terminal-styles">
+    /* Trust Section: 2-Column Split with Aceternity UI Terminal */
+    .trust-section {
+      background: var(--green-soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 96px 0;
+    }
+    .trust-layout-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 48px;
+    }
+    .trust-content-left {
+      flex: 0 1 45%;
+      max-width: 490px;
+    }
+    .trust-content-left h2 {
+      font-size: clamp(2.5rem, 4vw, 4.2rem);
+      font-weight: 620;
+      margin: 14px 0 18px;
+      line-height: 1.08;
+      letter-spacing: -0.05em;
+    }
+    .trust-content-left p:not(.eyebrow) {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.72;
+      margin: 0;
+    }
+    .trust-pills {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      margin-top: 22px !important;
+    }
+    .trust-pill {
+      font: 700 0.64rem ui-monospace, SFMono-Regular, Menlo, monospace !important;
+      letter-spacing: 0.08em !important;
+      padding: 5px 12px !important;
+      border-radius: 999px !important;
+      background: color-mix(in srgb, var(--green) 12%, transparent) !important;
+      color: var(--green) !important;
+      border: 1px solid color-mix(in srgb, var(--green) 24%, transparent) !important;
+    }
+    .trust-terminal-right {
+      flex: 0 1 55%;
+      max-width: 630px;
+      width: 100%;
+    }
+    /* Aceternity UI Terminal Window */
+    .aceternity-terminal {
+      background: #09090b !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.2) !important;
+      overflow: hidden !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+      width: 100% !important;
+      text-align: left !important;
+    }
+    .aceternity-header {
+      background: #18181b !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding: 12px 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      user-select: none !important;
+    }
+    .aceternity-dots {
+      display: flex !important;
+      align-items: center !important;
+      gap: 7px !important;
+      width: 50px !important;
+    }
+    .aceternity-dots span {
+      width: 11px !important;
+      height: 11px !important;
+      border-radius: 50% !important;
+      display: inline-block !important;
+    }
+    .dot-red { background: #ef4444 !important; }
+    .dot-yellow { background: #eab308 !important; }
+    .dot-green { background: #22c55e !important; }
+    .aceternity-title {
+      color: #a1a1aa !important;
+      font-size: 0.76rem !important;
+      font-weight: 500 !important;
+      text-align: center !important;
+      flex: 1 !important;
+      letter-spacing: 0.01em !important;
+    }
+    .aceternity-spacer {
+      width: 50px !important;
+    }
+    .aceternity-body {
+      background: #09090b !important;
+      padding: 22px 24px !important;
+      min-height: 270px !important;
+      max-height: 330px !important;
+      overflow-y: auto !important;
+      font-size: 0.81rem !important;
+      line-height: 1.7 !important;
+      color: #f4f4f5 !important;
+      text-align: left !important;
+    }
+    .aceternity-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .aceternity-body::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    .term-line {
+      margin: 2px 0 !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      display: block !important;
+      text-align: left !important;
+    }
+    .term-line-prompt {
+      margin-top: 10px !important;
+    }
+    .term-line-prompt:first-child {
+      margin-top: 0 !important;
+    }
+    .term-ps-prompt {
+      color: #38bdf8 !important;
+      font-weight: 600 !important;
+      user-select: none !important;
+    }
+    .term-command {
+      color: #fafafa !important;
+      font-weight: 600 !important;
+    }
+    .term-cursor-block {
+      display: inline-block !important;
+      width: 9px !important;
+      height: 15px !important;
+      background: #fafafa !important;
+      vertical-align: -2px !important;
+      margin-left: 2px !important;
+      animation: termBlockBlink 0.9s infinite !important;
+    }
+    @keyframes termBlockBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    .term-output {
+      color: #a1a1aa !important;
+      font-size: 0.79rem !important;
+    }
+    .term-output-check {
+      color: #22c55e !important;
+      font-weight: 700 !important;
+      margin-right: 5px !important;
+    }
+    .term-output-success {
+      color: #e4e4e7 !important;
+    }
+    .term-output-highlight {
+      color: #60a5fa !important;
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+    }
+    /* Downside: 3 Trust Pillars Row */
+    .trust-cards-row {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 24px !important;
+      margin-top: 60px !important;
+      padding-top: 48px !important;
+      border-top: 1px solid var(--line) !important;
+      text-align: left !important;
+    }
+    .trust-card {
+      display: flex !important;
+      gap: 16px !important;
+      align-items: flex-start !important;
+      padding: 22px !important;
+      border-radius: 8px !important;
+      background: color-mix(in srgb, var(--paper) 65%, transparent) !important;
+      border: 1px solid var(--line) !important;
+      transition: transform 0.2s, background 0.2s, border-color 0.2s !important;
+    }
+    .trust-card:hover {
+      transform: translateY(-2px) !important;
+      background: var(--paper) !important;
+      border-color: var(--green) !important;
+    }
+    .trust-card-num {
+      font: 700 0.75rem ui-monospace, Menlo, monospace !important;
+      color: var(--green) !important;
+      background: color-mix(in srgb, var(--green) 12%, transparent) !important;
+      padding: 3px 8px !important;
+      border-radius: 4px !important;
+      flex-shrink: 0 !important;
+    }
+    .trust-card-text strong {
+      display: block !important;
+      font-size: 1.02rem !important;
+      font-weight: 680 !important;
+      color: var(--ink) !important;
+      margin-bottom: 6px !important;
+    }
+    .trust-card-text p {
+      font-size: 0.84rem !important;
+      color: var(--muted) !important;
+      line-height: 1.6 !important;
+      margin: 0 !important;
+    }
+    @media (max-width: 900px) {
+      .trust-layout-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 36px !important;
+      }
+      .trust-content-left, .trust-terminal-right {
+        flex: 1 1 100% !important;
+        max-width: 100% !important;
+      }
+      .trust-cards-row {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+        margin-top: 40px !important;
+        padding-top: 32px !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -147,17 +379,59 @@
     </section>
 
     <section class="trust-section" id="trust">
-      <div class="wrap trust-layout">
-        <div>
-          <p class="eyebrow">BUILT FOR TRUST</p>
-          <h2>Integrity is the core product.</h2>
-          <p>Setowa rejects hallucinated impact claims. Visual observations cannot fabricate carbon metrics or waste weights. Unapproved proposals stay strictly out of certified reports.</p>
-          <a class="button primary" href="/demo/">Open Workspace →</a>
+      <div class="wrap trust-container">
+        <div class="trust-layout-row">
+          <div class="trust-content-left">
+            <p class="eyebrow">BUILT FOR TRUST</p>
+            <h2>Integrity is the core product.</h2>
+            <p>Setowa rejects hallucinated impact claims. Visual observations cannot fabricate carbon metrics or waste weights. Unapproved proposals stay strictly out of certified reports.</p>
+            <div class="trust-pills">
+              <span class="trust-pill">PowerShell Native</span>
+              <span class="trust-pill">DAG Workflows</span>
+              <span class="trust-pill">Modular AI Skills</span>
+            </div>
+          </div>
+
+          <div class="trust-terminal-right">
+            <div class="aceternity-terminal" aria-label="Interactive Aceternity Terminal">
+              <div class="aceternity-header">
+                <div class="aceternity-dots">
+                  <span class="dot-red"></span>
+                  <span class="dot-yellow"></span>
+                  <span class="dot-green"></span>
+                </div>
+                <div class="aceternity-title">setowa-win64 — pwsh</div>
+                <div class="aceternity-spacer"></div>
+              </div>
+              <div class="aceternity-body" id="aceternity-terminal-body" tabindex="0" role="region" aria-label="Terminal log output">
+                <!-- Dynamically typed lines rendered by terminal.js -->
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="trust-rules">
-          <div><span>01</span><strong>Source-linked</strong><p>Every claim points back to exact Cloudinary media assets and frame timestamps.</p></div>
-          <div><span>02</span><strong>Uncertainty surfaced</strong><p>Lighting disparities, occlusion, and angle shifts are explicitly flagged as caveats.</p></div>
-          <div><span>03</span><strong>Human-verified</strong><p>Only signed reviewer decisions can enter exported reports or public stories.</p></div>
+
+        <div class="trust-cards-row">
+          <div class="trust-card">
+            <span class="trust-card-num">01</span>
+            <div class="trust-card-text">
+              <strong>Source-linked</strong>
+              <p>Every claim points back to exact Cloudinary media assets and frame timestamps.</p>
+            </div>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card-num">02</span>
+            <div class="trust-card-text">
+              <strong>Uncertainty surfaced</strong>
+              <p>Lighting disparities, occlusion, and angle shifts are explicitly flagged as caveats.</p>
+            </div>
+          </div>
+          <div class="trust-card">
+            <span class="trust-card-num">03</span>
+            <div class="trust-card-text">
+              <strong>Human-verified</strong>
+              <p>Only signed reviewer decisions can enter exported reports or public stories.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
