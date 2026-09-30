@@ -1,8 +1,27 @@
 <p align="center">
-  <img src="showcase/setowa_logo.svg" alt="Setowa Logo" width="160" />
+  <img src="showcase/setowa_logo.svg" alt="Setowa Logo" width="180" />
 </p>
 
-# Setowa — Evidence Intelligence for Impact
+<h1 align="center">Setowa — Evidence Intelligence for Impact</h1>
+
+<p align="center">
+  <em>Calibrated Field Auditing, Multimodal AI Proposals & Human-Verified Public Reporting</em>
+</p>
+
+<p align="center">
+  <a href="http://127.0.0.1:8000/demo/"><img src="https://img.shields.io/badge/Live%20Demo-Local%20%7C%20Render%20Pilot-758465?style=flat-square&logo=render" alt="Live Demo" /></a>
+  <a href="https://github.com/farhanakhtar0x66/LEX"><img src="https://img.shields.io/badge/GitHub-farhanakhtar0x66%2FLEX-181717?style=flat-square&logo=github" alt="GitHub" /></a>
+  <img src="https://img.shields.io/badge/Version-0.1.0-007ec6?style=flat-square" alt="Version 0.1.0" />
+  <img src="https://img.shields.io/badge/Python-3.12%20%7C%203.14-3776ab?style=flat-square&logo=python" alt="Python 3.12 | 3.14" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi" alt="FastAPI 0.115" />
+  <img src="https://img.shields.io/badge/Tests-317%20passed%20%7C%202%20skipped-44cc11?style=flat-square&logo=pytest" alt="317 passed" />
+  <br/>
+  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI%20Engine-Gemini%203.8%20Flash-4285f4?style=flat-square&logo=google" alt="Google Gemini" /></a>
+  <a href="https://cloudinary.com"><img src="https://img.shields.io/badge/Media%20API-Cloudinary%20Programmable-3448c5?style=flat-square&logo=cloudinary" alt="Cloudinary" /></a>
+  <img src="https://img.shields.io/badge/Storage-Native%20SQLite%20(15%20Tables)-e36209?style=flat-square&logo=sqlite" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Human%20Review-100%25%20Verified%20Auditing-2ea44f?style=flat-square" alt="Human Verified" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-dfb317?style=flat-square" alt="MIT License" /></a>
+</p>
 
 > **Built by Team LEX (Local Evidence eXchange)** · Cloudinary × Google Gemini Hackathon 2026
 
@@ -30,13 +49,27 @@ Environmental cleanup organisations run dozens of concurrent field sites. Photos
 | **Report** | Only approved observations with approved text appear in exports |
 | **Impact Story** | Gemini generates a grounded narrative; published publicly via a share token |
 
-**Trust model:**
+**Core Trust Model:**
+
+```mermaid
+flowchart LR
+    A["🤖 AI Proposes<br/>(Observations & Signals)"] --> B["📸 Evidence Supports<br/>(Cloudinary Delivery URLs)"]
+    B --> C["👤 Human Verifies<br/>(Named Field Reviewer)"]
+    C --> D["✅ Approved Record<br/>(Optimistic Locked State)"]
+    D --> E["📊 Traceable Report<br/>(Zero-LLM Audit Export)"]
+    
+    style A fill:#2b2206,stroke:#f59e0b,stroke-width:1px,color:#fef3c7
+    style B fill:#0f2038,stroke:#3b82f6,stroke-width:1px,color:#dbeafe
+    style C fill:#1e142e,stroke:#8b5cf6,stroke-width:1px,color:#ede9fe
+    style D fill:#0b291b,stroke:#10b981,stroke-width:1px,color:#d1fae5
+    style E fill:#1a202c,stroke:#64748b,stroke-width:1px,color:#f1f5f9
+```
 
 ```
 AI PROPOSES  →  EVIDENCE SUPPORTS  →  HUMAN VERIFIES  →  APPROVED RECORD  →  TRACEABLE REPORT
 ```
 
-AI is a proposal engine, not a source of truth. No observation is ever auto-approved.
+*AI is a proposal engine, not a source of truth. No observation is ever auto-approved.*
 
 ---
 
@@ -72,25 +105,78 @@ Each stage has a footer navigation guide in the demo workspace so a judge can fo
 
 ---
 
-## Architecture overview
+## System Architecture Blueprint & Layer Flow
 
-```
-Browser (Vanilla JS SPA)
-    │
-    ├── /demo/          ← Setowa Workspace (index.html + app.js)
-    ├── /share/{token}  ← Public read-only impact story (server-rendered HTML)
-    └── /api/v1/        ← FastAPI JSON API
-            │
-            ├── Evidence store (SQLite / PostgreSQL)
-            │       Sites → Visits → Assets → Observations → Reviews → Reports
-            │
-            ├── Skill Runtime  ← versioned skills + permission enforcement
-            │       └── DAG Workflow Engine  ← topological execution
-            │
-            ├── Cloudinary SDK  ← upload, delivery, video frame derivation
-            │
-            └── Gemini API  ← visual intelligence, narrative synthesis
-                    (optional; all manual workflows function without it)
+Setowa is architected around strict separation of concerns, zero-build-step client presentation, declarative skill manifests with Kahn's DAG execution, Cloudinary programmable media delivery, Google Gemini multimodal visual reasoning, and an audit-grade SQLite/PostgreSQL evidence store:
+
+```mermaid
+graph TD
+    subgraph Layer1 ["1. Clients & Presentation Boundary (Zero-Build-Step)"]
+        BrowserApp["Setowa Workspace SPA<br/>(Vanilla HTML5 / Modern CSS / ES6)"]
+        PublicShareView["Public Impact Story View<br/>(/share/{token} • Open Graph SSR)"]
+        ShowcasePortal["Showcase Landing Page<br/>(/showcase/ • Project Directory)"]
+        CLITools["Admin & Ingestion CLI<br/>(scripts/ingest_collection.py)"]
+    end
+
+    subgraph Layer2 ["2. Transport, Security & Origin Boundary"]
+        FastAPIApp["FastAPI ASGI Core Engine<br/>(Uvicorn 0.0.0.0:8000)"]
+        SecurityBoundary["Security & CSP Boundary<br/>(Strict script-src, X-Frame-Options, Strict-CORS)"]
+        AuthBoundary["Session & Reviewer Auth<br/>(Bearer token reviewer identity)"]
+        ErrorRedactor["Sanitization Layer<br/>(Secrets & raw stack trace redaction)"]
+    end
+
+    subgraph Layer3 ["3. Skill Runtime & Declarative Workflow Engine"]
+        SkillRegistry["Skill Registry & Manifests<br/>(SemVer validation, typed contracts)"]
+        DAGComposer["Declarative Workflow Engine<br/>(Kahn's Topological Sort & Cycle Detection)"]
+        BuiltinSkills["Built-in Reusable Skills<br/>(media-metadata, evidence-comparison,<br/>field-frame-observation, media-intelligence)"]
+        ContractState["4-State Contract Guard<br/>(success | failed | invalid_input | unavailable)"]
+    end
+
+    subgraph Layer4 ["4. Core Business, Intelligence & Human-Audit Engines"]
+        CloudinaryPipeline["Cloudinary Media Engine<br/>(f_auto, q_auto delivery, derived so_&lt;ts&gt; frames,<br/>video poster generation, responsive previews)"]
+        GeminiMultimodal["Google Gemini Vision Engine<br/>(gemini-3.8-flash multimodal REST API,<br/>visual signals & anti-hallucination guard)"]
+        PairValidator["Evidence Pair Validator<br/>(Chronological visit ordering, same-site,<br/>distinct assets, permission verification)"]
+        HumanReviewGate["Human Verification & Review Gate<br/>(Optimistic locking, 409 conflict guard,<br/>edit-invalidation to pending)"]
+        ReportEngine["Deterministic Report Engine<br/>(Zero LLM calls, approved-only records,<br/>strict reviewer-sourced measurements)"]
+        ImpactSynthesizer["Impact Story Synthesizer<br/>(Grounded timeline narrative generation,<br/>cryptographic 128-bit share tokens)"]
+    end
+
+    subgraph Layer5 ["5. Storage, Schema & Ledger Boundary"]
+        EvidenceStore["Native SQLite / PostgreSQL Evidence Store<br/>(Projects, Sites, Visits, Assets, Video Frames,<br/>Observations, Reviews, Measurements, Stories)"]
+        MigrationEngine["Non-Destructive Migrations<br/>(PRAGMA table_info & ALTER TABLE)"]
+        FTS5Engine["SQLite FTS5 Search Engine<br/>(Instant indexed keyword discovery fallback)"]
+    end
+
+    BrowserApp --> SecurityBoundary
+    PublicShareView --> SecurityBoundary
+    ShowcasePortal --> SecurityBoundary
+    CLITools --> FastAPIApp
+
+    SecurityBoundary --> FastAPIApp
+    AuthBoundary --> FastAPIApp
+    ErrorRedactor --> FastAPIApp
+
+    FastAPIApp --> SkillRegistry
+    FastAPIApp --> DAGComposer
+    FastAPIApp --> PairValidator
+    FastAPIApp --> HumanReviewGate
+    FastAPIApp --> ReportEngine
+    FastAPIApp --> ImpactSynthesizer
+
+    DAGComposer --> BuiltinSkills
+    BuiltinSkills --> ContractState
+
+    BuiltinSkills --> CloudinaryPipeline
+    BuiltinSkills --> GeminiMultimodal
+    ImpactSynthesizer --> GeminiMultimodal
+    PairValidator --> EvidenceStore
+    HumanReviewGate --> EvidenceStore
+    ReportEngine --> EvidenceStore
+    ImpactSynthesizer --> EvidenceStore
+    FastAPIApp --> FTS5Engine
+
+    CloudinaryPipeline -.-> EvidenceStore
+    EvidenceStore --> MigrationEngine
 ```
 
 See [`.ai/ARCHITECTURE.md`](.ai/ARCHITECTURE.md) for core invariants and the [root `ARCHITECTURE.md`](ARCHITECTURE.md) for provider and persistence details.
@@ -99,15 +185,16 @@ See [`.ai/ARCHITECTURE.md`](.ai/ARCHITECTURE.md) for core invariants and the [ro
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.12+, FastAPI, Uvicorn |
-| Database | SQLite (default), PostgreSQL (optional, via `DATABASE_URL`) |
-| Media Storage | Cloudinary (Python SDK `cloudinary==1.46.2`) |
-| AI / Vision | Google Gemini (`gemini-flash-latest`) via `google-generativeai` |
-| AI / Search | Optional NVIDIA embedding adapter (FTS5 fallback when unavailable) |
-| Frontend | Vanilla HTML/CSS/JavaScript (no build step) |
-| Tests | pytest (317 passing, 2 skipped live-only, 1 known Windows chmod failure) |
+| Layer | Technology | Details |
+|---|---|---|
+| **Backend Framework** | Python 3.12+ / 3.14 · FastAPI 0.115 | Asynchronous REST API, typed Pydantic v2 schemas, Uvicorn ASGI |
+| **Media Backbone** | Cloudinary Programmable Media | Python SDK (`cloudinary==1.46.2`), auto format/quality (`f_auto,q_auto`), video frame transformations (`so_<ts>`) |
+| **AI Multimodal Vision** | Google Gemini (`gemini-3.8-flash`) | Multimodal vision & reasoning REST API, controlled taxonomies, structured anti-hallucination JSON contracts |
+| **Database & Persistence** | Native SQLite / PostgreSQL | Dynamic schema migration (`evidence_store.py`), foreign-key constraints, append-only timeline events |
+| **Search & Discovery** | Native SQLite FTS5 (Full-Text Search) | Instant indexed keyword search fallback (with optional vector embedding adapter) |
+| **Workflow Engine** | In-House Declarative DAG Runtime | Kahn's topological sort, cycle prevention, port validation, 4-state execution contracts |
+| **Frontend Presentation** | Zero-Build Modern Web Stack | Vanilla HTML5 semantic markup, CSS3 custom properties & glassmorphism, ES6 modular JavaScript |
+| **Testing & Quality** | pytest & Playwright automation | 317 unit/integration tests passed, 9/9 end-to-end smoke test phases, 0 browser console errors |
 
 ---
 
@@ -212,7 +299,7 @@ CLOUDINARY_API_SECRET=
 
 # Required for AI analysis (optional — demo works without it)
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-flash-latest
+GEMINI_MODEL=gemini-3.8-flash
 
 # Reviewer token for the local pilot (min 32 chars)
 REVIEWER_TOKENS={"YourName":"replace-with-32-random-chars"}
@@ -325,9 +412,9 @@ LEX/
 | Document | Purpose |
 |---|---|
 | [`.ai/ARCHITECTURE.md`](.ai/ARCHITECTURE.md) | Core invariants, trust model, storage principles |
-| [`.ai/DECISIONS.md`](.ai/DECISIONS.md) | Architecture decision log D001–D021 |
+| [`.ai/DECISIONS.md`](.ai/DECISIONS.md) | Architecture decision log D001–D024 |
 | [`.ai/PROJECT_STATE.md`](.ai/PROJECT_STATE.md) | Verified test baseline, full feature checklist |
-| [`.ai/TASK_BOARD.md`](.ai/TASK_BOARD.md) | Milestone history T001–T022 |
+| [`.ai/TASK_BOARD.md`](.ai/TASK_BOARD.md) | Milestone history T001–T022-A |
 | [`.ai/HANDOFF.md`](.ai/HANDOFF.md) | Agent handoff notes and session state |
 | [`.ai/CHANGELOG.md`](.ai/CHANGELOG.md) | Incremental change log |
 
